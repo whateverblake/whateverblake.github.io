@@ -5,7 +5,7 @@ title: How a Mooncake owner starts and mounts memory
 
 # How a Mooncake owner starts and mounts memory
 
-[Series index](index.html) · [Environment setup](environment_setting_up.html) · [Previous: master startup](mooncake_service_starting.html) · [Next: the Put path](mooncake_put_path.html)
+[Series index](index.html) · [Environment setup](environment_setting_up.html) · [Previous: master startup](mooncake_service_starting.html) · [Next: the Put path](mooncake_put-get_path.html)
 
 The owner is the process that supplies memory for stored objects. The master
 records this capacity and chooses space for objects. The object bytes stay in
@@ -811,5 +811,5 @@ Use these function breakpoints to inspect one boundary at a time:
 
 Keep the owner's backing allocation alive while inspecting master-side
 addresses. A pointer value sent to the master still refers to memory in the
-owner process. The [next chapter](mooncake_put_path.html) follows how a Put
+owner process. The [next chapter](mooncake_put-get_path.html) follows how a Put
 request receives space in that pool and transfers its bytes.

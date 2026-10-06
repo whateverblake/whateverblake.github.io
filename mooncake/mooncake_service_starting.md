@@ -436,7 +436,7 @@ describes how to reach registered memory at an engine endpoint.
 See [`MetadataAccessorRO` and `getShardIndex()`][service-header],
 [`GetReplicaList()` and `IsReplicaReadable()`][service], and
 [`AllocatedBuffer::get_descriptor()`][allocator-source]. The
-[Put/Get walkthrough](mooncake_put_path.html) follows the remaining TCP calls.
+[Put/Get walkthrough](mooncake_put-get_path.html) follows the remaining TCP calls.
 
 ## 6. Background workers start before RPC serving
 
