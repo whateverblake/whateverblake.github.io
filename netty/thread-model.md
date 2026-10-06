@@ -20,7 +20,7 @@ The following analysis uses the NIO transport.
 
 ## NioEventLoopGroup
 From a threading perspective, think of `NioEventLoopGroup` as a group of execution threads. Its size is configurable; by default it is twice the number of available processors. Strictly speaking, the children are `EventExecutor` instances rather than raw threads, but thinking of each as a thread makes the initial model easier to understand. A group creates a chooser to distribute work among its children. Netty supplies two default chooser implementations. This describes the event-loop groups in this example, not every thread that every Netty feature can create.
-- PowerOfTwoEventExecutorChooser 
+- PowerOfTwoEventExecutorChooser
 When the group's number of children is a power of two, it uses this chooser:
 
 ```
@@ -105,7 +105,7 @@ The following is the source of the core `NioEventLoop.run` method:
                            // If no ordinary task is queued, perform selector selection.
                            // With no scheduled task this can block; otherwise wait until curDeadlineNanos, unless another thread wakes the selector.
                             if (!hasTasks()) {
-                               
+
                                 strategy = select(curDeadlineNanos);
                             }
                         } finally {

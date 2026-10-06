@@ -133,7 +133,7 @@ Here are the fields of `PoolArena`.
     private final PoolChunkList<T> q100;
 
   private final List<PoolChunkListMetric> chunkListMetrics;
-    
+
 // The following fields record allocation and lifecycle statistics.
     // Metrics for allocations and deallocations
     private long allocationsNormal;
@@ -216,7 +216,7 @@ Here are the fields of `PoolSubpage`:
    // The page contains pageSize / elemSize allocation units.
    // A bitmap records which units are occupied.
     private final long[] bitmap;
-  
+
     PoolSubpage<T> prev;
     PoolSubpage<T> next;
 
@@ -292,7 +292,7 @@ Here are the fields of `PoolChunkList`:
 ```
 
     // Owning arena.
-    private final PoolArena<T> arena; 
+    private final PoolArena<T> arena;
     // Next utilization-band list.
     private final PoolChunkList<T> nextList;
     // minUsage and maxUsage define the utilization band.
@@ -327,7 +327,7 @@ freeMaxThreshold = (minUsage == 100) ? 0 : (int) (chunkSize * (100.0 - minUsage 
 
 ---
 
-- PoolThreadLocalCache 
+- PoolThreadLocalCache
 This `FastThreadLocal` associates each thread with a `PoolThreadCache`.
 - PoolThreadCache
 As its name suggests, `PoolThreadCache` caches reusable memory regions for a thread. Arenas, chunks, pages, and subpages manage shared backing storage. The cache retains regions allocated through the thread's arenas. A later allocation first tries the appropriate cache; only a miss requires returning to shared arena allocation.
@@ -341,7 +341,7 @@ Here are its important fields.
     final PoolArena<ByteBuffer> directArena;
 
     // Hold the caches for the different size classes, which are tiny, small and normal.
-    
+
     // The legacy allocator classifies positive capacities through 4096 bytes as subpage sizes.
     // Tiny requests normalize to multiples of 16 below 512.
     // Positive tiny classes are 16, 32, 48, ... , 496.
@@ -358,7 +358,7 @@ Here are its important fields.
     private final MemoryRegionCache<byte[]>[] tinySubPageHeapCaches;
    // Heap-memory equivalent of the small direct caches.
     private final MemoryRegionCache<byte[]>[] smallSubPageHeapCaches;
-   
+
     // normalDirectCaches has three slots with the default cache limit.
     // They represent 8, 16, and 32 KiB regions.
     // Larger-than-subpage allocations reserve power-of-two page runs.
@@ -491,8 +491,8 @@ private void allocate(PoolThreadCache cache, PooledByteBuf<T> buf, final int req
                 table = smallSubpagePools;
             }
 
- 
-    
+
+
             // head is the sentinel for the selected subpage size-class list.
             // Compare the earlier tiny and small subpage-pool diagrams.
             final PoolSubpage<T> head = table[tableIdx];
@@ -501,7 +501,7 @@ private void allocate(PoolThreadCache cache, PooledByteBuf<T> buf, final int req
              * Synchronize on the head. This is needed as {@link PoolChunk#allocateSubpage(int)} and
              * {@link PoolChunk#free(long)} may modify the doubly linked list as well.
              */
-          
+
             synchronized (head) {
                 final PoolSubpage<T> s = head.next;
                // If the first entry is the head itself, no available subpage exists in this list.
@@ -670,7 +670,7 @@ If the allocator has no backing chunk yet, or no existing chunk can supply the r
             return new PoolChunk<ByteBuffer>(this, memory, pageSize,
                     maxOrder, pageShifts, chunkSize,
                     offsetCacheLine(memory));
-        }  
+        }
 
 ```
 
@@ -688,7 +688,7 @@ The legacy allocator reserves normal regions in power-of-two page runs. A three-
        // maxOrder defaults to 11; depth d ranges from 0 through 11.
        // A leaf's depth is 11, corresponding to one 8 KiB page.
        // A node at depth 2 represents 4 MiB at these defaults.
-        for (int d = 0; d <= maxOrder; ++ d) { // move down the tree one level at a time     
+        for (int d = 0; d <= maxOrder; ++ d) { // move down the tree one level at a time
             // Calculate the number of nodes on this level.
             int depth = 1 << d;
             // Assign the same initial depth value to every node on the level.
@@ -730,7 +730,7 @@ The subpage case also subdivides one page into equal-size units and records thei
             if (id < 0) {
                 return id;
             }
-            
+
             final PoolSubpage<T>[] subpages = this.subpages;
             final int pageSize = this.pageSize;
             // Subtract one page from the chunk's free bytes.
@@ -753,7 +753,7 @@ The subpage case also subdivides one page into equal-size units and records thei
 
 ```
 
-- allocateNode(int d) 
+- allocateNode(int d)
 Allocate a node from the tree encoded by `memoryMap`:
 
 ```
@@ -909,7 +909,7 @@ The next free unit is found through `getNextAvail`,
 ```
 
 private int findNextAvail() {
-        
+
         final long[] bitmap = this.bitmap;
         final int bitmapLength = this.bitmapLength;
         for (int i = 0; i < bitmapLength; i ++) {
@@ -1031,7 +1031,7 @@ For a subpage allocation, the offset formula is:
 
 ```
 
-runOffset(memoryMapIdx) + (bitmapIdx & 0x3FFFFFFF) * subpage.elemSize + offset  
+runOffset(memoryMapIdx) + (bitmapIdx & 0x3FFFFFFF) * subpage.elemSize + offset
 
 ```
 
@@ -1041,7 +1041,7 @@ It has three terms:
 3) The chunk's backing-storage `offset`, normally zero unless alignment adds an offset.
 Adding the three terms gives the allocated unit's start in the backing storage.
 
-- buf.init 
+- buf.init
 Finally, initialize the pooled buffer wrapper. The fields below follow from the region information already examined.
 
 ```
@@ -1050,7 +1050,7 @@ private void init0(PoolChunk<T> chunk, ByteBuffer nioBuffer,
                        long handle, int offset, int length, int maxLength, PoolThreadCache cache) {
         assert handle >= 0;
         assert chunk != null;
-        
+
         this.chunk = chunk;
         memory = chunk.memory;
         tmpNioBuf = nioBuffer;

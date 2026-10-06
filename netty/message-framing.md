@@ -57,7 +57,7 @@ public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception 
             } catch (Exception e) {
                 throw new DecoderException(e);
             } finally {
-       
+
                 if (cumulation != null && !cumulation.isReadable()) {
                     // Release an accumulator with no readable bytes left.
                     numReads = 0;
@@ -142,7 +142,7 @@ protected void callDecode(ChannelHandlerContext ctx, ByteBuf in, List<Object> ou
             // Continue decoding while readable bytes remain and progress is possible.
             while (in.isReadable()) {
                 int outSize = out.size();
-                
+
                 if (outSize > 0) {
                     // Deliver decoded outputs through channelRead.
                     fireChannelRead(ctx, out, outSize);
@@ -181,7 +181,7 @@ protected void callDecode(ChannelHandlerContext ctx, ByteBuf in, List<Object> ou
                         continue;
                     }
                 }
-             
+
                 if (oldInputLength == in.readableBytes()) {
                     // Producing output without consuming bytes violates the decoder contract.
                     throw new DecoderException(
@@ -261,11 +261,11 @@ protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception 
           // lengthFieldLength is the field width in bytes.
           // Read the unadjusted length-field value.
         long frameLength = getUnadjustedFrameLength(in, actualLengthFieldOffset, lengthFieldLength, byteOrder);
-     
+
         if (frameLength < 0) {
             failOnNegativeLengthField(in, frameLength, lengthFieldEndOffset);
         }
-  
+
       //lengthFieldEndOffset = lengthFieldOffset+lengthFieldLength
       // lengthAdjustment reconciles the protocol's field meaning with total frame length.
       // Some protocols count a body only, while others include some or all header bytes.
@@ -329,7 +329,7 @@ If a frame exceeds the configured maximum, the decoder discards it. Here are the
             // Enter the discard mode and discard everything received so far.
          // Otherwise the accumulator holds only part of the oversized frame.
          // The remaining bytes may still be in transit.
-   
+
            // Keep discarding on future decode invocations until the whole oversized frame is skipped.
             discardingTooLongFrame = true;
          // Record how many bytes still need to be discarded.

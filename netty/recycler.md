@@ -593,7 +593,7 @@ boolean transfer(Stack<?> dst) {
                 final int actualCapacity = dst.increaseCapacity(expectedCapacity);
                 srcEnd = min(srcStart + actualCapacity - dstSize, srcEnd);
             }
-            
+
          // There are handles to process.
             if (srcStart != srcEnd) {
                 // Source link elements.

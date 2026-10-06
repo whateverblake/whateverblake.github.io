@@ -67,7 +67,7 @@ for a in manifest['articles']:
    if normalized and normalized[-1].strip():normalized.append('')
    normalized.append(line.strip());normalized.append('')
   else:normalized.append(line)
- p.write_text('\n'.join(normalized).rstrip()+'\n')
+ p.write_text('\n'.join(line.rstrip() for line in normalized).rstrip()+'\n')
 # Keep the original overview prose and reading links, with an easy-to-scan series index.
 p=REPO/'netty/index.md';s=p.read_text();front=s[:s.index('\n---\n',4)+5]
 rows=[a for a in manifest['articles'] if a['topic']=='netty' and a['slug']!='index']

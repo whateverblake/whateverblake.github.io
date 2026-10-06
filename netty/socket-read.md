@@ -216,14 +216,14 @@ Examine `doReadBytes` and its internal call chain:
         final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
          // Record the number of bytes this attempt can read.
         allocHandle.attemptedBytesRead(byteBuf.writableBytes());
-        
+
         return byteBuf.writeBytes(javaChannel(), allocHandle.attemptedBytesRead());
     }
 
 // ByteBuf.writeBytes implementation
    public int writeBytes(ScatteringByteChannel in, int length) throws IOException {
         ensureWritable(length);
-       
+
         int writtenBytes = setBytes(writerIndex, in, length);
         if (writtenBytes > 0) {
           // Advance writerIndex by the number of bytes actually read.

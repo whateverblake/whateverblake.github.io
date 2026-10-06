@@ -33,7 +33,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 ```
 
 Follow the `ctx.writeAndFlush` call chain.
-writeAndFlush(msg) --> writeAndFlush(msg,promise) --> write(msg,flush,promise) 
+writeAndFlush(msg) --> writeAndFlush(msg,promise) --> write(msg,flush,promise)
 The methods in this chain belong to `ChannelHandlerContext`; here is the internal `write` method:
 
 ```
@@ -174,7 +174,7 @@ public final class ChannelOutboundBuffer {
     //  - 1 boolean field
     //  - padding
    // Estimated per-entry overhead; JOL can help inspect object layout.
-    static final int 
+    static final int
 CHANNEL_OUTBOUND_BUFFER_ENTRY_OVERHEAD =
             SystemPropertyUtil.getInt("io.netty.transport.outboundBufferEntrySizeOverhead", 96);
 
@@ -237,7 +237,7 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
         }
         // Move tailEntry to the newly appended entry.
         tailEntry = entry;
-       
+
         if (unflushedEntry == null) {
            // If this is the first unflushed message, initialize unflushedEntry.
             unflushedEntry = entry;
@@ -261,7 +261,7 @@ Next, follow how queued data is flushed to the transport.
  @Override
         public final void flush() {
             assertEventLoop();
-          
+
             ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
             if (outboundBuffer == null) {
                 return;
@@ -407,7 +407,7 @@ protected void doWrite(ChannelOutboundBuffer in) throws Exception {
             switch (nioBufferCnt) {
                // No ByteBuffer is available in this batch.
                 case 0:
-                    // We have something else beside ByteBuffers to write so fallback to normal writes. 
+                    // We have something else beside ByteBuffers to write so fallback to normal writes.
                     // For example, the current message may be a FileRegion.
                     writeSpinCount -= doWrite0(in);
                     break;

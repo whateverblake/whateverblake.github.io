@@ -11,7 +11,7 @@ description: "Follow leader discovery, epoch agreement, DIFF/TRUNC/SNAP synchron
 
 # How ZooKeeper Leaders and Followers Form an Ensemble
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The English figures reconstruct relationships from this pinned code; they are explanatory diagrams, not recovered debugger screenshots. 
+> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The English figures reconstruct relationships from this pinned code; they are explanatory diagrams, not recovered debugger screenshots.
 
 ## Before we begin
 [Following ZooKeeper Fast Leader Election](leader-election.html) examined the election process in detail. This article follows what happens next: the initialization of the leader and its followers.
@@ -165,7 +165,7 @@ Once created, `Leader` enters its leadership routine through `lead`. This method
             self.tick.set(0);
            // Load local data. Normally election startup has already loaded the database; this call takes a local snapshot.
             zk.loadData();
-            
+
             leaderStateSummary = new StateSummary(self.getCurrentEpoch(), zk.getLastProcessedZxid());
 
             // Start thread that waits for connection requests from
@@ -680,7 +680,7 @@ Now return to `Leader.lead`. What happens when its main thread returns from `get
 
             // Obtain the newly proposed epoch.
             long epoch = getEpochToPropose(self.getId(), self.getAcceptedEpoch());
-            
+
              // Create the initial zxid for that epoch.
             zk.setZxid(ZxidUtils.makeZxid(epoch, 0));
 
@@ -697,7 +697,7 @@ Now return to `Leader.lead`. What happens when its main thread returns from `get
             QuorumVerifier lastSeenQV = self.getLastSeenQuorumVerifier();
             QuorumVerifier curQV = self.getQuorumVerifier();
             if (curQV.getVersion() == 0 && curQV.getVersion() == lastSeenQV.getVersion()) {
-               
+
                 try {
                     LOG.debug(String.format("set lastSeenQuorumVerifier to currentQuorumVerifier (%s)", curQV.toString()));
                     QuorumVerifier newQV = self.configFromString(curQV.toString());
@@ -872,7 +872,7 @@ boolean syncFollower(long peerLastZxid, LearnerMaster learnerMaster) {
              *
              * 1. Force sending snapshot (for testing purpose)
              // If follower and leader zxids already match, send DIFF with no missing history to replay.
-             * 2. Peer and learnerMaster is already sync, send empty diff          
+             * 2. Peer and learnerMaster is already sync, send empty diff
               // If the follower is ahead of the leader's committed log, send TRUNC to discard its divergent suffix.
              // A new-epoch marker has counter zero and is handled specially; do not truncate solely because that marker is numerically larger.
              * 3. Follower has txn that we haven't seen. This may be old leader
@@ -952,7 +952,7 @@ boolean syncFollower(long peerLastZxid, LearnerMaster learnerMaster) {
                         needOpPacket = true;
                     } else {
                         LOG.debug("Queueing committedLog 0x{}", Long.toHexString(currentZxid));
-               
+
                         Iterator<Proposal> committedLogItr = db.getCommittedLog().iterator();
          // queueCommittedProposals normally queues proposals newer than the follower's zxid.
          // It can also discover a divergent follower suffix and queue TRUNC; a matching boundary supports DIFF. Consult its explicit boundary and epoch checks rather than deciding from numeric zxid alone.
@@ -1184,7 +1184,7 @@ Now return to the follower and inspect the rest of `syncWithLeader`. This method
                 ServiceUtils.requestSystemExit(ExitCode.QUORUM_PACKET_ERROR.getValue());
             }
          // Initialize the local database's /zookeeper/config node.
-         zk.getZKDatabase().initConfigInZKDatabase(self.getQuorumVerifier()); 
+         zk.getZKDatabase().initConfigInZKDatabase(self.getQuorumVerifier());
          // Create LearnerSessionTracker; the earlier startup articles explain session tracking.
          zk.createSessionTracker();
 
@@ -1310,7 +1310,7 @@ Now return to the follower and inspect the rest of `syncWithLeader`. This method
                         zk.takeSnapshot(syncSnapshot);
                         self.setCurrentEpoch(newEpoch);
                     }
-                   
+
                     self.setZooKeeperServer(zk);
                     self.adminServer.setZooKeeperServer(zk);
                    // Leave the synchronization loop and prepare to start the local ZooKeeper server.

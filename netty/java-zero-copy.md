@@ -189,7 +189,7 @@ public class FileReader {
     private void doBusiness(byte[] data,int len){
         System.out.println(new String(data,0,len));
     }
-    
+
 }
 
 ```

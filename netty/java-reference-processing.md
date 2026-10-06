@@ -34,7 +34,7 @@ The three reference types have similar construction APIs. A `ReferenceQueue` is 
 Objects referenced only through these special references can become eligible for collection once the appropriate reachability conditions are met. A softly reachable object may be retained according to the collector's policy; soft references are cleared before the VM throws an out-of-memory error. Weak references are cleared when the collector determines that their referents are weakly reachable. Phantom references become eligible for enqueueing after their referents are phantom reachable; in this JDK 8 implementation a phantom reference does not automatically clear its referent. These transitions do not guarantee immediate physical reclamation. `SoftReference.get()` and `WeakReference.get()` can return the referent while it remains available, whereas `PhantomReference.get()` always returns `null`. Registered reference objects are eventually enqueued, allowing application code to obtain the reference object and perform its own cleanup logic. It is the reference object, not the referent, that appears in the queue.
 
 ## Reference processing
-- Reference 
+- Reference
 This class also acts as a linked-list node in the VM's reference-processing machinery.
 [![Reference: queue and VM-managed links](assets/java-reference-processing-03.svg)](assets/java-reference-processing-03.svg)
 

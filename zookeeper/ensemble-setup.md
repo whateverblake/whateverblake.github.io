@@ -11,7 +11,7 @@ description: "Configure and debug three ZooKeeper peers on one computer using se
 
 # Setting Up a Three-Node ZooKeeper Ensemble
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. 
+> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods.
 
 ## Introduction
 The earlier [ZooKeeper source reading articles](index.html) examined the standalone server. Next, a series of articles follows ZooKeeper's ensemble source code. This opening article explains how to create a distributed debugging environment on one computer.

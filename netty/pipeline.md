@@ -34,7 +34,7 @@ Here is its source:
 ```
 
 final class DefaultChannelHandlerContext extends AbstractChannelHandlerContext {
-     
+
     // DefaultChannelHandlerContext stores the user-defined handler.
     private final ChannelHandler handler;
 
@@ -275,8 +275,8 @@ The following diagram summarizes this flow. `XXX` denotes an event such as regis
           // The head, tail, and installed application handlers remain.
             if (initChannel(ctx)) {
 
-                // We are done with init the Channel, removing the initializer now.  
-   
+                // We are done with init the Channel, removing the initializer now.
+
                 removeState(ctx);
             }
         }

@@ -11,7 +11,7 @@ description: "Trace ZooKeeper client and server Netty channels, session negotiat
 
 # How ZooKeeper Uses Netty for Client-Server Communication
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. ZooKeeper 3.6.2 uses Netty **4.1.50.Final**, as declared in its [pinned POM](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/pom.xml); the independent [Netty series](../netty/index.html) uses 4.1.53.Final. 
+> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. ZooKeeper 3.6.2 uses Netty **4.1.50.Final**, as declared in its [pinned POM](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/pom.xml); the independent [Netty series](../netty/index.html) uses 4.1.53.Final.
 
 ## Introduction
 The [ZooKeeper source reading series](index.html) has so far examined the network layer implemented with Java NIO. ZooKeeper also supports Netty. To use Netty as the client/server network transport, configure the client and server separately.
@@ -23,7 +23,7 @@ The [ZooKeeper source reading series](index.html) has so far examined the networ
 
 ```
 
-      
+
 - Set this JVM startup property on the server:
 
 ```text
@@ -82,7 +82,7 @@ Let us inspect its construction.
 ```java
 
 void connect(InetSocketAddress addr) throws IOException {
-        
+
         firstConnect = new CountDownLatch(1);
         // Initialize the client Bootstrap and install ZKClientPipelineFactory as its channel initializer.
         // ZKClientPipelineFactory extends ChannelInitializer; we will examine initChannel below.
@@ -107,7 +107,7 @@ void connect(InetSocketAddress addr) throws IOException {
                     boolean connected = false;
                     connectLock.lock();
                     try {
-                        
+
                         if (!channelFuture.isSuccess()) {
                             // If connection failed, return without assigning the channel.
                             LOG.warn("future isn't success.", channelFuture.cause());
@@ -191,7 +191,7 @@ void doTransport(
                 head = outgoingQueue.poll(waitTimeOut, TimeUnit.MILLISECONDS);
             }
             // check if being waken up on closing.
-         
+
             if (!sendThread.getZkState().isAlive()) {
                 // adding back the packet to notify of failure in conLossPacket().
                // If the client state is no longer alive, put the polled packet back at the head of outgoingQueue so connection-loss handling can notify its caller.
@@ -224,7 +224,7 @@ Unlike `ClientCnxnSocketNIO.doTransport`, this method directly handles the outgo
         updateNow();
         boolean anyPacketsSent = false;
         while (true) {
-            
+
             if (p != WakeupPacket.getInstance()) {
                // Skip the special wakeup packet.
                 if ((p.requestHeader != null)
@@ -323,7 +323,7 @@ private class ZKClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
             disconnected.set(true);
             onClosing();
         }
- 
+
          // channelRead0 receives response bytes from the server.
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
@@ -362,7 +362,7 @@ private class ZKClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     }
                 }
             }
-   
+
             wakeupCnxn();
             // Note: SimpleChannelInboundHandler releases the ByteBuf for us
             // so we don't need to do it.
@@ -617,7 +617,7 @@ class CnxnChannelHandler extends ChannelDuplexHandler {
             }
         };
 
-     
+
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
             if (LOG.isTraceEnabled()) {
