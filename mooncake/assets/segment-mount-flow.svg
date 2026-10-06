@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1180" viewBox="0 0 720 1180" role="img" aria-labelledby="title desc">
+<title id="title">Mount a segment: owner → master</title><desc id="desc">Register the range locally, then announce storage capacity.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="1180" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Mount a segment: owner → master</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Register the range locally, then announce storage capacity.</text>
+<text x="32" y="123" font-size="20" fill="#7651ac" font-weight="700" text-anchor="start">OWNER PROCESS</text>
+<text x="382" y="123" font-size="20" fill="#2563b0" font-weight="700" text-anchor="start">MASTER PROCESS</text>
+<path d="M 360 143 L 360 1119" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="32" y="153" width="304" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="165" width="5" height="65" rx="2" fill="#7651ac"/>
+<text x="52" y="186" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">1  RealClient</text>
+<text x="52" y="216" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Allocate the global pool.</text>
+<path d="M 184 247 L 184 277" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="284" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="296" width="5" height="87" rx="2" fill="#087f78"/>
+<text x="52" y="317" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">2  Client</text>
+<text x="52" y="347" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountSegmentAndGetId()</text>
+<text x="52" y="374" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Validate / check overlap.</text>
+<path d="M 184 400 L 184 430" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="437" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="449" width="5" height="87" rx="2" fill="#087f78"/>
+<text x="52" y="470" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">3  Transfer Engine</text>
+<text x="52" y="500" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Register the address range.</text>
+<text x="52" y="527" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">TCP updates BufferDesc.</text>
+<path d="M 184 553 L 184 587" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="594" width="304" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="606" width="5" height="65" rx="2" fill="#087f78"/>
+<text x="52" y="627" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">4  MasterClient</text>
+<text x="52" y="657" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Send Segment + client UUID.</text>
+<text x="384" y="241" font-size="21" fill="#2563b0" font-weight="700" text-anchor="start">The RPC carries metadata.</text>
+<text x="384" y="273" font-size="20" fill="#536579" font-weight="400" text-anchor="start">The pool stays in the owner.</text>
+<text x="384" y="329" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Segment UUID: which pool?</text>
+<text x="384" y="361" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Client UUID: whose pool?</text>
+<path d="M 339 639 L 379 639" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="382" y="594" width="306" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="382" y="606" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="402" y="627" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">WrappedMasterService</text>
+<text x="402" y="657" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">RPC entry → service method</text>
+<path d="M 536 688 L 536 723" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="382" y="730" width="306" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="382" y="742" width="5" height="87" rx="2" fill="#2563b0"/>
+<text x="402" y="763" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">MasterService</text>
+<text x="402" y="793" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Acquire segment access.</text>
+<text x="402" y="820" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Queue owner liveness ID.</text>
+<path d="M 536 846 L 536 877" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="382" y="884" width="306" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="382" y="896" width="5" height="87" rx="2" fill="#2563b0"/>
+<text x="402" y="917" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">ScopedSegmentAccess</text>
+<text x="402" y="947" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Create the allocator.</text>
+<text x="402" y="974" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Insert record and indexes.</text>
+<rect x="32" y="1020" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="1032" width="5" height="87" rx="2" fill="#7651ac"/>
+<text x="52" y="1053" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">5  Client: finish mount</text>
+<text x="52" y="1083" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Save Segment in local map.</text>
+<text x="52" y="1110" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Start heartbeat / task poll.</text>
+<path d="M 536 1000 L 536 1065 L 341 1065" fill="none" stroke="#2563b0" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="554" y="1045" font-size="20" fill="#2563b0" font-weight="400" text-anchor="start">Success</text>
+<text x="32" y="1160" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

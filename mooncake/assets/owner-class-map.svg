@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1480" viewBox="0 0 1200 1480" role="img" aria-labelledby="title desc">
+<title id="title">The owner: classes and important members</title><desc id="desc">CPU memory · TCP + P2PHANDSHAKE · all objects are in one process</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="1200" height="1480" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">The owner: classes and important members</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">CPU memory · TCP + P2PHANDSHAKE · all objects are in one process</text>
+<rect x="24" y="109" width="1152" height="1241" rx="14" fill="#fff4e8" stroke="#b35a13" stroke-width="2"/>
+<text x="46" y="144" font-size="25" fill="#b35a13" font-weight="700" text-anchor="start">RealClient : PyClient</text>
+<text x="48" y="177" font-size="22" fill="#15283f" font-weight="400" text-anchor="start">High-level Store API + backing allocations</text>
+<text x="48" y="213" font-size="21" fill="#536579" font-weight="400" text-anchor="start">client_ holds the Client shown below.</text>
+<text x="48" y="245" font-size="18" fill="#536579" font-weight="400" text-anchor="start">client_ and client_buffer_allocator_ are inherited from PyClient.</text>
+<rect x="770" y="150" width="382" height="104" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="770" y="162" width="5" height="80" rx="2" fill="#b35a13"/>
+<text x="790" y="183" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">ClientBufferAllocator</text>
+<text x="790" y="213" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">client_buffer_allocator_</text>
+<text x="790" y="240" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Local staging memory</text>
+<rect x="48" y="280" width="1104" height="1043" rx="14" fill="#eaf3ff" stroke="#2563b0" stroke-width="2"/>
+<text x="70" y="315" font-size="25" fill="#2563b0" font-weight="700" text-anchor="start">Client</text>
+<rect x="72" y="346" width="312" height="142" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="72" y="358" width="5" height="118" rx="2" fill="#2563b0"/>
+<text x="92" y="379" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">MasterClient</text>
+<text x="92" y="409" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">master_client_</text>
+<text x="92" y="436" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Store RPCs to the master</text>
+<text x="92" y="463" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountSegment / PutStart</text>
+<rect x="432" y="346" width="312" height="142" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="432" y="358" width="5" height="118" rx="2" fill="#087f78"/>
+<text x="452" y="379" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">TransferSubmitter</text>
+<text x="452" y="409" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">transfer_submitter_</text>
+<text x="452" y="436" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">engine_: TransferEngine&amp;</text>
+<text x="452" y="463" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Uses the same engine below</text>
+<rect x="792" y="346" width="336" height="142" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="792" y="358" width="5" height="118" rx="2" fill="#2563b0"/>
+<text x="812" y="379" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">mounted_segments_</text>
+<text x="812" y="409" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">UUID → Segment</text>
+<text x="812" y="436" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Owner-side Store records</text>
+<text x="812" y="463" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">No master allocator here</text>
+<path d="M 588 493 L 588 541" fill="none" stroke="#087f78" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="609" y="524" font-size="19" fill="#087f78" font-weight="400" text-anchor="start">engine_ reference</text>
+<rect x="72" y="548" width="1056" height="748" rx="14" fill="#f0edf9" stroke="#7651ac" stroke-width="2"/>
+<text x="94" y="583" font-size="25" fill="#7651ac" font-weight="700" text-anchor="start">TransferEngine</text>
+<text x="95" y="613" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Client::transfer_engine_ holds this public API wrapper.</text>
+<path d="M 700 602 L 700 643" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="718" y="628" font-size="19" fill="#7651ac" font-weight="400" text-anchor="start">impl_</text>
+<rect x="96" y="650" width="1008" height="624" rx="14" fill="#faf8ff" stroke="#7651ac" stroke-width="2"/>
+<text x="118" y="685" font-size="25" fill="#7651ac" font-weight="700" text-anchor="start">TransferEngineImpl</text>
+<text x="120" y="718" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Local registration bookkeeping:</text>
+<text x="120" y="748" font-size="21" fill="#15283f" font-weight="400" text-anchor="start">local_memory_regions_  ·  registering_memory_regions_</text>
+<text x="120" y="776" font-size="18" fill="#087f78" font-weight="400" text-anchor="start">multi_transports_ ↓</text>
+<text x="624" y="776" font-size="18" fill="#7651ac" font-weight="400" text-anchor="start">metadata_ ↓</text>
+<rect x="120" y="792" width="432" height="458" rx="14" fill="#e4f4f0" stroke="#087f78" stroke-width="2"/>
+<text x="142" y="827" font-size="25" fill="#087f78" font-weight="700" text-anchor="start">MultiTransport</text>
+<text x="142" y="856" font-size="21" fill="#15283f" font-weight="400" text-anchor="start">transport_map_[&quot;tcp&quot;]</text>
+<text x="142" y="885" font-size="19" fill="#15283f" font-weight="400" text-anchor="start">shared_ptr&lt;Transport&gt; → TcpTransport</text>
+<text x="142" y="918" font-size="20" fill="#7651ac" font-weight="400" text-anchor="start">metadata_</text>
+<path d="M 557 911 L 619 911" fill="none" stroke="#7651ac" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="142" y="953" width="388" height="273" rx="14" fill="#fff4e8" stroke="#b35a13" stroke-width="2"/>
+<text x="164" y="988" font-size="25" fill="#b35a13" font-weight="700" text-anchor="start">TcpTransport : Transport</text>
+<text x="163" y="1019" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">thread_: runs the TCP event loop</text>
+<text x="163" y="1052" font-size="19" fill="#7651ac" font-weight="400" text-anchor="start">metadata_: inherited shared pointer</text>
+<text x="163" y="1083" font-size="19" fill="#b35a13" font-weight="400" text-anchor="start">context_ ↓</text>
+<rect x="162" y="1095" width="348" height="110" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="162" y="1107" width="5" height="86" rx="2" fill="#b35a13"/>
+<text x="182" y="1128" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">TcpContext</text>
+<text x="182" y="1158" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">io_context: event-loop state</text>
+<text x="182" y="1185" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">acceptor: TCP data port D</text>
+<path d="M 533 1050 L 586 1050 L 586 947 L 619 947" fill="none" stroke="#7651ac" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<rect x="624" y="792" width="456" height="458" rx="14" fill="#eee7f9" stroke="#7651ac" stroke-width="2"/>
+<text x="646" y="827" font-size="25" fill="#7651ac" font-weight="700" text-anchor="start">TransferMetadata (shared)</text>
+<text x="646" y="856" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">local_rpc_meta_: handshake endpoint H</text>
+<text x="646" y="887" font-size="21" fill="#15283f" font-weight="400" text-anchor="start">segment_id_to_desc_map_</text>
+<text x="646" y="918" font-size="21" fill="#15283f" font-weight="400" text-anchor="start">segment_name_to_id_map_</text>
+<text x="646" y="949" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Shared with the TCP transport</text>
+<text x="646" y="980" font-size="18" fill="#7651ac" font-weight="400" text-anchor="start">handshake_plugin_ ↓</text>
+<rect x="644" y="996" width="416" height="229" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="644" y="1008" width="5" height="205" rx="2" fill="#7651ac"/>
+<text x="664" y="1029" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">SocketHandShakePlugin</text>
+<text x="664" y="1057" font-size="19" fill="#15283f" font-weight="400" text-anchor="start">listen_fd_: listens on handshake port H</text>
+<text x="664" y="1088" font-size="19" fill="#15283f" font-weight="400" text-anchor="start">listener_: accepts connections</text>
+<text x="664" y="1125" font-size="19" fill="#15283f" font-weight="400" text-anchor="start">on_metadata_callback_ →</text>
+<text x="664" y="1155" font-size="19" fill="#15283f" font-weight="400" text-anchor="start">TransferMetadata::receivePeerMetadata</text>
+<text x="664" y="1193" font-size="18" fill="#15283f" font-weight="400" text-anchor="start">Other callbacks: connection / notify / probe</text>
+<text x="40" y="1385" font-size="21" fill="#536579" font-weight="400" text-anchor="start">Nested boxes: held objects / state, not exclusive ownership or separate threads.</text>
+<text x="40" y="1414" font-size="21" fill="#7651ac" font-weight="400" text-anchor="start">Dashed arrows: references. Both metadata_ arrows reach the same shared object.</text>
+<text x="32" y="1460" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

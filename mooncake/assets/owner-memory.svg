@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="865" viewBox="0 0 720 865" role="img" aria-labelledby="title desc">
+<title id="title">One pool, three descriptions</title><desc id="desc">Example owner: 64 MiB global pool, zero local staging.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="865" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">One pool, three descriptions</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Example owner: 64 MiB global pool, zero local staging.</text>
+<rect x="32" y="109" width="656" height="117" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="121" width="5" height="93" rx="2" fill="#7651ac"/>
+<text x="52" y="142" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">OWNER PROCESS: actual memory</text>
+<text x="52" y="172" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Allocated pool holds the object bytes.</text>
+<text x="52" y="199" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">RealClient keeps the CPU allocation alive.</text>
+<path d="M 360 231 L 360 259" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="267" width="656" height="141" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="279" width="5" height="117" rx="2" fill="#087f78"/>
+<text x="52" y="300" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">1  MemoryRegion: engine bookkeeping</text>
+<text x="52" y="330" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Reserve in registering_memory_regions_.</text>
+<text x="52" y="357" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Register with the installed transport.</text>
+<text x="52" y="384" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Commit into local_memory_regions_.</text>
+<path d="M 360 414 L 360 445" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="452" width="656" height="117" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="464" width="5" height="93" rx="2" fill="#7651ac"/>
+<text x="52" y="485" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">2  SegmentDesc: peer transfer metadata</text>
+<text x="52" y="515" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">TCP endpoint + BufferDesc address ranges.</text>
+<text x="52" y="542" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Peers request it through the P2P handshake.</text>
+<path d="M 360 574 L 360 607" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="614" width="656" height="143" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="626" width="5" height="119" rx="2" fill="#2563b0"/>
+<text x="52" y="647" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">3  Store Segment: master-visible capacity</text>
+<text x="52" y="677" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">UUID + logical name + base + size + TE endpoint.</text>
+<text x="52" y="704" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountSegment RPC sends this record to the master.</text>
+<text x="52" y="731" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Master creates an allocator for the reported range.</text>
+<text x="360" y="808" font-size="21" fill="#536579" font-weight="400" text-anchor="middle">Local buffer registration alone does not mount storage.</text>
+<text x="32" y="845" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

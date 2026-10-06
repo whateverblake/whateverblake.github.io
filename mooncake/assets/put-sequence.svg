@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="850" viewBox="0 0 720 850" role="img" aria-labelledby="title desc">
+<title id="title">A Put has three milestones</title><desc id="desc">One new key • one memory replica • first peer connection</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="850" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">A Put has three milestones</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">One new key • one memory replica • first peer connection</text>
+<rect x="32" y="108" width="158" height="56" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="120" width="5" height="32" rx="2" fill="#087f78"/>
+<text x="52" y="141" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">CALLER</text>
+<path d="M 111 177 L 111 776" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="281" y="108" width="158" height="56" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="281" y="120" width="5" height="32" rx="2" fill="#2563b0"/>
+<text x="301" y="141" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">MASTER</text>
+<path d="M 360 177 L 360 776" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="530" y="108" width="158" height="56" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="530" y="120" width="5" height="32" rx="2" fill="#7651ac"/>
+<text x="550" y="141" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">OWNER</text>
+<path d="M 609 177 L 609 776" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<text x="235.5" y="206" font-size="20" fill="#2563b0" font-weight="400" text-anchor="middle">1  PutStart</text>
+<path d="M 111 220 L 360 220" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="235.5" y="273" font-size="20" fill="#2563b0" font-weight="400" text-anchor="middle">Reserved replica</text>
+<path d="M 360 287 L 111 287" fill="none" stroke="#2563b0" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="360.0" y="351" font-size="20" fill="#7651ac" font-weight="400" text-anchor="middle">P2P handshake: request peer description</text>
+<path d="M 111 365 L 609 365" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="360.0" y="410" font-size="20" fill="#7651ac" font-weight="400" text-anchor="middle">TCP endpoint + registered buffer ranges</text>
+<path d="M 609 424 L 111 424" fill="none" stroke="#7651ac" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="360.0" y="489" font-size="20" fill="#b35a13" font-weight="400" text-anchor="middle">2  TCP WRITE: header + object bytes</text>
+<path d="M 111 503 L 609 503" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="360.0" y="561" font-size="20" fill="#b35a13" font-weight="400" text-anchor="middle">v2 acknowledgement: body received</text>
+<path d="M 609 575 L 111 575" fill="none" stroke="#b35a13" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="235.5" y="640" font-size="20" fill="#2563b0" font-weight="400" text-anchor="middle">3  PutEnd</text>
+<path d="M 111 654 L 360 654" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="235.5" y="709" font-size="20" fill="#2563b0" font-weight="400" text-anchor="middle">Replica COMPLETE</text>
+<path d="M 360 723 L 111 723" fill="none" stroke="#2563b0" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="360" y="803" font-size="22" fill="#15283f" font-weight="700" text-anchor="middle">The master never forwards the object payload.</text>
+<text x="32" y="830" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

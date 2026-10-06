@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1120" viewBox="0 0 720 1120" role="img" aria-labelledby="title desc">
+<title id="title">Where the mounted segment lives</title><desc id="desc">Two processes • two maps • one payload pool</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="1120" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Where the mounted segment lives</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Two processes • two maps • one payload pool</text>
+<rect x="32" y="110" width="656" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="122" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="52" y="143" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">MASTER: SegmentManager</text>
+<text x="52" y="173" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Records mounted capacity and controls allocation.</text>
+<path d="M 184 204 L 184 235" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M 536 204 L 536 235" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="32" y="242" width="304" height="143" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="254" width="5" height="119" rx="2" fill="#2563b0"/>
+<text x="52" y="275" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">mounted_segments_[id]</text>
+<text x="52" y="305" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountedSegment record</text>
+<text x="52" y="332" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">segment + status OK</text>
+<text x="52" y="359" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">buf_allocator</text>
+<rect x="382" y="242" width="306" height="143" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="382" y="254" width="5" height="119" rx="2" fill="#2563b0"/>
+<text x="402" y="275" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">allocator_manager_</text>
+<text x="402" y="305" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">AllocatorManager</text>
+<text x="402" y="332" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">name → allocator pointers</text>
+<text x="402" y="359" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Used by allocation strategy</text>
+<path d="M 184 390 L 268 474" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M 536 390 L 452 474" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="360" y="430" font-size="19" fill="#087f78" font-weight="700" text-anchor="middle">Same object</text>
+<rect x="112" y="481" width="496" height="143" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="112" y="493" width="5" height="119" rx="2" fill="#087f78"/>
+<text x="132" y="514" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">OffsetBufferAllocator</text>
+<text x="132" y="544" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Segment name + base + capacity + endpoint</text>
+<text x="132" y="571" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">OffsetAllocator tracks free / reserved ranges.</text>
+<text x="132" y="598" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">No owner payload is copied into the master.</text>
+<rect x="32" y="656" width="656" height="116" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="668" width="5" height="92" rx="2" fill="#2563b0"/>
+<text x="52" y="689" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">Other indexes in SegmentManager</text>
+<text x="52" y="719" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Client → segment IDs; name → client / segment ID</text>
+<text x="52" y="746" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Host → names → IDs; capacity and usage tracking</text>
+<path d="M 32 810 L 688 810" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="32" y="845" width="656" height="143" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="857" width="5" height="119" rx="2" fill="#7651ac"/>
+<text x="52" y="878" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">OWNER: Client + RealClient</text>
+<text x="52" y="908" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Client::mounted_segments_[id] stores a Segment.</text>
+<text x="52" y="935" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">RealClient keeps the real 64 MiB memory allocation.</text>
+<text x="52" y="962" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">The owner map has no master-side allocator field.</text>
+<text x="360" y="1040" font-size="22" fill="#15283f" font-weight="700" text-anchor="middle">Mount: make a pool available.</text>
+<text x="360" y="1072" font-size="22" fill="#15283f" font-weight="700" text-anchor="middle">Later Put: reserve a range inside that pool.</text>
+<text x="32" y="1100" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="956" viewBox="0 0 720 956" role="img" aria-labelledby="title desc">
+<title id="title">Start the master</title><desc id="desc">One process • non-HA path • fresh state</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="956" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Start the master</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">One process • non-HA path • fresh state</text>
+<rect x="64" y="103" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="115" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="136" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">01  Parse and validate configuration</text>
+<text x="84" y="166" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">main() builds the effective MasterConfig.</text>
+<path d="M 360 194 L 360 217" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="221" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="233" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="254" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">02  Construct the RPC server</text>
+<text x="84" y="284" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Address, port, and worker count are configured.</text>
+<path d="M 360 312 L 360 335" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="339" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="351" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="372" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">03  Construct the service objects</text>
+<text x="84" y="402" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">WrappedMasterService owns MasterService.</text>
+<path d="M 360 430 L 360 453" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="457" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="469" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="490" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">04  Initialize state and start workers</text>
+<text x="84" y="520" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Managers exist before any owner mounts memory.</text>
+<path d="M 360 548 L 360 571" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="575" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="587" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="608" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">05  Start the HTTP admin server</text>
+<text x="84" y="638" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Monitoring and management use a separate port.</text>
+<path d="M 360 666 L 360 689" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="693" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="705" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="726" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">06  Register RPC handlers</text>
+<text x="84" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Bind PutStart, MountSegment, Ping, and others.</text>
+<path d="M 360 784 L 360 807" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="64" y="811" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="64" y="823" width="5" height="65" rx="2" fill="#2563b0"/>
+<text x="84" y="844" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">07  Run the RPC server</text>
+<text x="84" y="874" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">A serving thread starts; main waits for shutdown.</text>
+<text x="32" y="936" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>

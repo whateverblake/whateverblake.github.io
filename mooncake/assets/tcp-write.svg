@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="688" viewBox="0 0 720 688" role="img" aria-labelledby="title desc">
+<title id="title">TCP Write: two sessions</title><desc id="desc">Protocol v2 • CPU memory • logical order of completion</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="720" height="688" rx="20" fill="#f4f7fb"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">TCP Write: two sessions</text>
+<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Protocol v2 • CPU memory • logical order of completion</text>
+<rect x="32" y="108" width="306" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="32" y="120" width="5" height="65" rx="2" fill="#087f78"/>
+<text x="52" y="141" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">ClientSession</text>
+<text x="52" y="171" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Runs in the caller</text>
+<rect x="382" y="108" width="306" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="382" y="120" width="5" height="65" rx="2" fill="#7651ac"/>
+<text x="402" y="141" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">ServerSession</text>
+<text x="402" y="171" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Runs in the owner</text>
+<path d="M 150 209 L 150 590" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<path d="M 570 209 L 570 590" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
+<text x="360" y="246" font-size="20" fill="#b35a13" font-weight="400" text-anchor="middle">WRITE header: address + length</text>
+<path d="M 150 263 L 570 263" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="360" y="332" font-size="20" fill="#b35a13" font-weight="400" text-anchor="middle">Body: bytes from local staging buffer</text>
+<path d="M 150 349 L 570 349" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="341" y="382" width="347" height="91" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
+<rect x="341" y="394" width="5" height="67" rx="2" fill="#7651ac"/>
+<text x="361" y="415" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">Owner memory</text>
+<text x="361" y="445" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">readBody() fills the target.</text>
+<text x="360" y="514" font-size="20" fill="#7651ac" font-weight="400" text-anchor="middle">Success status after the complete body</text>
+<path d="M 570 532 L 150 532" fill="none" stroke="#7651ac" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="360" y="610" font-size="21" fill="#15283f" font-weight="700" text-anchor="middle">Complete when body write + acknowledgement succeed.</text>
+<text x="360" y="640" font-size="20" fill="#536579" font-weight="400" text-anchor="middle">Then the Store caller sends PutEnd to the master.</text>
+<text x="32" y="668" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
+</g></svg>
