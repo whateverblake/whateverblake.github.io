@@ -1,6 +1,12 @@
 ---
 layout: default
 title: Mooncake Master service — startup, metadata, and key lookup
+article: true
+topic: Mooncake
+order: 20
+series_order: 1
+nav_title: "Inside the Master service"
+description: "Trace startup, metadata structures, replica lookup, and the workers that keep the cluster running."
 ---
 
 # Mooncake Master service: startup, metadata, and key lookup

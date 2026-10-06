@@ -1,0 +1,36 @@
+---
+layout: default
+---
+{% assign articles = site.pages | where: 'article', true | sort: 'order' %}
+{% assign topics = articles | group_by: 'topic' %}
+<section class="home-intro" aria-labelledby="intro-title">
+  <div>
+    <p class="eyebrow">A notebook for curious engineers</p>
+    <h1 id="intro-title">Understand systems.<br><span>Follow the source.</span></h1>
+    <p class="intro-description">Hi, I’m Blake. I write about how software works, from the first function call to the bytes on the wire.</p>
+  </div>
+  <div class="intro-note"><span class="note-rule"></span><p>Source walkthroughs.<br>Practical debugging.<br>Clear diagrams.</p><a href="#articles">Explore the articles <span aria-hidden="true">↘</span></a></div>
+</section>
+<section class="series-feature" aria-labelledby="series-title">
+  <div class="series-illustration" aria-hidden="true"><span class="diagram-node master-node">Master</span><span class="diagram-connector"></span><div class="diagram-peers"><span class="diagram-node">Caller</span><span class="peer-arrow">⇄</span><span class="diagram-node">Owner</span></div><span class="diagram-caption">Find the location. Move the bytes.</span></div>
+  <div class="series-copy"><p class="eyebrow">Source code series / Mooncake</p><h2 id="series-title">From a memory segment<br>to a distributed store.</h2><p>Follow the Master service, start a memory owner, and trace a Put and Get through the TCP transport.</p><a class="primary-link" href="{{ '/mooncake/' | relative_url }}">Read the series <span aria-hidden="true">→</span></a></div>
+</section>
+<section id="articles" class="article-library" aria-labelledby="library-title">
+  <div class="library-heading"><div><p class="eyebrow">The notebook</p><h2 id="library-title">All articles<span class="article-count">{{ articles.size }}</span></h2></div><p>Explore a topic. Follow an idea.</p></div>
+  <nav class="topic-nav" aria-label="Article topics">{% for topic in topics %}<a href="#topic-{{ topic.name | slugify }}">{{ topic.name | escape }} <span>{{ topic.items.size }}</span></a>{% endfor %}</nav>
+  {% for topic in topics %}
+  <section class="topic-section" id="topic-{{ topic.name | slugify }}" aria-labelledby="heading-{{ topic.name | slugify }}">
+    <div class="topic-heading"><h3 id="heading-{{ topic.name | slugify }}">{{ topic.name | escape }}</h3><span>{{ topic.items.size }} {% if topic.items.size == 1 %}article{% else %}articles{% endif %}</span></div>
+    <div class="article-grid">
+    {% for article in topic.items %}
+      <a class="article-card" href="{{ article.url | relative_url }}">
+        <div class="card-top"><span>{% if article.series_order %}Part {{ article.series_order }}{% else %}{{ article.kind | default: 'Article' | escape }}{% endif %}</span><span aria-hidden="true">↗</span></div>
+        <h4>{{ article.nav_title | default: article.title | escape }}</h4>
+        <p>{{ article.description | escape }}</p>
+        <span class="card-bottom">{% if article.lang == 'zh-CN' %}中文 · {% endif %}Read article <span aria-hidden="true">→</span></span>
+      </a>
+    {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</section>

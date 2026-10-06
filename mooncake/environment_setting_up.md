@@ -1,6 +1,12 @@
 ---
 layout: default
 title: Setting up a Mooncake debugging environment
+article: true
+topic: Mooncake
+order: 10
+series_order: 0
+nav_title: "Set up the debugging environment"
+description: "Build Mooncake in Linux on a Mac and connect CLion to a remote debugging session."
 ---
 
 # Setting up a Mooncake debugging environment

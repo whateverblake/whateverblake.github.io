@@ -1,6 +1,12 @@
 ---
 layout: default
 title: How a Mooncake owner starts and mounts memory
+article: true
+topic: Mooncake
+order: 30
+series_order: 2
+nav_title: "Turn a client into a memory owner"
+description: "Follow the class relationships, TCP listeners, memory registration, and segment mounting."
 ---
 
 # How a Mooncake owner starts and mounts memory

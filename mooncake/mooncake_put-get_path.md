@@ -1,6 +1,12 @@
 ---
 layout: default
 title: Mooncake source walkthrough — a client that puts and gets
+article: true
+topic: Mooncake
+order: 40
+series_order: 3
+nav_title: "Follow a Put and Get"
+description: "Trace a value from the C++ API through connection lanes and sockets to owner memory and back."
 ---
 
 # A client that puts and gets

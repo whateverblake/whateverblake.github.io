@@ -1,3 +1,15 @@
+---
+layout: default
+title: Linux 零拷贝：sendfile 与 mmap
+article: true
+topic: Linux
+order: 100
+lang: zh-CN
+description: "通过 Java Socket、sendfile 和 mmap 示例，理解数据复制的开销与零拷贝的工作方式。"
+---
+
+# Linux 零拷贝：sendfile 与 mmap
+
 ### 零copy的意义
 应用程序在使用请求网络数据或者硬盘数据的时候，这些数据往往需要在用户程序缓存区，内核缓存区中来回的copy，零拷贝主要是为了减少数据在用户缓存空间和内核缓存空间之间的copy，以及数据在内核缓存之间的copy操作，而并不是表示真的没有数据copy的发送，通过零copy可以给cpu减负，使其更有效率的运行，减少用户缓存区和内核缓存区的内存占用。
 
