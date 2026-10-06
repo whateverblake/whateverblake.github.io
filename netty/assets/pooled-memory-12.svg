@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700" role="img" aria-labelledby="title description"><title id="title">Legacy page-run buddy tree</title><desc id="description">A 16 MiB root divides to 2048 leaves of 8 KiB. This is the pre-redesign allocator.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="700" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Legacy page-run buddy tree</text>
+<rect x="425.0" y="140" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="500.0" y="172" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">16 MiB</text>
+<path d="M 500.0 194 L 295.0 221" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<path d="M 500.0 194 L 705.0 221" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<text x="34" y="172" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">d=0</text>
+<rect x="220.0" y="225" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="295.0" y="257" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 MiB</text>
+<path d="M 295.0 279 L 192.5 306" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<path d="M 295.0 279 L 397.5 306" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="630.0" y="225" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="705.0" y="257" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 MiB</text>
+<path d="M 705.0 279 L 602.5 306" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<path d="M 705.0 279 L 807.5 306" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<text x="34" y="257" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">d=1</text>
+<rect x="117.5" y="310" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="192.5" y="342" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">4 MiB</text>
+<rect x="322.5" y="310" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="397.5" y="342" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">4 MiB</text>
+<rect x="527.5" y="310" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="602.5" y="342" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">4 MiB</text>
+<rect x="732.5" y="310" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="807.5" y="342" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">4 MiB</text>
+<text x="34" y="342" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">d=2</text>
+<rect x="117.5" y="395" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="192.5" y="427" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">…</text>
+<rect x="322.5" y="395" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="397.5" y="427" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">…</text>
+<rect x="527.5" y="395" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="602.5" y="427" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">…</text>
+<rect x="732.5" y="395" width="150" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="807.5" y="427" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">…</text>
+<text x="34" y="427" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">d=3</text>
+<rect x="94.125" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="141.25" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="196.625" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="243.75" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="299.125" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="346.25" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="401.625" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="448.75" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="504.125" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="551.25" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="606.625" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="653.75" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="709.125" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="756.25" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<rect x="811.625" y="480" width="94.25" height="52" rx="10" fill="#e7eff9" stroke="#d5dfeb"/>
+<text x="858.75" y="512" font-size="18" fill="#2161ad" font-weight="700" text-anchor="middle">8 KiB</text>
+<text x="34" y="512" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">d=11</text>
+<text x="34" y="574" font-size="16" fill="#182a42" font-weight="400" text-anchor="start">Root depth 0 → leaf depth 11: 2048 pages; depthMap is fixed, memoryMap tracks allocation.</text>
+<text x="34" y="614" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">A 16 MiB root divides to 2048 leaves of 8 KiB. This is the pre-redesign allocator.</text>
+<a href="https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java">
+<text x="34" y="678" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: PoolChunk.java • Legacy: Netty 4.1.50.Final</text>
+</a></g></svg>

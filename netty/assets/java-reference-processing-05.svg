@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="531" viewBox="0 0 1000 531" role="img" aria-labelledby="title description"><title id="title">Reference Handler detects Cleaner references</title><desc id="description">Actual source around the Cleaner type check; no debugger values are shown.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="531" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">OPENJDK 8U272-B10</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Reference Handler detects Cleaner references</text>
+<rect x="34" y="133" width="932" height="251" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    c = r instanceof Cleaner ? (Cleaner) r : null;</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    // unlink &#x27;r&#x27; from &#x27;pending&#x27; chain</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    pending = r.discovered;</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    r.discovered = null;</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">} else {</text>
+<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    // The waiting on the lock may cause an OutOfMemoryError</text>
+<text x="53" y="303" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    // because it may try to allocate exception objects.</text>
+<text x="53" y="327" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    if (waitForNotify) {</text>
+<text x="53" y="351" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">        lock.wait();</text>
+<text x="34" y="422" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 183; no runtime state is shown.</text>
+<text x="34" y="445" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Actual source around the Cleaner type check; no debugger values are shown.</text>
+<a href="https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/Reference.java">
+<text x="34" y="509" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: Reference.java • OpenJDK 8u272-b10</text>
+</a></g></svg>

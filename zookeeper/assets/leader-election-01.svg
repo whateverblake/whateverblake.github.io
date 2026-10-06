@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="889" viewBox="0 0 1000 889" role="img" aria-labelledby="title description"><title id="title">Election votes cross thread and queue boundaries</title><desc id="description">The lower-case sendqueue/recvqueue belong to election; queueSendMap/recvQueue belong to QuorumCnxManager.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="889" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">ZOOKEEPER 3.6.2</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Election votes cross thread and queue boundaries</text>
+<rect x="42" y="135" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="165" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">01  QuorumPeer</text>
+<text x="63" y="192" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Produce a proposal; read Notification votes.</text>
+<path d="M 500 217 L 500 239" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="244" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="274" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">02  FastLeaderElection.WorkerSender</text>
+<text x="63" y="301" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Consume sendqueue&lt;ToSend&gt;; serialize a vote.</text>
+<path d="M 500 326 L 500 348" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="353" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="383" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">03  QuorumCnxManager.SendWorker</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Consume the peer’s queueSendMap entry; write the peer socket.</text>
+<path d="M 500 435 L 500 457" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="462" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="492" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">04  QuorumCnxManager.RecvWorker</text>
+<text x="63" y="519" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Read a peer socket; publish a Message to recvQueue.</text>
+<path d="M 500 544 L 500 566" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="571" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="601" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">05  FastLeaderElection.WorkerReceiver</text>
+<text x="63" y="628" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Decode Message; publish Notification to recvqueue.</text>
+<path d="M 500 653 L 500 675" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="680" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="710" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">06  QuorumPeer.lookForLeader</text>
+<text x="63" y="737" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Evaluate notifications and update or accept the proposal.</text>
+<text x="34" y="803" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">The lower-case sendqueue/recvqueue belong to election; queueSendMap/recvQueue belong to QuorumCnxManager.</text>
+<a href="https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java">
+<text x="34" y="867" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: FastLeaderElection.java • ZooKeeper 3.6.2</text>
+</a></g></svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="435" viewBox="0 0 1000 435" role="img" aria-labelledby="title description"><title id="title">Ordinary pending references are enqueued</title><desc id="description">Source-level replacement for the original queue-processing screenshot.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="435" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">OPENJDK 8U272-B10</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Ordinary pending references are enqueued</text>
+<rect x="34" y="133" width="932" height="155" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    ReferenceQueue&lt;? super Object&gt; q = r.queue;</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    if (q != ReferenceQueue.NULL) q.enqueue(r);</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    return true;</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">}</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">static {</text>
+<text x="34" y="326" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 216; no runtime state is shown.</text>
+<text x="34" y="349" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Source-level replacement for the original queue-processing screenshot.</text>
+<a href="https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/Reference.java">
+<text x="34" y="413" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: Reference.java • OpenJDK 8u272-b10</text>
+</a></g></svg>

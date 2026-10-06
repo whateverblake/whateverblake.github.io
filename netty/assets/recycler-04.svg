@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="435" viewBox="0 0 1000 435" role="img" aria-labelledby="title description"><title id="title">Link: a batch of recycled handles</title><desc id="description">AtomicInteger supplies the writer index; readIndex is the consumer’s position.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="435" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">NETTY 4.1.53.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Link: a batch of recycled handles</text>
+<rect x="34" y="133" width="932" height="155" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">static final class Link extends AtomicInteger {</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    final DefaultHandle&lt;?&gt;[] elements = new DefaultHandle[LINK_CAPACITY];</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    int readIndex;</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    Link next;</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">}</text>
+<text x="34" y="326" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 256; no runtime state is shown.</text>
+<text x="34" y="349" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">AtomicInteger supplies the writer index; readIndex is the consumer’s position.</text>
+<a href="https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java">
+<text x="34" y="413" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: Recycler.java • Netty 4.1.53.Final</text>
+</a></g></svg>

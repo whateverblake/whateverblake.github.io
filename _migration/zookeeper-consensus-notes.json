@@ -1,0 +1,51 @@
+{
+  "baseline": {
+    "zookeeper": "3.6.2",
+    "commit": "803c7f1a12f85978cb049af5e4ef23bd8b688715",
+    "local_source": "/Users/blake/Downloads/jianshu_blog/source-references/zookeeper-3.6.2",
+    "bundled_netty": "4.1.50.Final",
+    "independent_netty_series": "4.1.53.Final"
+  },
+  "files": [
+    "zookeeper/index.md",
+    "zookeeper/ensemble-setup.md",
+    "zookeeper/leader-election.md",
+    "zookeeper/leader-follower-initialization.md",
+    "zookeeper/netty-transport.md"
+  ],
+  "translation": "Complete line-by-line translation of prose and Chinese code comments, preserving section order, all original code blocks, identifiers, and executable logic. Code excerpts are selected fragments rather than standalone compilable methods.",
+  "release_mismatches": [],
+  "source_checks": [
+    "Compared normalized executable excerpt lines with the pinned 3.6.2 source and compared every translated Java block against its original, excluding comments. The only executable-text repairs are two truncated QuorumCnxManager log statements and one missing sendPkt semicolon.",
+    "Verified multi-address ListenerHandler/LearnerCnxAcceptorHandler, RequestPathMetricsCollector, large-request throttling initialization, synchronization throttlers, and digest-aware synchronization APIs are present in the 3.6.2 baseline.",
+    "Verified the pinned POM declares Netty 4.1.50.Final; explicitly distinguished the independent 4.1.53.Final series.",
+    "Checked FastLeaderElection.totalOrderPredicate, Leader.getEpochToPropose, waitForEpochAck/waitForNewLeaderAck, Learner.syncWithLeader, LearnerHandler.syncFollower, ZooKeeperServer.startup, Netty client writes and response framing against local source. Opened immutable FastLeaderElection and POM links through the web tool as primary-source corroboration."
+  ],
+  "corrections": [
+    "Election ordering prefers the larger peerEpoch, then zxid, then sid. Original zxid comparison was reversed and omitted peerEpoch; electionEpoch is a distinct logical election round.",
+    "WorkerSender and WorkerReceiver descriptions were swapped in the original overview. Actual socket reader class is RecvWorker, and the two incoming queues contain Message and Notification respectively.",
+    "QuorumPeer.run and QuorumCnxManager.startConnection headings were corrected. Restored two truncated logging statements from pinned source.",
+    "Majority wording is qualified for standard majority ensembles; checks use the configured QuorumVerifier.",
+    "Election connection ID tie-break operates after TCP establishment, retaining the connection initiated by the higher sid.",
+    "Leader initialization counts a quorum including the leader; it does not require a majority of followers alone.",
+    "Epoch ACKEPOCH and synchronized NEWLEADER ACK are distinct barriers. Server startup follows NEWLEADER quorum acknowledgment, rather than LEADERINFO acknowledgment.",
+    "UPTODATE ends synchronization; replay and NEWLEADER may precede it. Committed-log and applied-database watermarks do not alone establish whether a transaction is awaiting quorum acknowledgment.",
+    "Netty channelActive creates a connection object before session negotiation; plaintext excerpts do not exclude SSL handlers in the complete pipeline. Restored original sendPkt missing semicolon.",
+    "Three-peer local example adds explicit tickTime/initLimit/syncLimit, separate data directories, myid creation commands, and disables optional AdminServer to prevent a shared HTTP-port conflict."
+  ],
+  "validation": {
+    "chinese_text_in_articles": 0,
+    "jianshu_self_links_remaining": 0,
+    "front_matter": "All five files contain layout/default, article/true, topic/ZooKeeper, lang/en, manifest title/order/series_order, and description; each body has its required H1.",
+    "code_block_counts": {
+      "leader-election": {"original": 21, "english": 21},
+      "leader-follower-initialization": {"original": 25, "english": 25},
+      "netty-transport": {"original": 15, "english": 15},
+      "ensemble-setup": {"original": 1, "english": 3}
+    },
+    "images": "Six references exactly match the manifest's ordered asset list; all have meaningful English alt text. SVG generation belongs to the parent agent.",
+    "links": "Every internal Markdown link uses a relative .html target mapped to a manifest article. Overview links all twelve ZooKeeper manifest pages, including itself and eleven detail pages.",
+    "fences": "All code fences balanced; no Liquid opening delimiters in assigned files.",
+    "runtime": "No cluster run or full-site build performed by this content translation subtask; parent performs aggregate site validation."
+  }
+}

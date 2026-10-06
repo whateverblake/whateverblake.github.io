@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="710" viewBox="0 0 1000 710" role="img" aria-labelledby="title description"><title id="title">Group expiration times into interval buckets</title><desc id="description">The formula rounds strictly to the next interval, even when the deadline is already aligned.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="710" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">ZOOKEEPER 3.6.2</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Group expiration times into interval buckets</text>
+<rect x="42" y="132" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="160" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Example interval</text>
+<text x="63" y="185" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">1000 ms; these are illustrative times, not a runtime dump.</text>
+<rect x="42" y="207" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="235" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">connection A</text>
+<text x="63" y="260" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Deadline 2100 ms → bucket 3000 ms</text>
+<rect x="42" y="282" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="310" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">connection B</text>
+<text x="63" y="335" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Deadline 2900 ms → bucket 3000 ms</text>
+<rect x="42" y="357" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="385" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">connection C</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Deadline 3000 ms → bucket 4000 ms</text>
+<rect x="42" y="432" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="460" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">roundToNextInterval(time)</text>
+<text x="63" y="485" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">(time / expirationInterval + 1) × expirationInterval</text>
+<rect x="42" y="507" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="535" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">expiryMap</text>
+<text x="63" y="560" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Each bucket maps to a set of objects to expire.</text>
+<text x="34" y="624" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">The formula rounds strictly to the next interval, even when the deadline is already aligned.</text>
+<a href="https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ExpiryQueue.java">
+<text x="34" y="688" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: ExpiryQueue.java • ZooKeeper 3.6.2</text>
+</a></g></svg>

@@ -29,7 +29,7 @@
       <article class="prose">{{ content }}</article>
       <nav class="article-end" aria-label="Continue reading">
         <a href="{{ '/#articles' | relative_url }}">← Browse all articles</a>
-        {% if page.topic == 'Mooncake' %}<a href="{{ '/mooncake/' | relative_url }}">Mooncake series →</a>{% endif %}
+        {% if page.topic == 'Mooncake' %}<a href="{{ '/mooncake/' | relative_url }}">Mooncake series →</a>{% elsif page.topic == 'ZooKeeper' %}<a href="{{ '/zookeeper/' | relative_url }}">ZooKeeper series →</a>{% elsif page.topic == 'Netty' %}<a href="{{ '/netty/' | relative_url }}">Netty series →</a>{% endif %}
         <a href="#main-content">Back to top ↑</a>
       </nav>
     {% endif %}

@@ -1,0 +1,832 @@
+{
+  "repo": "/Users/blake/blogs/github_article/whateverblake.github.io",
+  "source_export": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437",
+  "versions": {
+    "zookeeper": "release-3.6.2",
+    "netty": "netty-4.1.53.Final",
+    "jdk": "jdk8u272-b10"
+  },
+  "articles": [
+    {
+      "original_name": "zookeeper-单机版源码解析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper-单机版源码解析.md",
+      "topic": "zookeeper",
+      "slug": "index",
+      "title": "Reading ZooKeeper Source Code",
+      "order": 200,
+      "series_order": 0,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/index.md",
+      "images": []
+    },
+    {
+      "original_name": "zookeeper源码阅读环境搭建.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper源码阅读环境搭建.md",
+      "topic": "zookeeper",
+      "slug": "debugging-environment",
+      "title": "Setting Up a ZooKeeper Source Debugging Environment",
+      "order": 210,
+      "series_order": 1,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/debugging-environment.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "zookeeper_github.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-261483b18d8ddd20.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/debugging-environment-01.svg",
+          "line": 5,
+          "context": "本文介绍如何在Intellij Idea搭建zookeeper源码阅读环境\n\n#####github\n在Intellij Idea中通过File-->new--> project from version control --> git 输入zookeeper的github地址去导入zookeeper的源码代码（我的intellij idea安装了github插件，但是在version control的选项中没有显示）\n\n如果选择了使用clone with ssh 请确保intellij idea上配置了github的账号信息\n![git_clone.png](https://upload-images.jianshu.io/upload_images/23114405-0a2b17f51c2ddf59.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n把git协议或者https协议对应的地址填入URL框中，点击clone开始下载代码，这个过程可能会比较慢取决于你的网速，下载完毕之后可以在Intellij Idea的右下角选择不同的zookeeper版本去编译\n\n![版本选择.png](https://upload-images.jianshu.io/upload_images/23114405-ec55b71c9e909df6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n"
+        },
+        {
+          "index": 2,
+          "original_caption": "git_clone.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-0a2b17f51c2ddf59.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/debugging-environment-02.svg",
+          "line": 7,
+          "context": "本文介绍如何在Intellij Idea搭建zookeeper源码阅读环境\n\n#####github\n在Intellij Idea中通过File-->new--> project from version control --> git 输入zookeeper的github地址去导入zookeeper的源码代码（我的intellij idea安装了github插件，但是在version control的选项中没有显示）\n![zookeeper_github.png](https://upload-images.jianshu.io/upload_images/23114405-261483b18d8ddd20.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n如果选择了使用clone with ssh 请确保intellij idea上配置了github的账号信息\n\n把git协议或者https协议对应的地址填入URL框中，点击clone开始下载代码，这个过程可能会比较慢取决于你的网速，下载完毕之后可以在Intellij Idea的右下角选择不同的zookeeper版本去编译\n\n![版本选择.png](https://upload-images.jianshu.io/upload_images/23114405-ec55b71c9e909df6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n\n#####maven\n以前zookeeper使用ant来编译和管理依赖，新版本的zookeeper使用maven来编译和管理依赖，如果上一步代码下载完成了，那么执行maven的package\n![打包.png](https://upload-images.jianshu.io/upload_images/23114405-afcbe72c3df358d4.png?imageMogr2/auto"
+        },
+        {
+          "index": 3,
+          "original_caption": "版本选择.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-ec55b71c9e909df6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/debugging-environment-03.svg",
+          "line": 10,
+          "context": "r_github.png](https://upload-images.jianshu.io/upload_images/23114405-261483b18d8ddd20.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n如果选择了使用clone with ssh 请确保intellij idea上配置了github的账号信息\n![git_clone.png](https://upload-images.jianshu.io/upload_images/23114405-0a2b17f51c2ddf59.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n把git协议或者https协议对应的地址填入URL框中，点击clone开始下载代码，这个过程可能会比较慢取决于你的网速，下载完毕之后可以在Intellij Idea的右下角选择不同的zookeeper版本去编译\n\n\n\n\n\n#####maven\n以前zookeeper使用ant来编译和管理依赖，新版本的zookeeper使用maven来编译和管理依赖，如果上一步代码下载完成了，那么执行maven的package\n![打包.png](https://upload-images.jianshu.io/upload_images/23114405-afcbe72c3df358d4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n##### 运行\n1. 把config中的log4j.properties移动到zookeeper-server的resources下面，然后在project structure中设置resources目录为resources，同时把zoo_example.cfg改名为zoo.cfg\n2. 在包org.apache.zookeeper.server找到ZooKeeperServerMain设置启动参数conf/zo"
+        },
+        {
+          "index": 4,
+          "original_caption": "打包.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-afcbe72c3df358d4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/debugging-environment-04.svg",
+          "line": 16,
+          "context": "shu.io/upload_images/23114405-0a2b17f51c2ddf59.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n把git协议或者https协议对应的地址填入URL框中，点击clone开始下载代码，这个过程可能会比较慢取决于你的网速，下载完毕之后可以在Intellij Idea的右下角选择不同的zookeeper版本去编译\n\n![版本选择.png](https://upload-images.jianshu.io/upload_images/23114405-ec55b71c9e909df6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n\n#####maven\n以前zookeeper使用ant来编译和管理依赖，新版本的zookeeper使用maven来编译和管理依赖，如果上一步代码下载完成了，那么执行maven的package\n\n\n\n##### 运行\n1. 把config中的log4j.properties移动到zookeeper-server的resources下面，然后在project structure中设置resources目录为resources，同时把zoo_example.cfg改名为zoo.cfg\n2. 在包org.apache.zookeeper.server找到ZooKeeperServerMain设置启动参数conf/zoo.cfg\n![init_parameter.png](https://upload-images.jianshu.io/upload_images/23114405-53d63478872af690.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n3. run ZooKeeperServerMain的main方法\n\n\n#####可能的错误\n我使用的是zookeeper3.6版本去编译的，所以在启动的时候报错"
+        },
+        {
+          "index": 5,
+          "original_caption": "init_parameter.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-53d63478872af690.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/debugging-environment-05.svg",
+          "line": 22,
+          "context": "###maven\n以前zookeeper使用ant来编译和管理依赖，新版本的zookeeper使用maven来编译和管理依赖，如果上一步代码下载完成了，那么执行maven的package\n![打包.png](https://upload-images.jianshu.io/upload_images/23114405-afcbe72c3df358d4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n##### 运行\n1. 把config中的log4j.properties移动到zookeeper-server的resources下面，然后在project structure中设置resources目录为resources，同时把zoo_example.cfg改名为zoo.cfg\n2. 在包org.apache.zookeeper.server找到ZooKeeperServerMain设置启动参数conf/zoo.cfg\n\n3. run ZooKeeperServerMain的main方法\n\n\n#####可能的错误\n我使用的是zookeeper3.6版本去编译的，所以在启动的时候报错\n-  java.lang.NoClassDefFoundError: com/codahale/metrics/Reservoir\nzookeeper3.6版本使用的metrics-core是3.2.5,升级到4.1.10问题解决\n- Caused by: java.lang.ClassNotFoundException: org.xerial.snappy.SnappyInputStream\npom.xml中snappy-java的scope为provided，把它直接注释掉问题可以得到解决\n\n#####结语\nenjoy source code reading journey\n\n\n\n\n  \n\n\n\n\n\n\n\n\n"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper-分布式环境搭建.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper-分布式环境搭建.md",
+      "topic": "zookeeper",
+      "slug": "ensemble-setup",
+      "title": "Setting Up a Three-Node ZooKeeper Ensemble",
+      "order": 220,
+      "series_order": 2,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/ensemble-setup.md",
+      "images": []
+    },
+    {
+      "original_name": "zookeeper-单机版-server端启动源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper-单机版-server端启动源码分析.md",
+      "topic": "zookeeper",
+      "slug": "standalone-server-startup",
+      "title": "How a Standalone ZooKeeper Server Starts",
+      "order": 230,
+      "series_order": 3,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/standalone-server-startup.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "session_time_out.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-87b7f8994d8ac23a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/standalone-server-startup-01.svg",
+          "line": 7,
+          "context": "开始使用zookeeper了，当时就觉的很好用，基于zookeeper还把一个不支持分项布式部署和任务分发的通用文件采集器改成了分布式的，后来拜读了《从Paxos到Zookeeper分布式一致性原理与实践》，之后自己就按照几种不同的场景debug了zookeeper单机版源代码，由于当时debug完之后没有做相应的笔记，时间久了很多地方的知识点都忘记了，于是最近又把zookeeper的源码读了一下，获益良多，记录于此\n\n####Server端的启动过程\n##### 1. 参数解析\n我们先分析zookeeper单机版Server端的启动过程，启动入口类是org.apache.zookeeper.server.ZooKeeperServerMain，需要传入zoo.cfg作为启动参数，在zoo.cfg中配置的参数会被解析成ServerConfig的各个属性，这里面需要提到的是minSessionTimeout，maxSessionTimeout这两个参数，他们是根据tickTime算出来的\n  \n下面是ServerConfig的属性信息\n![ServerConfig.png](https://upload-images.jianshu.io/upload_images/23114405-53abdef024d2ed4f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1040)\n我们注解几个重要的参数\n- clientPortAddress 服务端监听客户端连接端口\n- dataDir 服务端zookeeper节点信息持久化的位置\n- logDir   服务端事物操作日志记录的位置\n- tickTime 基于tickTime可以计算出minSessionTimeout和maxSessionTimeout\n- maxClientCnxns  同一个IP地址可以创建的最大连接数\n- listenBacklog  用来设置socket连接队列的最大值\n\n\n#### runFromConfig\nrunFromConfig根据解析好"
+        },
+        {
+          "index": 2,
+          "original_caption": "ServerConfig.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-53abdef024d2ed4f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1040",
+          "asset": "assets/standalone-server-startup-02.svg",
+          "line": 9,
+          "context": "了，于是最近又把zookeeper的源码读了一下，获益良多，记录于此\n\n####Server端的启动过程\n##### 1. 参数解析\n我们先分析zookeeper单机版Server端的启动过程，启动入口类是org.apache.zookeeper.server.ZooKeeperServerMain，需要传入zoo.cfg作为启动参数，在zoo.cfg中配置的参数会被解析成ServerConfig的各个属性，这里面需要提到的是minSessionTimeout，maxSessionTimeout这两个参数，他们是根据tickTime算出来的\n![session_time_out.png](https://upload-images.jianshu.io/upload_images/23114405-87b7f8994d8ac23a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)  \n下面是ServerConfig的属性信息\n\n我们注解几个重要的参数\n- clientPortAddress 服务端监听客户端连接端口\n- dataDir 服务端zookeeper节点信息持久化的位置\n- logDir   服务端事物操作日志记录的位置\n- tickTime 基于tickTime可以计算出minSessionTimeout和maxSessionTimeout\n- maxClientCnxns  同一个IP地址可以创建的最大连接数\n- listenBacklog  用来设置socket连接队列的最大值\n\n\n#### runFromConfig\nrunFromConfig根据解析好的参数来启动zookeeper server\n1. 创建 FileTxnSnapLog类\n```\nFileTxnSnapLog 包含了两个重要的属性txnLog和snapLog分别指向zookeeper的事物日志和数据持久化文件\n```\n2. 创建ZookeeperServer\n```\nZookeeperServer是server端的代表类\n"
+        },
+        {
+          "index": 3,
+          "original_caption": "acceptThread_selectorThread.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-c12c92cad82d250d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1000",
+          "asset": "assets/standalone-server-startup-03.svg",
+          "line": 491,
+          "context": "electionKey(key);\n                }\n              //通过selectionKey的附件获取到对应的连接对象NIOServerCnxn\n                NIOServerCnxn cnxn = (NIOServerCnxn) key.attachment();\n                if (cnxn.isSelectable()) {\n                    //selectionKey重新注册感兴趣的事件，cnxn.getInterestOps会根据连接上的读写情况设置对应的感兴趣事件\n                    key.interestOps(cnxn.getInterestOps());\n                }\n            }\n        }\n```\n\n上面讲解了zookeeper关于连接接受和连接上IO事件处理的逻辑，下面的这张图是对这个过程的概括\n\n---\nserver端还会启动session和connection超时管理线程，在这里就不详解解析了可以看本系列另一篇文章\n[zookeeper 超时对象管理实现--ExpiryQueue](https://www.jianshu.com/writer#/notebooks/47664202/notes/77031369)\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper单机版-client启动.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper单机版-client启动.md",
+      "topic": "zookeeper",
+      "slug": "client-startup",
+      "title": "How a ZooKeeper Client Starts and Establishes a Session",
+      "order": 240,
+      "series_order": 4,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/client-startup.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "ConnectStringParser.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-5b530083eff46e15.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/client-startup-01.svg",
+          "line": 53,
+          "context": "der来封装这个逻辑\n        hostProvider = aHostProvider;\n      //客户端的连接对象，这个对象是实现客户端连接服务端的核心，在下面我们会详细解析\n        cnxn = createConnection(\n            connectStringParser.getChrootPath(),\n            hostProvider,\n            sessionTimeout,\n            this,\n            watchManager,\n            getClientCnxnSocket(),\n            canBeReadOnly);\n        //启动客户端相关的一些线程\n        cnxn.start();\n    }\n```\n\n##### ConnectStringParser\n我们先解析下ConnectStringParser这个类\n\n从上图我们可以看出ConnectStringParser类有两个重要的属性chrootPath，serverAddresses。ConnectStringParser就是根据用户传入的连接信息解析出这两个属性的值，chrootPath是用户传入的连接信息中包含的路径信息，比如用户提供的连接信息是\"192.168.11.1:2181,192.168.11.2:2181/tt\",那么通过ConnectStringParser的解析chrootPath=tt，serverAddresses用来存储用户提供的地址和端口对的解析结果，同样是上面的例子，serverAddresses解析的结果是[\"192.168.11.1:2181\",\"192.168.11.2:2181\"]\n现在给出ConnectStringParser解析用户提供的连接信息的源代码\n```\npublic ConnectStringParser(String connectString) {\n        // parse o"
+        },
+        {
+          "index": 2,
+          "original_caption": "StaticHostProvider.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-593003060daef986.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/client-startup-02.svg",
+          "line": 100,
+          "context": "nt(hostAndPort[1]);\n                }\n            } catch (ConfigException e) {\n                e.printStackTrace();\n            }\n            //根据ip和port创建InetSocketAddress对象，然后加入serverAddresses中\n            serverAddresses.add(InetSocketAddress.createUnresolved(host, port));\n        }\n    }\n\n\n```\n\n##### HostProvider\n通过对ConnectStringParser的解析，我们知道用户可能会提供多个连接服务端的IP:Port，那么客户端应该选择哪一个去连接服务端呢？这个就是HostProvider的工作了。HostProvider默认实现是StaticHostProvider\n\n上图是StaticHostProvider属性图，红框框出来的三个属性serverAddresses,lastIndex,currentIndex是StaticHostProvider实现选择一个服务器进行服务端连接的核心。StaticHostProvider的next()方法向外部提供了选取一个服务器进行连接的封装\n#####next()\n```\npublic InetSocketAddress next(long spinDelay) {\n        boolean needToSleep = false;\n        InetSocketAddress addr;\n\n        synchronized (this) {\n           //reconfigMode是zookeeper为了server端连接的负债均衡而设计的一个功能\n            if (reconfigMode) {\n                addr = nextHostIn"
+        },
+        {
+          "index": 3,
+          "original_caption": "ClientCnxn.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-19768481422f215c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/client-startup-03.svg",
+          "line": 150,
+          "context": "    }\n        if (needToSleep) {\n            try {\n                //休眠一会会，当服务器列表中的所有的服务器都被连接一遍之后，再次去连接服务器的时候需要休眠一会（个人理解：既然所有的服务器连接都没连接上，那么服务端可能在忙着什么事情，等一会给服务器端一些喘息的机会）\n                Thread.sleep(spinDelay);\n            } catch (InterruptedException e) {\n                LOG.warn(\"Unexpected exception\", e);\n            }\n        }\n      //返回服务器ip信息\n        return resolve(addr);\n    }\n```\n####ClientCnxn\n客户端连接对象，保存了客户端连接服务端的信息，包含的属性比较多，我们选择几个进行注释\n\n我们看下ClientCnxn最终的构造方法\n```\n public ClientCnxn(\n        String chrootPath,\n        HostProvider hostProvider,\n        int sessionTimeout,\n        ZooKeeper zooKeeper,\n        ClientWatchManager watcher,\n        ClientCnxnSocket clientCnxnSocket,\n        long sessionId,\n        byte[] sessionPasswd,\n        boolean canBeReadOnly) {\n        this.zooKeeper = zooKeeper;\n        this.watcher = watcher;\n        this.sessionId = sessionId;\n        this.s"
+        },
+        {
+          "index": 4,
+          "original_caption": "Packet.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-668a06c37eef98ba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/client-startup-04.svg",
+          "line": 648,
+          "context": "l\n      //简单来说就是在初始连接成功后但是很快session超时了，这个时候服务端会给客户端发送session超时事件同时关闭socket连接，如果与此同时客户端发送消息给服务端，会导致TCP的RST状态从而导致客户端收不到session 超时的消息。故而在连接没有完成的情况下initialized=false，客户端取消对op_write的监听\n                disableWrite();\n            } else {\n                // Just in case\n               //就像注释一样，以防万一，outgoingQueue还有数据继续注册op_write监听\n                enableWrite();\n            }\n        }\n    }\n\n```\n上面分析了doIO的逻辑，还有几个小点需要交待，我们先看下消息是如何转化成ByteBuffer的\n我们先看消息对象\n\n对于发送端来说，Packet类有两个属性，请求头requestHeader和请求体request\n这个两个属性的数据会转化成ByteBuffer类型的bb，下面我们就分析这个过程\n```\n public void createBB() {\n            try {\n               //创建输出流\n                ByteArrayOutputStream baos = new ByteArrayOutputStream();\n                BinaryOutputArchive boa = BinaryOutputArchive.getArchive(baos);\n              //消息流的前4个字节是全部消息的长度，但是目前还没确定，所以先初始化成-1\n                boa.writeInt(-1, \"len\"); // We'll fill this in later\n            "
+        },
+        {
+          "index": 5,
+          "original_caption": "连接创建.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-bb7e032bd57400a6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/client-startup-05.svg",
+          "line": 724,
+          "context": "rver which\n            // doesn't contain readOnly field\n            LOG.warn(\"Connected to an old server; r-o mode will be unavailable\");\n        }\n         //从反序列化的ConnectResponse对象中获得sessionId\n        this.sessionId = conRsp.getSessionId();\n       //向eventThread发送连接结果的通知\n        sendThread.onConnected(conRsp.getTimeOut(), this.sessionId, conRsp.getPasswd(), isRO);\n    }\n\n```\n到此zookeeper 完成了客户端的启动，客户端启动包含了socket连接建立和session建立的过程，下图对上面过程做了简短的概述\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper对象超时管理-ExpiryQueue.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper对象超时管理-ExpiryQueue.md",
+      "topic": "zookeeper",
+      "slug": "expiry-queue",
+      "title": "How ExpiryQueue Manages Connection and Session Timeouts",
+      "order": 250,
+      "series_order": 5,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/expiry-queue.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "connection_with_different_timeout_point.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-c771bd9f6a21b302.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/expiry-queue-01.svg",
+          "line": 6,
+          "context": "#### 背景\n在zookeeper服务端中需要管理session和connection这两类具有超时属性的对象。zookeeper提供了ExpiryQueue来实现通用对象超时管理容器。\n\n#### 实现\n我拿connection来说如何管理他的超时问题，不同的连接超时的时间点是不同的\n\n那么zookeeper是如何高效的管理这些不同的超时时间点的呢?\n在ExpiryQueue有个expirationInterval属性，zookeeper会使用expirationInterval作为基准把每一个连接的超时时间点归一化为expirationInterval整数倍，归一化的计算方式为\n$$\nnormalizeTimeout = (timeoutPoint/expirationInterval  +1) * expirationInterval\n$$\n我们拿上一个图为例子，通过归一化处理connection_1,connection_2,connection_3这三个连接的超时时间点可能会变成同一个\n```\n假定expirationInterval = 10000，\nconnection_1_timeout_point = 1599715479084\nconnection_2_timeout_point =  1599715479184 \nconnection_3_time"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper单机版节点创建源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper单机版节点创建源码分析.md",
+      "topic": "zookeeper",
+      "slug": "node-creation",
+      "title": "Following a ZooKeeper Node Creation Request",
+      "order": 260,
+      "series_order": 6,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/node-creation.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "client_process.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-f2b7dc33cced5d96.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/node-creation-01.svg",
+          "line": 120,
+          "context": "f (h.getType() == OpCode.closeSession) {\n                    closing = true;\n                }\n                //把请求消息放入到outgoingQueue中等待发送到服务端\n                outgoingQueue.add(packet);\n            }\n        }\n       //叫醒sendThread，让其从outgoingQueue继续处理消息\n        sendThread.getClientCnxnSocket().packetAdded();\n        return packet;\n    }\n```\n\n当sendThread从selector.select醒来之后，会执行doIO操作，在doIO中新建节点请求对象packet会被设置xid，然后会被转化成ByteBuffer对象通过socket发送给服务端\n\n\n\n####服务端的处理\n服务端的处理流程如下图\n![server_process.png](https://upload-images.jianshu.io/upload_images/23114405-69c76291ee3bf25d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\nSelectorThread.handleIO方法我们已经在[zookeeper server 启动源码分析](https://www.jianshu.com/p/8153a113fdf7)中解析了，接下来我们就一步一步的解析每一个流程的源代码\n\n\n##### IOWorkRequest.doWork\n当客户端发送的请求到达服务端的时候，SelectorThread会获取到对应的事件监听 selectionKey，selectionKey会被包装成IOWorkRequest提交给io worker线程池，线程池会分配一个线程给对应的IOWo"
+        },
+        {
+          "index": 2,
+          "original_caption": "server_process.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-69c76291ee3bf25d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/node-creation-02.svg",
+          "line": 125,
+          "context": "d(packet);\n            }\n        }\n       //叫醒sendThread，让其从outgoingQueue继续处理消息\n        sendThread.getClientCnxnSocket().packetAdded();\n        return packet;\n    }\n```\n\n当sendThread从selector.select醒来之后，会执行doIO操作，在doIO中新建节点请求对象packet会被设置xid，然后会被转化成ByteBuffer对象通过socket发送给服务端\n![client_process.png](https://upload-images.jianshu.io/upload_images/23114405-f2b7dc33cced5d96.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n####服务端的处理\n服务端的处理流程如下图\n\nSelectorThread.handleIO方法我们已经在[zookeeper server 启动源码分析](https://www.jianshu.com/p/8153a113fdf7)中解析了，接下来我们就一步一步的解析每一个流程的源代码\n\n\n##### IOWorkRequest.doWork\n当客户端发送的请求到达服务端的时候，SelectorThread会获取到对应的事件监听 selectionKey，selectionKey会被包装成IOWorkRequest提交给io worker线程池，线程池会分配一个线程给对应的IOWorkRequest用来执行IOWorkRequest的doWork方法，我们先分析下doWork方法\n```\n public void doWork() throws InterruptedException {\n            if (!key.isValid()) {\n             //如果selectionKey不合法，那么"
+        },
+        {
+          "index": 3,
+          "original_caption": "processor_chain.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-9c9ab2e075c547a7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/node-creation-03.svg",
+          "line": 374,
+          "context": " checkRequestSizeWhenMessageReceived(length);\n                    si.setLargeRequestSize(length);\n                }\n               //设置请求的owner\n                si.setOwner(ServerCnxn.me);\n              //提交请求给到requestThrottler\n                submitRequest(si);\n            }\n        }\n    }\n```\n上面经过processPacket的处理之后，请求对象会进入到请求处理链进行处理，对于单机版本的zookeeper而言,所有的事物请求都会被请求处理链处理，[zookeeper server 启动源码分析](https://www.jianshu.com/p/8153a113fdf7)中对此有简短的分析，\n\n\n那么one by one 的来分析链上的这些处理器\n#####RequestThrottler\n作为处理器链上的第一个处理器它的作用是用来控制zookeeper处理事物的数量从而达到限流的目的包装服务端不会过载，它作为一个单独的线程运行，因此我们看下的run 方法\n```\npublic void run() {\n        try {\n            while (true) {\n                if (killed) {\n                    break;\n                }\n               //从请求队列中取得一个请求\n                Request request = submittedRequests.take();\n                if (Request.requestOfDeath == request) {\n                    break;\n "
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper单机版watcher处理流程源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper单机版watcher处理流程源码分析.md",
+      "topic": "zookeeper",
+      "slug": "watch-processing",
+      "title": "How ZooKeeper Registers and Delivers Watch Events",
+      "order": 270,
+      "series_order": 7,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/watch-processing.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "process.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-6b67273630e0b991.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/watch-processing-01.svg",
+          "line": 27,
+          "context": "rPath, mode.getMode());\n       //把请求通过连接发送到服务端\n        ReplyHeader r = cnxn.submitRequest(h, request, new ErrorResponse(),\n                new AddWatchRegistration(watcher, basePath, mode));\n        if (r.getErr() != 0) {\n            throw KeeperException.create(KeeperException.Code.get(r.getErr()),\n                    basePath);\n        }\n    }\n```\n\n#### 服务端\n服务端接受到的请求也会像在[zookeeper新建节点请求源码](https://www.jianshu.com/p/defc21fc2b1c)描述的那样经历如下几个处理流程：\n所有的流程过程都是相同的，不同的地方就是那些case:xxx的地方，对于watch来说不同的地方就是FinalRequestProcessor.processRequest中的下面这段代码\n```\n case OpCode.addWatch: {\n                lastOp = \"ADDW\";\n                AddWatchRequest addWatcherRequest = new AddWatchRequest();\n                ByteBufferInputStream.byteBuffer2Record(request.request,\n                        addWatcherRequest);\n                zks.getZKDatabase().addWatch(addWatcherRequest.getPath(), cnxn, addWatcherRequest.ge"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper单机版-数据恢复.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper单机版-数据恢复.md",
+      "topic": "zookeeper",
+      "slug": "data-recovery",
+      "title": "How ZooKeeper Recovers Data from Snapshots and Transaction Logs",
+      "order": 280,
+      "series_order": 8,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/data-recovery.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "log_snap_filename_format.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-b744d115beaaf579.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-01.svg",
+          "line": 13,
+          "context": "- 从log恢复\n为什么需要从两个部分恢复呢？\n从前言的描述我们知道每一个事物性的操作都会先写log，所以说log包含了所有的事物操作记录。snapshot是zookeeper按照一定的条件产生的服务端数据持久化文件，那么可不可以直接从snapshot文件去恢复数据而不用管log文件呢？答案是不可以，因为存在这样的可能：zookeeper已经处理了一些事物但是这些操作还没有达到触发系统生成新snapshot文件的条件，如果在这个时候zookeeper server 宕机了，zookeeper如果只是从最新的已经生成的snapshot文件去恢复数据的话就会导致从上一个snapshot生成到宕机这段时间内的所有事物操作都会丢失。所有这个时候需要借助log去帮忙恢复那部分没有被snapshot持久化的事物。另一个问题是可不可以直接通过log去恢复，答案是不可以。如果全部的数据都从log中恢复那么就必须保存全的log数据，同时从log恢复数据的效率也是很低的。\n\n#### log，snap格式\n\n上图是我本机zookeeper生成的log和snapshot列表\n我们注意log文件名称格式为log.x，snapshot文件格式为snapshot.y。在zookeeper中每一个事物操作都会被分配一个事物id，事物id由服务端统一生成，是一个递增的数字，比如事物B比事物A晚发生，事物A分配的事物id是1，那么事物B的事物id一定是大于1的一个数，可能是2，3......具体是什么值取决于在事物A和事物B之间zookeeper是否还处理过别的事物，以及如果处理了处理了多少个。\n- ##### snapshot，log文件名后缀的意义\n我们看到snapshot文件格式为snapshot.x，log文件格式为log.y，我们知道x,y都是代表zookeeper处理事务的id，对于log来说log里面记录的事物id都是大于或者等于y的，也就是说log.y记录的第一个事物的id是y，那么一个log文件会记录多少个事物呢？在zookeeper中每一个log文件都是固定64M，在生成一个新的lo"
+        },
+        {
+          "index": 2,
+          "original_caption": "log_after_parse.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-bb10e85fe72751fe.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-02.svg",
+          "line": 21,
+          "context": "ookeeper是否还处理过别的事物，以及如果处理了处理了多少个。\n- ##### snapshot，log文件名后缀的意义\n我们看到snapshot文件格式为snapshot.x，log文件格式为log.y，我们知道x,y都是代表zookeeper处理事务的id，对于log来说log里面记录的事物id都是大于或者等于y的，也就是说log.y记录的第一个事物的id是y，那么一个log文件会记录多少个事物呢？在zookeeper中每一个log文件都是固定64M，在生成一个新的log文件的时候会预先在磁盘把这64M空间分配好，这样做的目的是为了加快每次写log的速度，因为是直接分配了64M磁盘，这些空间在磁盘上是连续的，这样一方面可以省去随机写磁盘导致的寻道耗时，另一方面操作系统读文件的时候可以缓存整块的log文件，减少了缓存页换进换出的次数。对于snapshot.x来说存储的事物id都是小于x，也就是说snapshot.x中存储的最后一个事物的id是x\n\n\n- ##### log文件内容\n\n\n上图是我本机一个zookeeper log文件解析出来的结果,我们使用框出来的这条记录来分析下log包含的主要信息\n\n- 事物操作发送的时间 \n- 事物操作会话id（session）\n- 事物操作在客户端的编码id cxid \n- 事物操作在服务端的id zxid\n- 具体的事物 \n ```\n   1. 操作类型（create2）\n   2. 节点名称 /test/hsbxxxxxxx\n   3. 节点存储的信息 #xxxxxx\n   4. 权限控制信息 v{s{31,s{'world,'anyone}}}\n ```\n- 摘要信息\n```\n1. 摘要版本 2\n2. 摘要信息 10546528799\n```\n- ##### snapshot文件内容\n![snapshot_znode_parse.png](https://upload-images.jianshu.io/upload_images/23114405-fa086ddc7bc410cd.png?imageMogr2/auto"
+        },
+        {
+          "index": 3,
+          "original_caption": "snapshot_znode_parse.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-fa086ddc7bc410cd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-03.svg",
+          "line": 42,
+          "context": "upload-images.jianshu.io/upload_images/23114405-bb10e85fe72751fe.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n上图是我本机一个zookeeper log文件解析出来的结果,我们使用框出来的这条记录来分析下log包含的主要信息\n\n- 事物操作发送的时间 \n- 事物操作会话id（session）\n- 事物操作在客户端的编码id cxid \n- 事物操作在服务端的id zxid\n- 具体的事物 \n ```\n   1. 操作类型（create2）\n   2. 节点名称 /test/hsbxxxxxxx\n   3. 节点存储的信息 #xxxxxx\n   4. 权限控制信息 v{s{31,s{'world,'anyone}}}\n ```\n- 摘要信息\n```\n1. 摘要版本 2\n2. 摘要信息 10546528799\n```\n- ##### snapshot文件内容\n\n![snapshot_session_parse.png](https://upload-images.jianshu.io/upload_images/23114405-20cea5b75d0c6879.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n上面两个图是我们本机一个snapshot文件解析的结果，我们可以看到snapshot包含了两部分信息：znode和session\n1) znode : 在snapshot文件生成的时间点zookeeper会持久化客户端在zookeeper上创建的所有节点信息。\n2) session: 客户端创建的session信息也会被持久化到snapshot中\n\n##### znode的数据内容\nznode主要保存以下信息\n\n- Czxid 创建节点的事物id\n- ctime 创建时间\n- mZxid 修改节点的事物id\n- mtime 修改时间\n- pZxid 孩子节点的最新事物id"
+        },
+        {
+          "index": 4,
+          "original_caption": "snapshot_session_parse.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-20cea5b75d0c6879.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-04.svg",
+          "line": 43,
+          "context": "框出来的这条记录来分析下log包含的主要信息\n\n- 事物操作发送的时间 \n- 事物操作会话id（session）\n- 事物操作在客户端的编码id cxid \n- 事物操作在服务端的id zxid\n- 具体的事物 \n ```\n   1. 操作类型（create2）\n   2. 节点名称 /test/hsbxxxxxxx\n   3. 节点存储的信息 #xxxxxx\n   4. 权限控制信息 v{s{31,s{'world,'anyone}}}\n ```\n- 摘要信息\n```\n1. 摘要版本 2\n2. 摘要信息 10546528799\n```\n- ##### snapshot文件内容\n![snapshot_znode_parse.png](https://upload-images.jianshu.io/upload_images/23114405-fa086ddc7bc410cd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n上面两个图是我们本机一个snapshot文件解析的结果，我们可以看到snapshot包含了两部分信息：znode和session\n1) znode : 在snapshot文件生成的时间点zookeeper会持久化客户端在zookeeper上创建的所有节点信息。\n2) session: 客户端创建的session信息也会被持久化到snapshot中\n\n##### znode的数据内容\nznode主要保存以下信息\n\n- Czxid 创建节点的事物id\n- ctime 创建时间\n- mZxid 修改节点的事物id\n- mtime 修改时间\n- pZxid 孩子节点的最新事物id\n- cversion 创建的版本信息\n- dataVersion 数据版本信息\n- aclVersion acl 版本信息\n- ephemeralOwner 如果是瞬时节点，对应的是sessionid\n- dataLength 节点存储数据的长度\n 还有一些信息没有显示比如节点存储的数据，节点的acl信息\n\n###"
+        },
+        {
+          "index": 5,
+          "original_caption": "dataTree.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-6fbb7c5ae058311b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-05.svg",
+          "line": 138,
+          "context": "tProposalPlaybackListener);\n        initialized = true;\n        long loadTime = Time.currentElapsedTime() - startTime;\n        ServerMetrics.getMetrics().DB_INIT_TIME.add(loadTime);\n        LOG.info(\"Snapshot loaded in {} ms, highest zxid is 0x{}, digest is {}\",\n                loadTime, Long.toHexString(zxid), dataTree.getTreeDigest());\n        return zxid;\n    }\n```\n到这里我们讲解下DataTree。\n##### DataTree\nDataTree是zookeeper的数据存储引擎类，下图是DataTree关键属性的截图\n\n从上图我们知道nodes属性存储是zookeeper所有的节点信息\n![NodeHashMap.png](https://upload-images.jianshu.io/upload_images/23114405-623a98c995781800.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\nzookeeper在内部使用ConcurrentHashMap作为节点的容器，容器的key是节点的名称，value是节点对象的表示类DataNode，DataNode的属性如下\n![data_node.png](https://upload-images.jianshu.io/upload_images/23114405-d04d145fd1d52ef2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n#####snapLog.restore\n我们继续讲解数据恢"
+        },
+        {
+          "index": 6,
+          "original_caption": "NodeHashMap.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-623a98c995781800.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-06.svg",
+          "line": 140,
+          "context": ");\n        LOG.info(\"Snapshot loaded in {} ms, highest zxid is 0x{}, digest is {}\",\n                loadTime, Long.toHexString(zxid), dataTree.getTreeDigest());\n        return zxid;\n    }\n```\n到这里我们讲解下DataTree。\n##### DataTree\nDataTree是zookeeper的数据存储引擎类，下图是DataTree关键属性的截图\n![dataTree.png](https://upload-images.jianshu.io/upload_images/23114405-6fbb7c5ae058311b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n从上图我们知道nodes属性存储是zookeeper所有的节点信息\n\n\nzookeeper在内部使用ConcurrentHashMap作为节点的容器，容器的key是节点的名称，value是节点对象的表示类DataNode，DataNode的属性如下\n![data_node.png](https://upload-images.jianshu.io/upload_images/23114405-d04d145fd1d52ef2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n#####snapLog.restore\n我们继续讲解数据恢复方法链上的snapLog.restore方法\n```\n public long restore(DataTree dt, Map<Long, Integer> sessions, PlayBackListener listener) throws IOException {\n        long snapLoadingStartTime = Time.cu"
+        },
+        {
+          "index": 7,
+          "original_caption": "data_node.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-d04d145fd1d52ef2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/data-recovery-07.svg",
+          "line": 143,
+          "context": "eeper的数据存储引擎类，下图是DataTree关键属性的截图\n![dataTree.png](https://upload-images.jianshu.io/upload_images/23114405-6fbb7c5ae058311b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n从上图我们知道nodes属性存储是zookeeper所有的节点信息\n![NodeHashMap.png](https://upload-images.jianshu.io/upload_images/23114405-623a98c995781800.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\nzookeeper在内部使用ConcurrentHashMap作为节点的容器，容器的key是节点的名称，value是节点对象的表示类DataNode，DataNode的属性如下\n\n\n#####snapLog.restore\n我们继续讲解数据恢复方法链上的snapLog.restore方法\n```\n public long restore(DataTree dt, Map<Long, Integer> sessions, PlayBackListener listener) throws IOException {\n        long snapLoadingStartTime = Time.currentElapsedTime();\n       //snapLog是snapshot的表示类，snapLog.deserialize用来恢复snapshot数据\n        long deserializeResult = snapLog.deserialize(dt, sessions);\n        ServerMetrics.getMetrics().STARTUP_SNAP_LOAD_TIME.add(Time.currentElapsedTim"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper-ZAB-Leader-Elect-源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper-ZAB-Leader-Elect-源码分析.md",
+      "topic": "zookeeper",
+      "slug": "leader-election",
+      "title": "Following ZooKeeper Fast Leader Election",
+      "order": 290,
+      "series_order": 9,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/leader-election.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "leader_elect_thread_exchange.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-d7c1a5e7e2e4668f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-election-01.svg",
+          "line": 49,
+          "context": "服务器发来的投票信息（这里不涉及网络操作，只是把投票信息发送到待发队列中）\n##### - WorkerReceiver\n  发送本机的投票信息给别的服务器（这里不涉及网络操作，只是从接受投票的队列中接受别的服务器发送来的投票信息）\n\n每个参与投票的节点到其他所有的投票节点都会接连网络链接\n##### - SendWorker\n 每个连接上都会有一个SendWorker用来通过网络把投票信息发送给对应的节点\n##### - ReceiveWorker\n每个连接上都会有一个ReceiveWorker用来通过网络接受来自其他节点发送过来的投票信息\n\n##### - ListenerHandler\n每个节点接受其他节点连接请求的处理线程\n##### - QuorumPeer\n根据获得到的其他节点的投票信息来动态的改变vote和检查是不是有主节点被选举出来，如果有主节点被选举出来，那么退出选举过程进入数据恢复过程，如果没有主节点被选举出来，那么继续选举过程\n\n下面是上述几个线程工作交互的流程图\n\n有了上述这些铺垫，那我们开始zookeeper集群选主源码分析吧\n\n\n#### 节点启动入口\nQuorumPeerMain是每个服务节点的启动入口类\n##### initializeAndRun\n是启动入口方法，在这个方法中主要做了如下三件事\n1. 把zoo.cfg解析成QuorumPeerConfig的属性\n2. 启动DatadirCleanupManager来定期的清理过期snapshop文件\n3. 启动节点 runFromConfig\n\n##### runFromConfig\n这个方法很长，我把一些主要的点，做一些注释说明\n```\n public void runFromConfig(QuorumPeerConfig config) throws IOException, AdminServerException {\n     \n           //上面省略一大波，但是不影响理解\n            if (config.getClientPortAddress() !"
+        },
+        {
+          "index": 2,
+          "original_caption": "leader_election_logical.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-8b347e513f2c3c07.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-election-02.svg",
+          "line": 549,
+          "context": "if (self.jmxLeaderElectionBean != null) {\n                    MBeanRegistry.getInstance().unregister(self.jmxLeaderElectionBean);\n                }\n            } catch (Exception e) {\n                LOG.warn(\"Failed to unregister with JMX\", e);\n            }\n            self.jmxLeaderElectionBean = null;\n            LOG.debug(\"Number of connection processing threads: {}\", manager.getConnectionThreadCount());\n        }\n    }\n```\n对上述代码逻辑可以使用下图去描述\n\n\n上面就是QuorumPeer线程的选主的工作逻辑\n接下来我们看下其中的一些细节，这些细节会关联到我前面提到的其他线程\n\n\n#####sendNotifications\n当服务节点刚启动或者接受到别的节点发送来的r_vote来更新自己的proposal的时候都需要通过sendNotification方法将自己推荐的Leader信息发送给别的participant，我们分析下sendNotifications的源码\n```\n private void sendNotifications() {\n        for (long sid : self.getCurrentAndNextConfigVoters()) {\n            QuorumVerifier qv = self.getQuorumVerifier();\n            //把节点proposal的Leader信息封装成ToSend对象然后加入到sendqueue中\n            ToSen"
+        },
+        {
+          "index": 3,
+          "original_caption": "connection_topology.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-374de1c4b52d1511.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-election-03.svg",
+          "line": 650,
+          "context": "                                                                                         \n     }                                                                                                                                  \n }                                                                                                                                      \n```\n\n##### Tpis\n在讲解connectOne方法之前我们先讲解下zookeeper投票节点直接的网络连接拓扑，\n下图描述的是三个节点建立的网络连接拓扑示意图\n\n每个节点都会和别的节点建立连接，zookeeper对于连接上的输入和输出投票消息分别使用SendWorker和ReceiveWorker来处理，他们都是线程类。因为任意两个节点之间都需要建立连接，为什么防止高效稳定的无浪费的建立起这些连接，zookeeper对于连接的建立创建了如下的一个约束：\n值允许sid较大的机器去主动建立到sid较小的机器：举个🌰 ： sid为1 和sid为2的两个机器建立网络连接\n如果sid=1的服务器主动发起向sid=2的服务器socket连接建立，该连接是无法建立起来的，底层socket建立之后，zookeeper会检查本机的sid和远程连接服务器的sid，如果发现自己的sid比较小那么会主动关闭socket连接。如果sid=2的服务器建立到sid=1的服务器socket连接，那么可以建立成功\n\n\n##### QuorumCnxManager.connectOne\nconnectOne方法就是完成建立我们上面连接拓扑图示意的结果\n```\n synchroni"
+        }
+      ]
+    },
+    {
+      "original_name": "Zookeeper-Leader和Follower初始化.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/Zookeeper-Leader和Follower初始化.md",
+      "topic": "zookeeper",
+      "slug": "leader-follower-initialization",
+      "title": "How ZooKeeper Leaders and Followers Form an Ensemble",
+      "order": 300,
+      "series_order": 10,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/leader-follower-initialization.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "connect_init.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-b5296fd18e693de7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-follower-initialization-01.svg",
+          "line": 8,
+          "context": "### 说在前面\n在 [zookeeper ZAB Leader Elect 源码分析](https://www.jianshu.com/p/584dc5af3aba) ，已经详细的分析了zookeeper的选主过程，接下来的文章会分析Leader和Follower的初始化过程\n\n#### 初始化示例图\n当leader被选出来之后，leader和follower进入集群形成和数据同步状态，包含以下几个过程\n##### 1. 连接连接\n leader会根据zoo.cfg里面配置ip的第一个端口启动连接监听器LearnerCnxAcceptorHandler来监控follower的连接请求\n\n##### 新epoch的确定\n新形成的集群需要一个新的epoch来表示大家目前是不是工作共一个circle中\n![new_epoch.png](https://upload-images.jianshu.io/upload_images/23114405-745ecf05ce2a7572.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n##### 数同步过程\n当集群新的epoch确定之后，集群就开始进行数据恢复，数据恢复完成之后，follower和leader的数据处理引擎启动，之后集群就可以向外提供服务了\n![data_sync.png](https://upload-images.jianshu.io/upload_images/23114405-815f33e4fb7a5b21.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n-----\n\n下面进行源"
+        },
+        {
+          "index": 2,
+          "original_caption": "new_epoch.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-745ecf05ce2a7572.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-follower-initialization-02.svg",
+          "line": 11,
+          "context": "/www.jianshu.com/p/584dc5af3aba) ，已经详细的分析了zookeeper的选主过程，接下来的文章会分析Leader和Follower的初始化过程\n\n#### 初始化示例图\n当leader被选出来之后，leader和follower进入集群形成和数据同步状态，包含以下几个过程\n##### 1. 连接连接\n leader会根据zoo.cfg里面配置ip的第一个端口启动连接监听器LearnerCnxAcceptorHandler来监控follower的连接请求\n![connect_init.png](https://upload-images.jianshu.io/upload_images/23114405-b5296fd18e693de7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n##### 新epoch的确定\n新形成的集群需要一个新的epoch来表示大家目前是不是工作共一个circle中\n\n\n##### 数同步过程\n当集群新的epoch确定之后，集群就开始进行数据恢复，数据恢复完成之后，follower和leader的数据处理引擎启动，之后集群就可以向外提供服务了\n![data_sync.png](https://upload-images.jianshu.io/upload_images/23114405-815f33e4fb7a5b21.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n-----\n\n下面进行源码的详解\n\n#### Leader\n经过几轮投票之后，Leader被成功的选了出来，Leading 所对应的QuorumPeer类就会进入Leading过程\n```\n\nwhile (running) {\n                switch (getPeerState()) {\n                   case LOOKING:  .....\n                  "
+        },
+        {
+          "index": 3,
+          "original_caption": "data_sync.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-815f33e4fb7a5b21.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/leader-follower-initialization-03.svg",
+          "line": 15,
+          "context": "ower的连接请求\n![connect_init.png](https://upload-images.jianshu.io/upload_images/23114405-b5296fd18e693de7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n##### 新epoch的确定\n新形成的集群需要一个新的epoch来表示大家目前是不是工作共一个circle中\n![new_epoch.png](https://upload-images.jianshu.io/upload_images/23114405-745ecf05ce2a7572.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n##### 数同步过程\n当集群新的epoch确定之后，集群就开始进行数据恢复，数据恢复完成之后，follower和leader的数据处理引擎启动，之后集群就可以向外提供服务了\n\n-----\n\n下面进行源码的详解\n\n#### Leader\n经过几轮投票之后，Leader被成功的选了出来，Leading 所对应的QuorumPeer类就会进入Leading过程\n```\n\nwhile (running) {\n                switch (getPeerState()) {\n                   case LOOKING:  .....\n                   case FOLLOWING: .....\n                   case OBSERVING: ......\n                   case LEADING:\n                       LOG.info(\"LEADING\");\n                      try {\n                        //生成Leader对象\n                        setL"
+        }
+      ]
+    },
+    {
+      "original_name": "zookeeper-基于Netty实现的网络通信.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/zookeeper/zookeeper-基于Netty实现的网络通信.md",
+      "topic": "zookeeper",
+      "slug": "netty-transport",
+      "title": "How ZooKeeper Uses Netty for Client-Server Communication",
+      "order": 310,
+      "series_order": 11,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/netty-transport.md",
+      "images": []
+    },
+    {
+      "original_name": "Netty源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty源码分析.md",
+      "topic": "netty",
+      "slug": "index",
+      "title": "Reading Netty Source Code",
+      "order": 400,
+      "series_order": 0,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/index.md",
+      "images": []
+    },
+    {
+      "original_name": "netty-线程模型解析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/netty-线程模型解析.md",
+      "topic": "netty",
+      "slug": "thread-model",
+      "title": "Understanding the Netty Thread Model",
+      "order": 410,
+      "series_order": 1,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/thread-model.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "reactor.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-112d3cbd3a98fff1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/424",
+          "asset": "assets/thread-model-01.svg",
+          "line": 3,
+          "context": "#### 背景\nnetty是一个使用java实现的高性能的网络通信框架，对于使用netty实现网络通信的Server端netty遵从了reactor模式，一个acceptor线程负责接收用户连接请求，为每个连接请求创建SocketChannel，然后被创建的SocketChannel会绑定一个线程，之后SocketChannel上发生的所有事件都是由其绑定的线程处理\n\n\n#### 说明\n下面都是基于NIO类型去分析\n\n#### NioEventLoopGroup\n从线程的角度来看，我们可以把NioEventLoopGroup类别成线程池，NioEventLoopGroup中线程的数量是用户可以设定的（在NioEventLoop中没有线程的说法，叫做EventExecutor，但是为了好理解我们就把它当做线程吧目前），如果不设定则默认为机器可用cpu cores的两倍，netty内部使用到的所有线程都是从这个类中分配,创建NioEventLoopGroup的时候会创建一个线程分配器，netty默认有两种线程分配器\n- PowerOfTwoEventExecutorChooser \n NioEventLoopGroup中包含的线程数为$2^n$时则使用这个线程分配器\n```\n private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser "
+        },
+        {
+          "index": 2,
+          "original_caption": "NioEventLoop_jobs.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-b29cad8d9b29fb0a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/thread-model-02.svg",
+          "line": 51,
+          "context": "xecutor next() {\n            return executors[Math.abs(idx.getAndIncrement() % executors.length)];\n        }\n    }\n```\n我们看到这两种选择器都能实现线程池中的线程被平均的分配，其实第二种更为通用，那么为什么还要实现PowerOfTwoEventExecutorChooser，这就体现了netty对细节的在乎了，因为&运算会比%运算快，所以对于这种也许微乎其微的性能提升netty也是不放过的\n\n\n\n#### NioEventLoop\n在netty中使用NioEventLoop表示一个线程，对于每一个NioSocketChannel都会绑定一个NioEventLoop，将来这个NioSocketChannel上面的所有事件都是由这个绑定的NioEveLoop来处理。NioEventLoop是对线程的包装，当NioEventLoop对应的线程启动后，它主要处理的任务类型如下图\n\n- selector\n从前面我们知道每个新建的NioSocketChannel都会绑定一个NioEventLoop，同时NioEventLoopGroup中管理的NioEventLoop数量是固定的，所以当创建的NioSocketChannel数量多于NioEventLoop时，一个NioEventLoop就会被多个NioSocketChanel绑定，之后这些NioSocketChannel都会在同一个NioEventLoop注册监听事件，当有监听事件发生的时候NioEventLoop需要处理这些事件\n- tasks\n这类事件是别的线程分配给自己的或者自己分配给自己的，比如主线程在把一个NioSocketChannel绑定到一个NioEventLoop的时，会向这个被绑定的NioEventLoop提交一个初始化NioSocketChannel的任务\n- scheduled tasks\n这是一类定时任务，比如当客户端的NioSocketChannel去连接远程服务，如果连接没有立马成功，"
+        },
+        {
+          "index": 3,
+          "original_caption": "executor_init.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-64cf87a3d908388a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/640",
+          "asset": "assets/thread-model-03.svg",
+          "line": 187,
+          "context": "tory;\n\n    public ThreadPerTaskExecutor(ThreadFactory threadFactory) {\n        this.threadFactory = ObjectUtil.checkNotNull(threadFactory, \"threadFactory\");\n    }\n\n    @Override\n    public void execute(Runnable command) {\n        threadFactory.newThread(command).start();\n    }\n}\n```\n我们在NioEventLoopGroup中初始化每个NioEventLoop的时候ThreadPerTaskExecutor会被传入NioEventLoop的构造方法，ThreadPerTaskExecutor通过ThreadExecutorMap.apply包装后赋值给NioEventLoop父类中名称为executor的属性\n\n我们看下ThreadExecutorMap.apply是如何实现的\n```\n public static Executor apply(final Executor executor, final EventExecutor eventExecutor) {\n        ObjectUtil.checkNotNull(executor, \"executor\");\n        ObjectUtil.checkNotNull(eventExecutor, \"eventExecutor\");\n        return new Executor() {\n        @Override\n        public void execute(final Runnable command) {\n            executor.execute(apply(command, eventExecutor));\n        }\n    };\n```\n可以看到apply方法返回"
+        }
+      ]
+    },
+    {
+      "original_name": "netty-Server端启动源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/netty-Server端启动源码分析.md",
+      "topic": "netty",
+      "slug": "server-startup",
+      "title": "Following Netty Server Startup",
+      "order": 420,
+      "series_order": 2,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/server-startup.md",
+      "images": []
+    },
+    {
+      "original_name": "netty事件处理链Pipeline源码解析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/netty事件处理链Pipeline源码解析.md",
+      "topic": "netty",
+      "slug": "pipeline",
+      "title": "How Netty Pipeline Events Travel Through Handlers",
+      "order": 430,
+      "series_order": 3,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/pipeline.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "netty事件处理方向.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-ff89f486ae75632b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/640",
+          "asset": "assets/pipeline-01.svg",
+          "line": 10,
+          "context": "tChannelPipeline默认会创建一个head节点和一个tail节点，用户根据业务需求创建的业务处理handler都会被添加到这两个节点中间，我们知道java io事件包含两种类型：***读，写***\nnetty定义了ChannelInboundHandler和ChannelOutboundHandler作为这两种事件处理的抽象接口提供给开发者，实现ChannelInboundHandler的handler用来处理读事件，实现ChannelOutboundHandler的handler用来处理写事件。这里需要注意一点：在pipeline链上对读写事件的处理方向是不同的\n- 对于读事件netty从pipeline的head开始向tail方向依次把读事件交给实现了ChannelInboundHandler的handler处理\n- 对于写事件netty从pipeline的tail开始向head方向依次把写事件交给实现了ChannelOutboundHandler的handler处理\n\n\n\n---\n#####Handler\nhandler是pipeline上处理事件的基本单元，用户处理IO事件的业务逻辑都是写在自定义的handler中\n\n\n##### ChannelHandlerContext\nChannelHandlerContext是handler上下文信息类，实际上pipeline链上节点的类型是ChannelHandlerContext，默认实现是DefaultChannelHandlerContext\n我们看下DefaultChannelHandlerContext源代码\n```\nfinal class DefaultChannelHandlerContext extends AbstractChannelHandlerContext {\n     \n    //DefaultChannelHandlerContext绑定了用户定义的handler\n    private final ChannelHandler handler;\n\n    DefaultCh"
+        },
+        {
+          "index": 2,
+          "original_caption": "pipeline事件触发流程.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-4f12e8b3fee5ae92.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/840",
+          "asset": "assets/pipeline-02.svg",
+          "line": 212,
+          "context": "一般用户自定义handler重写的channelRegistered方法会在处理完业务逻辑后调用AbstractChannelHandlerContext.fireChannelRegistered\n我们看下 fireChannelRegistered源代码\n```\n\npublic ChannelHandlerContext fireChannelRegistered() {\n //findContextInbound在pipeline上从本节点开始向pipeline的尾部找到下一个能处理channel  registered事件的handler，\ninvokeChannelRegistered(findContextInbound(MASK_CHANNEL_REGISTERED));\n        return this;\n    }\n```\n我们给出上面执行的逻辑图，XXX代表的是对应的事件，比如registered，add，YY代表的是事件的类型，YY有两种值：in 和 out\n\n\n---\n\n##### ChannelInitializer\nChannelInitializer是netty内置的一个特殊的Inboundhandler，这个handler是netty提供给开发者实现向pipeline中添加自定义handler的工具类，它一般会首先被添加到pipeline中，开发者通过实现ChannelInitializer的initChannel方法去添加业务handler到pipeline中。那么initChannel方法是如何被调用的呢？开发者在向pipeline添加handler的时候会触发handlerAdded事件，handlerAdded事件会触发相应handler的handlerAdded方法，我们看下ChannelInitializer handlerAdded方法的源码\n```\n @Override\n    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {"
+        }
+      ]
+    },
+    {
+      "original_name": "Netty-NioSocketChannel读数据源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty-NioSocketChannel读数据源码分析.md",
+      "topic": "netty",
+      "slug": "socket-read",
+      "title": "How NioSocketChannel Reads Data",
+      "order": 440,
+      "series_order": 4,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/socket-read.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "SIZE_TABLE.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-647588e5dcc1a0a2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/socket-read-01.svg",
+          "line": 270,
+          "context": "容量缩减\n                    decreaseNow = true;\n                }\n            } else if (actualReadBytes >= nextReceiveBufferSize) {\n                index = min(index + INDEX_INCREMENT, maxIndex);\n                nextReceiveBufferSize = SIZE_TABLE[index];\n                decreaseNow = false;\n            }\n        }\n```\nSIZE_TABLE是一个长度为53的int数组\n它存的数据分成两个部分\n- 第一部分：从16开始每次增加16直到496，总共31个数据项\n- 第二部分：从512开始，下一个数是前一个数的2倍，直到达到int能表示的最大的powerOfTwo（$2^{30}$）\n\n---\n就分析这么多了，谢谢阅读\n\n\n\n"
+        }
+      ]
+    },
+    {
+      "original_name": "Netty-NioSocketChannel写数据源码分析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty-NioSocketChannel写数据源码分析.md",
+      "topic": "netty",
+      "slug": "socket-write",
+      "title": "How NioSocketChannel Writes and Flushes Data",
+      "order": 450,
+      "series_order": 5,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/socket-write.md",
+      "images": []
+    },
+    {
+      "original_name": "Netty-半包，粘包处理.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty-半包，粘包处理.md",
+      "topic": "netty",
+      "slug": "message-framing",
+      "title": "Handling Fragmented and Coalesced Messages in Netty",
+      "order": 460,
+      "series_order": 6,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/message-framing.md",
+      "images": []
+    },
+    {
+      "original_name": "Netty-内存管理源码分析--jemalloc.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty-内存管理源码分析--jemalloc.md",
+      "topic": "netty",
+      "slug": "pooled-memory",
+      "title": "How Netty Allocates and Reuses Pooled Memory",
+      "order": 470,
+      "series_order": 7,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/pooled-memory.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "netty_jemalloc.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-7e8052637cccdb72.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-01.svg",
+          "line": 9,
+          "context": "现，也不用关心申请到的内存是如何被释放。比如创建一个对象Object obj = new Object(); 将来这个对象是何时被释放的，这个其实你是不用去关心的，因为GC会帮你搞定一切。写C语言的同学用malloc申请一块内存的时候，那么你在用完这块内存之后就需要用free去释放这块内存。写java的同学好奇写C的同学是如何直接操作这些内存的，写C的同学很多时候又很羡慕写java的同学不用去关心这些内存操作的细节。为了高效的实现内存的分配和复用，netty基于jemalloc实现了一套内存分配和回收机制\n\n#### 原理之前\njemalloc是一种优秀的内存管理算法，在这里就不展开去探究了，大家可以自行 ~~google~~ 百度。本文基于netty管理pooled direct memory实现进行讲解，netty对于java heap buffer的管理和对direct memory的管理在实现上基本相同\n\n####原理\n下图展示了netty基于jemalloc实现的内存划分逻辑\n\n#####关键对象\n- PooledByteBufAllocator\n申请内存通过这个类提供的buffer去操作,下面是这个类定义的属性\n```\n    //heap类型arena的个数，数量计算方法同下 \n    private static final int DEFAULT_NUM_HEAP_ARENA;\n    //direct类型arena个数，默认为min(cpu_processors * 2,maxDirectMemory/16M/2/3),正 \n    //常情况下如果不设置很小的Xmx或者很小的-XX:MaxDirectMemorySize， \n    //arena的数量就等于计算机processor个数的2倍，\n    private static final int DEFAULT_NUM_DIRECT_ARENA;\n     //内存页的大小，默认为8k（这个内存页可以类比操作系统内存管理中的内存页）\n    private static final int "
+        },
+        {
+          "index": 2,
+          "original_caption": "arena_thread_relation.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-e874f1794a3ff2ca.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-02.svg",
+          "line": 74,
+          "context": "`\n   for (int i = 0; i < directArenas.length; i ++) {\n                PoolArena.DirectArena arena = new PoolArena.DirectArena(\n                        this, pageSize, maxOrder, pageShifts, chunkSize, directMemoryCacheAlignment);\n                directArenas[i] = arena;\n                metrics.add(arena);\n            }\n```\n- Arena\narena是jemalloc中的概念，它是一个内存管理单元，线程在arena中去分配和释放内存，系统正常会存在多个arena，每个线程会被绑定一个arena，同一个arena可以被多个线程共享,arena和thread之间的关系如下图\n\n\n现在我们看下PoolArena的属性，比较多，耐性看完\n```\n    //maxOrder默认是11\n    private final int maxOrder;\n    //内存页的大小，默认是8k\n    final int pageSize;\n    //默认是13，表示的是8192等于2的13次方\n    final int pageShifts;\n   // 默认是16M\n    final int chunkSize;\n     //这个等于~(pageSize-1),用于判断申请的内存是不是大于或者等于一个page\n     //申请内存reqCapacity&subpageOverflowMask如果等于0那么表示申请的内 \n     //存小于一个page的大小，如果不等于0那么表示申请的内存大于或者一个page的大小\n    final int subpageOverflowMask;\n   //它等于pageShift - 9，默认等4\n    final "
+        },
+        {
+          "index": 3,
+          "original_caption": "SubpagePools.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-400d7ece3ccdec56.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-03.svg",
+          "line": 145,
+          "context": "\n我们先看下tinySubpagePools和smallSubpagePools数组的初始化\n```\n private PoolSubpage<T>[] newSubpagePoolArray(int size) {\n        return new PoolSubpage[size];\n    }\n```\nSubpagePools的元素会被初始化,可以看到PoolSubpage是双向链表节点型的对象，默认head和next都指向自己\n```\nprivate PoolSubpage<T> newSubpagePoolHead(int pageSize) {\n        PoolSubpage<T> head = new PoolSubpage<T>(pageSize);\n        head.prev = head;\n        head.next = head;\n        return head;\n    }\n```\n所以初始化后的SubpagePools长这样\n\n\n在讲解PoolSubpage之前我觉的有必要先说下netty的内存分配策略。netty向jvm或者堆外内存每次申请的内存以chunk为基本单位，每个chunk的默认大小是16M，在netty内部每个chunk又被分成若干个page，默认情况下每个page的大小为8k，所以在默认情况下一个chunk包含2048个page\n![chunk_page.png](https://upload-images.jianshu.io/upload_images/23114405-e2e26db019de4128.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n应用程序向netty申请内存的时候分成两种情况：\n1）如果申请的内存小于chunk的尺寸，默认情况下也就是小于16M，那么netty就会以page为单位去分配内存给应用程序，比如申请10K的内存，那么netty会选择一个chunk中的2个page分配给应用程序，如果申请的内存小于"
+        },
+        {
+          "index": 4,
+          "original_caption": "chunk_page.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-e2e26db019de4128.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-04.svg",
+          "line": 148,
+          "context": " = new PoolSubpage<T>(pageSize);\n        head.prev = head;\n        head.next = head;\n        return head;\n    }\n```\n所以初始化后的SubpagePools长这样\n![SubpagePools.png](https://upload-images.jianshu.io/upload_images/23114405-400d7ece3ccdec56.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n在讲解PoolSubpage之前我觉的有必要先说下netty的内存分配策略。netty向jvm或者堆外内存每次申请的内存以chunk为基本单位，每个chunk的默认大小是16M，在netty内部每个chunk又被分成若干个page，默认情况下每个page的大小为8k，所以在默认情况下一个chunk包含2048个page\n\n应用程序向netty申请内存的时候分成两种情况：\n1）如果申请的内存小于chunk的尺寸，默认情况下也就是小于16M，那么netty就会以page为单位去分配内存给应用程序，比如申请10K的内存，那么netty会选择一个chunk中的2个page分配给应用程序，如果申请的内存小于一个page的大小，那么就直接分配一个page给应用程序 \n2）如果申请的内存大于一个chunk的尺寸，那么netty就会直接向JVM或者操作系统申请相应大小的内存。下面的图展示的是直接内存申请的情况\n![netty_memory_allocation_strategy.png](https://upload-images.jianshu.io/upload_images/23114405-787e26215254a11b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n- PoolSubpage\n通过上面的讲解，我们了解到当我们申请的内存小于"
+        },
+        {
+          "index": 5,
+          "original_caption": "netty_memory_allocation_strategy.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-787e26215254a11b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-05.svg",
+          "line": 152,
+          "context": "chunk又被分成若干个page，默认情况下每个page的大小为8k，所以在默认情况下一个chunk包含2048个page\n![chunk_page.png](https://upload-images.jianshu.io/upload_images/23114405-e2e26db019de4128.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n应用程序向netty申请内存的时候分成两种情况：\n1）如果申请的内存小于chunk的尺寸，默认情况下也就是小于16M，那么netty就会以page为单位去分配内存给应用程序，比如申请10K的内存，那么netty会选择一个chunk中的2个page分配给应用程序，如果申请的内存小于一个page的大小，那么就直接分配一个page给应用程序 \n2）如果申请的内存大于一个chunk的尺寸，那么netty就会直接向JVM或者操作系统申请相应大小的内存。下面的图展示的是直接内存申请的情况\n\n\n\n- PoolSubpage\n通过上面的讲解，我们了解到当我们申请的内存小于一个chunk的大小，netty会以page为单位返回结果给申请者，一个page默认是8K,如果我们申请的内存量是32B，netty返回了一个page，这不是很浪费吗，对你说的很对这确实很浪费，所以PoolSubpage的作用就是对申请到的page按照实际申请量的大小对这个page再进行分割从而做到内存的合理利用和减少内存碎片化。\n有两种类型的PoolSubpage：\n1）申请内存小于512的tiny类型的PoolSubpage \n2）申请内存在512到4096之间的small类型的PoolSubpage\n先上图\n![tinySubpagePools.png](https://upload-images.jianshu.io/upload_images/23114405-5e6e7ddcd8c1c4f6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/124"
+        },
+        {
+          "index": 6,
+          "original_caption": "tinySubpagePools.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-5e6e7ddcd8c1c4f6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-06.svg",
+          "line": 161,
+          "context": "ocation_strategy.png](https://upload-images.jianshu.io/upload_images/23114405-787e26215254a11b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n- PoolSubpage\n通过上面的讲解，我们了解到当我们申请的内存小于一个chunk的大小，netty会以page为单位返回结果给申请者，一个page默认是8K,如果我们申请的内存量是32B，netty返回了一个page，这不是很浪费吗，对你说的很对这确实很浪费，所以PoolSubpage的作用就是对申请到的page按照实际申请量的大小对这个page再进行分割从而做到内存的合理利用和减少内存碎片化。\n有两种类型的PoolSubpage：\n1）申请内存小于512的tiny类型的PoolSubpage \n2）申请内存在512到4096之间的small类型的PoolSubpage\n先上图\n\n![smallSubpagePools.png](https://upload-images.jianshu.io/upload_images/23114405-136e035ae912b8d3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n对于tiny和small来说netty把内存分成不同大小的规格进行管理\n1. tiny是按照16的倍数分块，最大分到496，tinySubpagePools数组长度是32，其中index=0的位置是不使用的，数组的第一个元素指向的是内存被按照以16B为基本单位进行划分的pages，第32个元素指向的是内存被按照以496B为基本单位进行划分的pages。\n2. small类型从512开始后面的数是前面的2倍直到4096，所以smallSubpagePools的大小是4，第一个元素指向的是内存被按照以512B为基本单位进行划分的pages，最后一个元素指向的是内存被按照以4096B为"
+        },
+        {
+          "index": 7,
+          "original_caption": "smallSubpagePools.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-136e035ae912b8d3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-07.svg",
+          "line": 162,
+          "context": "- PoolSubpage\n通过上面的讲解，我们了解到当我们申请的内存小于一个chunk的大小，netty会以page为单位返回结果给申请者，一个page默认是8K,如果我们申请的内存量是32B，netty返回了一个page，这不是很浪费吗，对你说的很对这确实很浪费，所以PoolSubpage的作用就是对申请到的page按照实际申请量的大小对这个page再进行分割从而做到内存的合理利用和减少内存碎片化。\n有两种类型的PoolSubpage：\n1）申请内存小于512的tiny类型的PoolSubpage \n2）申请内存在512到4096之间的small类型的PoolSubpage\n先上图\n![tinySubpagePools.png](https://upload-images.jianshu.io/upload_images/23114405-5e6e7ddcd8c1c4f6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n\n对于tiny和small来说netty把内存分成不同大小的规格进行管理\n1. tiny是按照16的倍数分块，最大分到496，tinySubpagePools数组长度是32，其中index=0的位置是不使用的，数组的第一个元素指向的是内存被按照以16B为基本单位进行划分的pages，第32个元素指向的是内存被按照以496B为基本单位进行划分的pages。\n2. small类型从512开始后面的数是前面的2倍直到4096，所以smallSubpagePools的大小是4，第一个元素指向的是内存被按照以512B为基本单位进行划分的pages，最后一个元素指向的是内存被按照以4096B为基本单位进行划分的pages\n看下PoolSubpage的属性\n```\n    //PoolSubpage所属的chunk\n    final PoolChunk<T> chunk;\n   //本PoolSubpage在memoryMap数组中的index\n    private final int mem"
+        },
+        {
+          "index": 8,
+          "original_caption": "PoolChunkList.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-c299e468d162a544.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-08.svg",
+          "line": 245,
+          "context": "e<ByteBuffer> cachedNioBuffers;\n    //剩余可用内存\n    int freeBytes;\n    //指向自己所属的PoolChunkList\n    PoolChunkList<T> parent;\n    //指向PoolChunk链的前一个节点\n    PoolChunk<T> prev;\n    //指向PoolChunk链的后一个节点\n    PoolChunk<T> next;\n```\n\n- PoolChunkList\n在netty中每个arena都会管理很多个chunk，这些chunk初始大小默认都是16M，但是随着系统的运行，这些chunk对应的内存会被一点点的分配出去，这样arena中就会存在很多大小各异的chunk，为了高效的管理这些chunk，netty会根据剩余可用空间把这些chunk分类，剩余可用空间在同一范围的chunk组成一个链表。PoolChunkList就是chunk类别的定义类，这些类别也会按照链表的形式组装起来\n\n下面是PoolChunkList中定义属性\n```\n    //PoolChunkList所属的arena\n    private final PoolArena<T> arena; \n    //指向PoolChunkList链表中的下一个节点\n    private final PoolChunkList<T> nextList;\n    //下面会解释minUsage和maxUsage的作用\n    private final int minUsage;\n    private final int maxUsage;\n    //属于本PoolChunkList管理的chunk最大可被申请的内存量\n    private final int maxCapacity;\n    //同类chunk链表头指针\n    private PoolChunk<T> head;\n    private final int freeMinThreshold;\n    private final "
+        },
+        {
+          "index": 9,
+          "original_caption": "chunk_category.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-408cd199ff0ffdb9.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-09.svg",
+          "line": 267,
+          "context": " final int maxCapacity;\n    //同类chunk链表头指针\n    private PoolChunk<T> head;\n    private final int freeMinThreshold;\n    private final int freeMaxThreshold;\n\n    // This is only update once when create the linked like list of PoolChunkList in PoolArena constructor.\n    // 指向PoolChunkList链表中的前一个节点\n    private PoolChunkList<T> prevList;\n```\n那么netty到底是如何给不同的chunk进行分类的呢？其实是通过设定两个参数实现的，minUsage和maxUsage，在netty中chunk按照剩余可用内存的大小被分成了6类，下面是这六类在PoolArena中的定义\n\n我们看到在arena中minUsage和maxUsage被设置了不同大小的值\n```\nfreeMinThreshold = (maxUsage == 100) ? 0 : (int) (chunkSize * (100.0 - maxUsage + 0.99999999) / 100L);\nfreeMaxThreshold = (minUsage == 100) ? 0 : (int) (chunkSize * (100.0 - minUsage + 0.99999999) / 100L);\n```\nfreeMinThreshold和freeMaxThreshold会分别根据maxUsage和minUsage计算出来，我们就拿q025来举例子看下，q025对应的PoolChunkList， minUsage = 25，maxUsage = 75，根据这两个值可以算出freeMinThreshold约定于4.16M，freeMaxThreshold约等于12.16M。当一个chunk分配"
+        },
+        {
+          "index": 10,
+          "original_caption": "Chunk_memory_range_for_different_PoolChunkList.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-be9f2ec6a3a8800a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-10.svg",
+          "line": 274,
+          "context": "freeMaxThreshold会分别根据maxUsage和minUsage计算出来，我们就拿q025来举例子看下，q025对应的PoolChunkList， minUsage = 25，maxUsage = 75，根据这两个值可以算出freeMinThreshold约定于4.16M，freeMaxThreshold约等于12.16M。当一个chunk分配出去一些内存后，如果这个chunk在这次分配之后剩余的可用内存小于freeMinThreshold，那么这个chunk就不再属于这个chunkList管理了，那么他就会被沿着PoolChunkList链表向下继续查找适合存放它的PoolChunkList。当向一个chunk中释放内存后，如果释放之后这个chunk的可用内存大于freeMaxThreshold，那么就需要沿着PoolChunkList链表向头部方向去寻找适合管理这个chunk的PoolChunkList。下图给出了不同PoolChunkList管理的chunk的内存范围\n\n\n---\n\n- PoolThreadLocalCache \n这是一个FastThreadLocal，它的作用就是给每个线程绑定PoolThreadCache\n- PoolThreadCache\n通过名字我们大致就可以猜出这个类的作用，线程级别的内存缓存池，我们上面的讲解的Arena，Chunk，Page,Subpage这些都是整个应用级别的内存管理，PoolThreadCache管理的是本线程从Arena中申请的内存将来如何在自己本线程中实现复用，当一个线程申请内存的时候，它首先从PoolThreadCache管理的内存池中去取，如果取不到自己需要的内存才会再向Arena去申请。\n先看它定义的关键属性\n\n```\n    //本线程绑定的heap类型的arena\n    final PoolArena<byte[]> heapArena;\n    //本线程绑定的direct类型的arena\n    final PoolArena<ByteBuffer> directArena;\n\n  "
+        },
+        {
+          "index": 11,
+          "original_caption": "源头.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-297f2831988c9b73.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-11.svg",
+          "line": 341,
+          "context": "消费者从queue中取走了一些ByteBuffer\n        private final int size;\n        //这个queue被用来缓存被线程回收的的ByteBuffer或者byte[]\n        private final Queue<Entry<T>> queue;\n        //用来标记本MemoryRegionCache的类型（tiny, small, normal）\n        private final SizeClass sizeClass;\n```\n上面我们分析netty实现jemalloc来管理整个应用系统ByteBuf内存，以及每个线程缓存申请到的内存所涉及的一些核心类。\n\n---\n\n下面通过一段代码，我们看netty是如何给系统分配一块堆外内存的\n```\n ByteBuf byteBuf5 = pooledByteBufAllocator.buffer(18) ;\n```\n整个分配过程涉及到的方法调用链比较长：so 要耐心看\n\n\n- ##### newDirectBuffer()\nPoolByteBufAllocator前面的方法我们就不看了，直接看newDirectBuffer方法\n```\nprotected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {\n       //获取本线程绑定的PoolThreadCache\n        PoolThreadCache cache = threadCache.get();\n       //获取PoolThreadCache绑定的directArena，这个绑定关系是在 \n       //PoolThreadCache初始化中实现的，我们上面分析过每个线程都会\n       //绑定到一个arena上面，那么如何保证每个arena绑定的线程数大致相同的\n        //每个Arena都会记录自己被绑定的次数，当下次有线程去绑定Arena的时候，\n        //只要从A"
+        },
+        {
+          "index": 12,
+          "original_caption": "full_binary_tree.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-b68a831b7210ba13.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-12.svg",
+          "line": 585,
+          "context": " offsetCacheLine(memory));\n        }  \n```\n在上面创建PoolChunk对象的时候会初始化memoryMap和depthMap数组。\n到这里有必要介绍下PoolChunk管理的内存是如何被分配的了，我们知道netty分配给应用程序的内存都是以page（默认8K）为单位进行分配，同时根据申请量每次分配$2^n$个page，换言之netty不可能一次分配3个page或者5个page，如果申请3x8192的内存默认netty会分配4个page，如果申请5x8192的内存，默认netty会分配8个page。一个chunk默认的大小是16M，在PoolChunk中这16M的内存在逻辑上被划分成2048个page。为了高效的实现page的分配，netty使用一棵树完全二叉树来管理这16M的内存，这棵完全二叉树的深度为12，从第0层开始，第11层有2048个叶子节点，每个叶子节点代表一个page，这颗完全二叉树中的非叶子节代表的内存容量等于其子节点的容量和\n\n\n\nmemoryMap和depthMap就是代表的这颗二叉树，默认memoryMap和depthMap数组长度为4096，但是这棵完全二叉树只有4095个节点，netty选择从数组的index=1开始去表示这棵完全二叉树。那么memoryMap和depthMap有什么区别呢，memoryMap是会随着page的分配和回收动态的修改每个节点的值，depthMap中的元素一旦初始化之后就不会被修改了，将来需要查看某个节点初始状态的值就可以通过depthMap查找。我们看下memoryMap和depthMap初始化代码\n```    \n        //从数组的index=1开始去表示这棵完全二叉树\n        int memoryMapIndex = 1;\n       //maxOrder默认为11，d表示的是每层节点的编码，d的范围是[0,11]，不同\n       //的编码表示不同的内存量，比如所以的叶子节点的编码都是11，表示每\n       //个叶子节点代表的内存大小是8"
+        },
+        {
+          "index": 13,
+          "original_caption": "handle.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-ea32c18d6ecb5783.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/pooled-memory-13.svg",
+          "line": 781,
+          "context": "();\n        //q对应上面bitmapIdx表示的第一层信息\n        int q = bitmapIdx >>> 6;\n        //r对应上面的bitmapIdx表示的第二层信息\n        int r = bitmapIdx & 63;\n        assert (bitmap[q] >>> r & 1) == 0;\n        //更新对应bit状态为1，表示一个内存单元被分配了\n        bitmap[q] |= 1L << r;\n        //如果所有的内存单元都被分配完了，那么把本PoolSubpage从相应的PoolSubpage链表中删除\n        if (-- numAvail == 0) {\n            removeFromPool();\n        }\n        //返回结果\n        return toHandle(bitmapIdx);\n    }\n```\n- toHandle\n\nhandle是通过三个数‘|’在一起的结果，第一个部分是2的64次方，是long能表示\n最大的powOfTwo,第二部分表示的是申请的内存单元在相应page中的位置，比如一个page中包含了256个内存单元块，现在申请的内存单元块是19，那么19就是这个位置，第三部分是申请的内存单元所在的page在chunk中的位置\n。通过handle的值可以计算出page在chunk中的位置，申请的内存单元在page中的位置\n\n- getNextAvail\n用户查找下一个可用内存单元块在PoolSubpage中位置，涉及到的核心方法有\nfindNextAvail，findNextAvail0，我们就深入源码看下吧 \n```\nprivate int findNextAvail() {\n        \n        final long[] bitmap = this.bitmap;\n        final int bitmapLength = this.bitmapLength;\n      "
+        }
+      ]
+    },
+    {
+      "original_name": "Netty-Recycler源码解析.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/Netty-Recycler源码解析.md",
+      "topic": "netty",
+      "slug": "recycler",
+      "title": "How Netty Recycler Reuses Objects Across Threads",
+      "order": 480,
+      "series_order": 8,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/recycler.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "原理.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-f088521b3dc2a9cf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-01.svg",
+          "line": 65,
+          "context": "    System.out.println(p3==p4);\n    }\n\n}\n```\n上面的例子说明了要定义一个可复用类型对象需要满足的条件：\n1)创建对象池\n2)复用类型Product需要持有Handle的引用\n3)提供对象回收方法（例如recycle）。\n在main方法中我们从对象池中获取产品p1,这个时候由于对象池中还没有这个对象，于是对象池内部会通过调用recycler的newObject方法去创建一个Product，当我们使用完p1之后通过调用recycle方法把p1回收到对象池中，之后我们再次从对象池中获取p2，我们获取到的p2和p1指向的是相同的对象。但是当我们比较p3和p4的时候发现他们是不同的。为什么p1和p2相同但是p3和p4不同呢，继续读下去，你会得到答案\n\n#### 原理之前\nnetty实现的对象池都是线程级别的，也就是说在netty中针对某一类型的复用对象每个线程都有自己的对象池，线程之间互不共享，这避免的线程之间的同步开销。\n\n#### 原理\n先上图为敬\n\n先解释上图中的一些主要元素的意义\n- ##### stack\nstack是每个线程对象池的具体实现，从图中可以看出每个线程都会有自己的stack\n- ##### stack -> elements\nstack中的elements属性指向的是一个默认长度为256的DefaultHandle数组，数组的每个元素代表的是一个被回收的对象\n- ##### DefaultHandle\nDefaultHandle是对象实现复用的入口，它具有两个关键的属性stack和value，stack指向的是线程对象池，value指向的是可复用对象，线程对象池存放的其实是DefaultHandle对象\n![DefaultHandle.png](https://upload-images.jianshu.io/upload_images/23114405-de5ac1f733c832da.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n- ####"
+        },
+        {
+          "index": 2,
+          "original_caption": "DefaultHandle.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-de5ac1f733c832da.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-02.svg",
+          "line": 73,
+          "context": "开销。\n\n#### 原理\n先上图为敬\n![原理.png](https://upload-images.jianshu.io/upload_images/23114405-f088521b3dc2a9cf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n先解释上图中的一些主要元素的意义\n- ##### stack\nstack是每个线程对象池的具体实现，从图中可以看出每个线程都会有自己的stack\n- ##### stack -> elements\nstack中的elements属性指向的是一个默认长度为256的DefaultHandle数组，数组的每个元素代表的是一个被回收的对象\n- ##### DefaultHandle\nDefaultHandle是对象实现复用的入口，它具有两个关键的属性stack和value，stack指向的是线程对象池，value指向的是可复用对象，线程对象池存放的其实是DefaultHandle对象\n\n\n- ##### stack -> head\nhead的类型是WeakOrderQueue，指向一个WeakOrderQueue的链表\n- ##### stack -> cursor\ncursor的类型是WeakOrderQueue，我们在下面解析如何从对象池中获取对象的时候会详细解释\n- ##### stack -> pre\npre的类型是WeakOrderQueue，我们在下面解析如何从对象池中获取对象的时候会详细解释\n- ##### WeakOrderQueue\n从上面我们知道netty为了避免对象复用的时候需要进行线程同步，所以对象池都是线程化的。每个线程都有自己的对象池，每次需要对象的时候都从本线程的对象池中取得，但是对于对象的回收却并不是必须由本线程去做的，可以由别的线程帮本线程回收对象，当然为了实现回收的时候不需要对stack的elements对象进行加锁同步，当一个线程为另一个线程的对象池回收对象的时候，会为那个对象池的stack创建一个WeakOrderQueue,然"
+        },
+        {
+          "index": 3,
+          "original_caption": "Head.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-b6c9f010782a4669.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-03.svg",
+          "line": 93,
+          "context": "rderQueue,然后在WeakOrderQueue中实现对另外一个线程复用对象的回收。当有多个外部线程给某一个线程回收对象的时候就会创建多个WeakOrderQueue,这些WeakOrderQueue就组成了一个链表，stack的head永远指向最新加入的WeakOrderQueue\n- ##### WeakOrderQueue -> next\n指向链表的下一个WeakOrderQueue节点\n- ##### WeakOrderQueue -> id\n每个WeakOrderQueue都有自己的id\n- ##### WeakOrderQueue -> head\n指向Head对象，Head的会在下面进行解释\n- ##### WeakOrderQueue -> tail\n指向下面描述的Link链表的尾部\n- ##### Head\nHead是连接WeakOrderQueue和Link的中间体，它记录了其他线程最大可以为别的线程回收多少个对象，以及它提供了指向真正存放回收对象的Link链表\n\n\n- ##### Link\n本线程回收的对象会存在stack的elements数组中，其他线程帮本线程回收的对象存在那个线程创建的Link对象中，从上图可以看出Link中也有一个elements对象，这个属性指向是的是长度为16的DefaultHandle数组\n![Link.png](https://upload-images.jianshu.io/upload_images/23114405-34d73917022a2125.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n这个Link有两个‘指针’：readIndex和writeIndex，因为Link继承AtomicInteger，所以它自身就当做writeIndex，readIndex代表的是从elements数组readIndex位置获取复用对象，每次获取一个复用对象readIndex都会+1，writeIndex代表的是当回收对象的时候从elements的wri"
+        },
+        {
+          "index": 4,
+          "original_caption": "Link.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-34d73917022a2125.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-04.svg",
+          "line": 97,
+          "context": "Queue -> head\n指向Head对象，Head的会在下面进行解释\n- ##### WeakOrderQueue -> tail\n指向下面描述的Link链表的尾部\n- ##### Head\nHead是连接WeakOrderQueue和Link的中间体，它记录了其他线程最大可以为别的线程回收多少个对象，以及它提供了指向真正存放回收对象的Link链表\n![Head.png](https://upload-images.jianshu.io/upload_images/23114405-b6c9f010782a4669.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n- ##### Link\n本线程回收的对象会存在stack的elements数组中，其他线程帮本线程回收的对象存在那个线程创建的Link对象中，从上图可以看出Link中也有一个elements对象，这个属性指向是的是长度为16的DefaultHandle数组\n\n这个Link有两个‘指针’：readIndex和writeIndex，因为Link继承AtomicInteger，所以它自身就当做writeIndex，readIndex代表的是从elements数组readIndex位置获取复用对象，每次获取一个复用对象readIndex都会+1，writeIndex代表的是当回收对象的时候从elements的writeIndex位置回收，每次回收一个对象writeIndex +1,当readIndex = writeIndex表示在这个Link中没有对象可以被复用。这里需要注意一点的是elements中的复用对象不是直接返回给用户的，它先会被转移到stack的elements数组中，然后在从stack的elements数组中找到一个复用对象返回给用户。\n\n---\n#### 对象回收源码解析\n先解析可复用对象是如何被回收的，这样在解析如何从对象池中获取复用对象的时候，我们就能明白这些复用对象是如何存进来的，被存在什么位置\n![reccycle.png"
+        },
+        {
+          "index": 5,
+          "original_caption": "reccycle.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-5684a220977f571b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-05.svg",
+          "line": 103,
+          "context": "iew2/2/w/1240)\n这个Link有两个‘指针’：readIndex和writeIndex，因为Link继承AtomicInteger，所以它自身就当做writeIndex，readIndex代表的是从elements数组readIndex位置获取复用对象，每次获取一个复用对象readIndex都会+1，writeIndex代表的是当回收对象的时候从elements的writeIndex位置回收，每次回收一个对象writeIndex +1,当readIndex = writeIndex表示在这个Link中没有对象可以被复用。这里需要注意一点的是elements中的复用对象不是直接返回给用户的，它先会被转移到stack的elements数组中，然后在从stack的elements数组中找到一个复用对象返回给用户。\n\n---\n#### 对象回收源码解析\n先解析可复用对象是如何被回收的，这样在解析如何从对象池中获取复用对象的时候，我们就能明白这些复用对象是如何存进来的，被存在什么位置\n\n上图就是回收复用对象的方法调用链，那么我看下stack.push发生了什么\n```\n void push(DefaultHandle<?> item) {\n            Thread currentThread = Thread.currentThread();\n            if (threadRef.get() == currentThread) {\n                // The current Thread is the thread that belongs to the Stack, we can try to push the object now.\n                pushNow(item);\n            } else {\n                // The current Thread is not the one that belongs to the Stack\n               "
+        },
+        {
+          "index": 6,
+          "original_caption": "push.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-d48f36dd81c09f90.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-06.svg",
+          "line": 120,
+          "context": "      } else {\n                // The current Thread is not the one that belongs to the Stack\n                // (or the Thread that belonged to the Stack was collected already), we need to signal that the push\n                // happens later.\n                pushLater(item, currentThread);\n            }\n        }\n```\nstack中会有一个threadRef的属性，这个属性指向了本stack所属的Thread（每个线程都有自己的stack）。上面代码的意思是：如果是本线程回收自己的复用对象走pushNow方法，如果是别的线程帮本线程回收复用对象那么走pushLater方法\n\n下面我们分两种情况来分别讨论：\n- ##### pushNow\n```\n private void pushNow(DefaultHandle<?> item) {\n            if ((item.recycleId | item.lastRecycledId) != 0) {\n                throw new IllegalStateException(\"recycled already\");\n            }\n           //设置recycleId和lastRecycledId\n            item.recycleId = item.lastRecycledId = OWN_THREAD_ID;\n\n            int size = this.size;\n            // size是当前对象池中已经存在的复用对象的数量，maxCapacity代表的\n           //是对象池中允许的最大复用"
+        },
+        {
+          "index": 7,
+          "original_caption": "obj_get.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-9f6eabdb867bcd7e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-07.svg",
+          "line": 326,
+          "context": "e owning thread;\n            // this also means we guarantee visibility of an element in the queue if we see the index updated\n            //更新Link的writeIndex\n            tail.lazySet(writeIndex + 1);\n        }\n```\n上面就是WeakOrderQueue回收对象的过程\nHead.newLink源码如下\n```\nLink newLink() {\n                return reserveSpaceForLink(availableSharedCapacity) ? new Link() : null;\n            }\n```\n\n####到此就介绍了整个对象回收过程\n---\n#### 接下来我们来看下获取复用对象过程\n\n从对象池中获取复用对象的流程如下\n\n核心方法是Recycler.get\n```\npublic final T get() {\n        //maxCapacity是每个线程可以缓存复用对象的最大数量，默认是4096\n        if (maxCapacityPerThread == 0) {\n         //maxCapacityPerThread等于0，那么每次在对象池中获取对象都是新建\n            return newObject((Handle<T>) NOOP_HANDLE);\n        }\n       //threadLocal是FastThreadLocal<Stack<T>>类型，表示每个线程拥有自己的Stack\n        Stack<T> stack = threadLocal.get();\n       //通过pop方法从本线程的Stack表示的对象池中获取对象\n        DefaultHandle<T> handle = stack.pop();\n  "
+        },
+        {
+          "index": 8,
+          "original_caption": "Dead_WeakOrderQueue回收.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-6ce1a2c037108f0b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/recycler-08.svg",
+          "line": 473,
+          "context": "akOrderQueue所属的线程还不存在)，那么会把它Link链表中存储的所有复用对象都转移到stack中。理论上Dead_WeakOrderQueue在转移完毕之后应该被踢出WeakOrderQueue链表，这样Dead_WeakOrderQueue就可以被GC掉，但是如果head指向的是Dead_WeakOrderQueue，那么它就不会被踢出WeakOrderQueue链，这个应该是因为对于head操作需要做线程同步，而netty一直在避免线程同步的开销，因此在从对象池中获取对象的时候，head是一直不变的，想象一下如果从head开始一直到一个pre指向的Active_WeakOrderQueue之间的所有的节点都是Dead_WeakOrderQueue，按照目前的代码实现这些Dead_WeakOrderQueue都不会被踢出WeakOrderQueue链表，也就会一直像僵尸一样存在，pre之后的Dead_WeakOrderQueue是可以被踢出WeakOrderQueue链表\n\n上图中蓝色Dead_WeakOrderQueue无法被回收，WeakOrderQueue链表最后一个节点如果为Dead_WeakOrderQueue也是无法被回收\n\n##### WeakOrderQueue.transfer(stack)\n这个方法是真正实现了把WeakOrderQueue的一个Link存储的复用对象转移到stack中，源码如下，好长。。。。。\n```\nboolean transfer(Stack<?> dst) {\n            //设置head在Link链表中的位置，可以看出每次都是从Link链表的头部开始寻找可复用对象去转移\n            Link head = this.head.link;\n             //如果Link对象不存在直接返回转移失败\n            if (head == null) {\n                return false;\n            }\n           //如果h"
+        }
+      ]
+    },
+    {
+      "original_name": "SoftReference,WeakReference,PhantomReference-引用对象回收过程.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/SoftReference,WeakReference,PhantomReference-引用对象回收过程.md",
+      "topic": "netty",
+      "slug": "java-reference-processing",
+      "title": "How Java Processes Soft, Weak, and Phantom References",
+      "order": 490,
+      "series_order": 9,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/java-reference-processing.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-d40ea4979158274f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-01.svg",
+          "line": 12,
+          "context": "继承自Reference这个抽象类。\n\n### 引用方式\n```\nReferenceQueue referenceQueue = new ReferenceQueue();\nObject obj = new Object();\nSoftReference sr = new SoftReference(obj,referenceQueue);\nWeakReference wr = new WeakReference(obj,referenceQueue);\nPhantomReference pr = new PhantomReference(obj,referenceQueue)\n```\n从上面的代码我们可以看出，这三种引用提供了基本相同的使用方式，当然，对于SoftReference，WeakReference来说ReferenceQueue在初始化引用的时候不是必须的，因为如果你不提供的话，SoftReference，WeakReference的父类Reference会提供默认的实现:\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-f5255db9ae025b64.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n### 作用\n\n这三种引用类型引用的对象如果处于gc root链不可达，那么这些对象就有可能被随时被回收掉。对于SoftReference引用的对象来说，如果gc root链不可达，那么垃圾收集器会在内存不足的时候把它引用的对象回收掉。对于WeakReference和PhantomReference来说他们引用的对象，如果gc root链不可达那么在gc的时候会被立即回收。SoftReference和WeakReference引用的对象可以通过引用的get方法获取到相应的对象，但是对于PhantomReference来说没法通过这类引用去获取被引用的对象。当这三类引用引用的对象被回收的时候，那么这三类引用"
+        },
+        {
+          "index": 2,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-f5255db9ae025b64.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-02.svg",
+          "line": 13,
+          "context": "eference(obj,referenceQueue);\nWeakReference wr = new WeakReference(obj,referenceQueue);\nPhantomReference pr = new PhantomReference(obj,referenceQueue)\n```\n从上面的代码我们可以看出，这三种引用提供了基本相同的使用方式，当然，对于SoftReference，WeakReference来说ReferenceQueue在初始化引用的时候不是必须的，因为如果你不提供的话，SoftReference，WeakReference的父类Reference会提供默认的实现:![image.png](https://upload-images.jianshu.io/upload_images/23114405-d40ea4979158274f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n\n\n### 作用\n\n这三种引用类型引用的对象如果处于gc root链不可达，那么这些对象就有可能被随时被回收掉。对于SoftReference引用的对象来说，如果gc root链不可达，那么垃圾收集器会在内存不足的时候把它引用的对象回收掉。对于WeakReference和PhantomReference来说他们引用的对象，如果gc root链不可达那么在gc的时候会被立即回收。SoftReference和WeakReference引用的对象可以通过引用的get方法获取到相应的对象，但是对于PhantomReference来说没法通过这类引用去获取被引用的对象。当这三类引用引用的对象被回收的时候，那么这三类引用对象自身会被放在ReferenceQueue中，然后我们可以从ReferenceQueue获取相应的引用对象信息，基于这写信息我们可以做一些自己的逻辑。\n\n### 回收过程\n- Reference \n这个类是一个链表节点类型的类\n![image.png](https://upload"
+        },
+        {
+          "index": 3,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-fb2810242e3e1fc6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-03.svg",
+          "line": 22,
+          "context": "trip%7CimageView2/2/w/1240)\n\n### 作用\n\n这三种引用类型引用的对象如果处于gc root链不可达，那么这些对象就有可能被随时被回收掉。对于SoftReference引用的对象来说，如果gc root链不可达，那么垃圾收集器会在内存不足的时候把它引用的对象回收掉。对于WeakReference和PhantomReference来说他们引用的对象，如果gc root链不可达那么在gc的时候会被立即回收。SoftReference和WeakReference引用的对象可以通过引用的get方法获取到相应的对象，但是对于PhantomReference来说没法通过这类引用去获取被引用的对象。当这三类引用引用的对象被回收的时候，那么这三类引用对象自身会被放在ReferenceQueue中，然后我们可以从ReferenceQueue获取相应的引用对象信息，基于这写信息我们可以做一些自己的逻辑。\n\n### 回收过程\n- Reference \n这个类是一个链表节点类型的类\n\n\n- ReferenceHandler\nreferenceHandler是Reference的内部类继承Thread,\n\n这个类是在Reference的静态代码块中被启动的\n ```\n static {\n        ThreadGroup tg = Thread.currentThread().getThreadGroup();\n        for (ThreadGroup tgn = tg;\n             tgn != null;\n             tg = tgn, tgn = tg.getParent());\n        Thread handler = new ReferenceHandler(tg, \"Reference Handler\");\n        /* If there were a special system-only priority greater than\n         * MAX_PRIORITY, it would"
+        },
+        {
+          "index": 4,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-fefd57062cbf7e41.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-04.svg",
+          "line": 115,
+          "context": "ReferenceQueue.NULL) q.enqueue(r);\n        return true;\n    }\n```\n这个是一个核心方法，如果明白这里面发生了什么，那么就能搞明白这三类引用类型引用的对象被回收后发生了什么。\n我们看到同步代码块中上来就是pending是否为空的判断，如果为空那么这个线程就去wait了，我们看下pending在Reference的定义\n```\n private static Reference<Object> pending = null;\n```\n可以看出初始化是null的，那么什么时候这个pending会被谁在什么时候赋值。\npending会被JVM直接赋值：当着三类引用类型引用的对象被回收后那么相应的引用会被加入到pending中，pending每次只会被赋值一个引用对象，那么剩下别的引用对象会被加入到pending的discover中形成一个链表。我们可以看到在tryHandlePending每次都是处理链表上的一个reference\n\n那么对每一个reference是如何处理的呢，对于reference如果是一个Cleaner那么会执行它的clean方法\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-15504cc3fde8b54a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n Cleaner是PhantomReference的子类，在DirectByteBuffer中就用到了它来做堆外内存的回收，在这里就不详细介绍了，如果不是Cleaner那么就是把这个reference加入到ReferenceQueue中\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-d24ef46b9f3ded20.png?imageMogr2/auto-orient/strip%7CimageV"
+        },
+        {
+          "index": 5,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-15504cc3fde8b54a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-05.svg",
+          "line": 117,
+          "context": " static Reference<Object> pending = null;\n```\n可以看出初始化是null的，那么什么时候这个pending会被谁在什么时候赋值。\npending会被JVM直接赋值：当着三类引用类型引用的对象被回收后那么相应的引用会被加入到pending中，pending每次只会被赋值一个引用对象，那么剩下别的引用对象会被加入到pending的discover中形成一个链表。我们可以看到在tryHandlePending每次都是处理链表上的一个reference\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-fefd57062cbf7e41.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n那么对每一个reference是如何处理的呢，对于reference如果是一个Cleaner那么会执行它的clean方法\n\n Cleaner是PhantomReference的子类，在DirectByteBuffer中就用到了它来做堆外内存的回收，在这里就不详细介绍了，如果不是Cleaner那么就是把这个reference加入到ReferenceQueue中\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-d24ef46b9f3ded20.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n然后我们就可以从ReferenceQueue中获取相应的reference了\n到此已经全部讲完了整个过程下面是我的实验代码\n\n### 实验\n```\n        Object obj = new Object();\n        ReferenceQueue referenceQueue = new ReferenceQueue();\n        WeakRefer"
+        },
+        {
+          "index": 6,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-d24ef46b9f3ded20.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-06.svg",
+          "line": 119,
+          "context": "ttps://upload-images.jianshu.io/upload_images/23114405-fefd57062cbf7e41.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n那么对每一个reference是如何处理的呢，对于reference如果是一个Cleaner那么会执行它的clean方法\n![image.png](https://upload-images.jianshu.io/upload_images/23114405-15504cc3fde8b54a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)\n Cleaner是PhantomReference的子类，在DirectByteBuffer中就用到了它来做堆外内存的回收，在这里就不详细介绍了，如果不是Cleaner那么就是把这个reference加入到ReferenceQueue中\n\n然后我们就可以从ReferenceQueue中获取相应的reference了\n到此已经全部讲完了整个过程下面是我的实验代码\n\n### 实验\n```\n        Object obj = new Object();\n        ReferenceQueue referenceQueue = new ReferenceQueue();\n        WeakReference weakReference = new WeakReference(obj,referenceQueue);\n        WeakReference weakReference2 = new WeakReference(obj,referenceQueue);\n        WeakReference weakReference3 = new WeakReference(obj,referenceQueue);\n\n        System.out.println(weakReference.get"
+        },
+        {
+          "index": 7,
+          "original_caption": "image.png",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-67cd29332ad6c3a3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-reference-processing-07.svg",
+          "line": 149,
+          "context": "System.gc()触发full gc，这个时候理论上新建的new Object()对象会被回收掉，然后在referenceQueue会得到执行这个对象的三个弱引用，但是因为ReferenceHandler是一个后台线程在运行，所以我们在before isEnqueue打印出的是false（reference.isEnqueue可以判断这个reference是不是被加入了ReferenceQueue中），所以我们sleep 1s等一下ReferenceQueue线程去执行，在after isEnqueue 打印出的就是true，然后我们可以通过referenceQueue.poll()获得一个weakReference，如果你poll三次那么会得到上面定义的三个weakReference。\n\nTips：如果想debug tryHandlePending方法看到上面我们定义的weakReference是如何加入referenceQueue的,那么最好是把debug设置condition\n\n上图是我们在idea 中设置的condition（pending instanceof WeakReference && !(pending instanceof WeakHashMap.Entry)）为什么这么设置呢，因为jvm内部也有很多这种类型的引用会被回收，如果不设置就需要执行这个方法很多遍才能看到自己定义的reference\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ]
+    },
+    {
+      "original_name": "java-零拷贝---MMAP,sendFile,Channel.md",
+      "original_path": "/Users/blake/Downloads/jianshu_blog/user-23114405-1791319437/随笔/java-零拷贝---MMAP,sendFile,Channel.md",
+      "topic": "netty",
+      "slug": "java-zero-copy",
+      "title": "Understanding Java Zero-Copy with sendfile and mmap",
+      "order": 500,
+      "series_order": 10,
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/java-zero-copy.md",
+      "images": [
+        {
+          "index": 1,
+          "original_caption": "用户态-内核态-数据copy.jpg",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-9bae43b3d6d4bf57.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-zero-copy-01.svg",
+          "line": 102,
+          "context": "     }\n    }\n\n    public static void main(String[] args) {\n        try {\n            Client client = new Client(\"127.0.0.1\",6687);\n            client.sendMessage();\n        } catch (Exception e) {\n            e.printStackTrace();\n        }\n    }\n}\n```\n从客户端来看数据在磁盘，内核缓存，用户缓存，socket缓存会经过如下图的copy过程\n1. 磁盘文件通过DMA的方式copy到内核缓存区（DMA负责 copy）\n2. 内核缓存区的数据copy到用户缓存区（cpu负责copy）\n3. 用户缓存区的数据copy到socket缓存区（内核缓存区）（cpu负责copy）\n4. socket缓存区的数据通过DMA发送给网卡（DMA负责 copy）\n\n\n从上面的图中可以看出来两次cpu的copy在特定的场景是可以省略的（应用不需要处理这些数据），linux 提供了sendfile系统调用，通过这个系统调用可以避免两次用户内存缓存区和内核缓存区的数据copy。现在我们把client代码修改如下。这个时候上图中的两次cpu copy就可以被规避,入下图就是这种情况下数据copy的过程\n```\nclass ClientChannel {\n    SocketChannel socketChannel;\n\n    ClientChannel(String host, int port) throws Exception {\n        socketChannel = SocketChannel.open();\n        socketChannel.connect(new InetSocketAddress(host, port));\n    }\n\n    public void sendMessage() {\n        Fil"
+        },
+        {
+          "index": 2,
+          "original_caption": "内核-内核_copy.jpg",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-92aa5d681d82cf7f.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-zero-copy-02.svg",
+          "line": 136,
+          "context": "erTo(0, f.length(), socketChannel);\n        } catch (FileNotFoundException e) {\n            e.printStackTrace();\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n    }\n\n    public static void main(String[] args) {\n        try {\n            ClientChannel client = new ClientChannel(\"127.0.0.1\", 6687);\n            client.sendMessage();\n        } catch (Exception e) {\n            e.printStackTrace();\n        }\n    }\n}\n```\n\n\n### mmap\n对于哪些需要读取磁盘文件然后做一些业务逻辑的应用程序，如何有效减少文件在内核缓存和用户缓存之间的复制呢？\n\n###### 非MMap代码块\n```\npublic class FileReader {\n    File f ;\n\n    public void readFile(String fileName){\n\n        f = new File(fileName);\n        byte[] buffer = new byte[1024] ;\n        try {\n            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));\n            int len= 0;\n            while((len =bis.read(buffer)) != -1){\n                doBusiness(buffer"
+        },
+        {
+          "index": 3,
+          "original_caption": "非MMAP_复制.jpg",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-0f0d7f39f1f84631.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-zero-copy-03.svg",
+          "line": 169,
+          "context": "     try {\n            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));\n            int len= 0;\n            while((len =bis.read(buffer)) != -1){\n                doBusiness(buffer,len);\n            }\n\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n\n    }\n    private void doBusiness(byte[] data,int len){\n        System.out.println(new String(data,0,len));\n    }\n    \n}\n```\n上面这段代码涉及到的数据copy入下图\n\n\n1. 数据通过DMA copy 到内核缓存区\n2. 内核缓存区copy 到用户缓存区\n\n###### Mmap代码块\n```\npublic class MmapFileReader {\n\n    byte buffer[];\n    File f ;\n\n    public MmapFileReader(String fileName){\n        f =  new File(fileName) ;\n        buffer = new byte[(int)f.length()] ;\n    }\n\n    public void doMmap(){\n        try {\n            MappedByteBuffer mappedByteBuffer = new RandomAccessFile(f,\"rw\").getChannel().map(FileChannel.MapMode.READ_WRITE,0,f.length());\n           "
+        },
+        {
+          "index": 4,
+          "original_caption": "mmap_内存复制.jpg",
+          "original_url": "https://upload-images.jianshu.io/upload_images/23114405-8db68ff7590b2a7c.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240",
+          "asset": "assets/java-zero-copy-04.svg",
+          "line": 203,
+          "context": "ength());\n            ByteBuffer byteBuffer = mappedByteBuffer.get(buffer);\n            System.out.println(new String(buffer,0,(int)f.length()));\n        } catch (FileNotFoundException e) {\n            e.printStackTrace();\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n\n    }\n}\n```\n上面代码使用了file channel 然后映射了底层操作系统的mmap系统调用\n这段代码涉及到的数据copy入下图。可以发现通过mmap，在用户空间对文件的读操作会直接映射到内核空间的缓存中，对文件的写操作也会直接修改内核缓存页的数据，保存之后数据会通过DMA刷入磁盘\n\n\n\n\n\n#### 参考文档\n[https://www.jianshu.com/p/fad3339e3448](https://www.jianshu.com/p/fad3339e3448)\n[https://zhuanlan.zhihu.com/p/66595734](https://zhuanlan.zhihu.com/p/66595734)\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      ]
+    }
+  ]
+}

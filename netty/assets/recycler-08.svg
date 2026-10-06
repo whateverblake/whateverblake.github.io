@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="658" viewBox="0 0 1000 658" role="img" aria-labelledby="title description"><title id="title">Scavenging dead cross-thread queues</title><desc id="description">Explanatory state labels replace runtime object addresses. A dead producer is not the same as an immediately collectible queue.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="658" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">NETTY 4.1.53.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Scavenging dead cross-thread queues</text>
+<rect x="42" y="132" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="160" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Stack.head</text>
+<text x="63" y="185" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Start of the WeakOrderQueue chain</text>
+<rect x="42" y="207" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="235" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">cursor / prev</text>
+<text x="63" y="260" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Track progress while transferring handles back to the stack</text>
+<rect x="42" y="282" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="310" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Dead producer thread</text>
+<text x="63" y="335" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">owner.get() == null; drain remaining handles when possible</text>
+<rect x="42" y="357" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="385" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Unlinking</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">The original logic cannot unlink a queue without a predecessor.</text>
+<rect x="42" y="432" width="916" height="86" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="460" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Version caveat</text>
+<text x="63" y="485" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Queue management is implementation-specific; this diagram describes the pinned</text>
+<text x="63" y="508" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Recycler source.</text>
+<text x="34" y="572" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Explanatory state labels replace runtime object addresses. A dead producer is not the same as an immediately</text>
+<text x="34" y="591" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">collectible queue.</text>
+<a href="https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java">
+<text x="34" y="636" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: Recycler.java • Netty 4.1.53.Final</text>
+</a></g></svg>

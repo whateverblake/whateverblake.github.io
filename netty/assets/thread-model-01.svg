@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="671" viewBox="0 0 1000 671" role="img" aria-labelledby="title description"><title id="title">Reactor roles in a Netty NIO server</title><desc id="description">Reactor roles in a Netty NIO server</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="671" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">NETTY 4.1.53.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Reactor roles in a Netty NIO server</text>
+<rect x="42" y="135" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="165" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">01  Boss NioEventLoop</text>
+<text x="63" y="192" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Accept connections on NioServerSocketChannel.</text>
+<path d="M 500 217 L 500 239" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="244" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="274" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">02  New NioSocketChannel</text>
+<text x="63" y="301" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Wrap an accepted SocketChannel.</text>
+<path d="M 500 326 L 500 348" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="353" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="383" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">03  Worker EventLoopGroup</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Choose one NioEventLoop for the child channel.</text>
+<path d="M 500 435 L 500 457" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="462" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="492" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">04  Assigned NioEventLoop</text>
+<text x="63" y="519" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Handle that channel’s I/O and tasks; many channels may share the same loop.</text>
+<text x="34" y="585" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">English explanatory reconstruction from the named source.</text>
+<a href="https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/ServerBootstrap.java">
+<text x="34" y="649" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: ServerBootstrap.java • Netty 4.1.53.Final</text>
+</a></g></svg>

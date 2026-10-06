@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" role="img" aria-labelledby="title description"><title id="title">Legacy subpage handle bit layout</title><desc id="description">handle = 0x4000000000000000L | ((long) bitmapIdx &lt;&lt; 32) | memoryMapIdx; marker is bit 62, not 2^64.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="640" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Legacy subpage handle bit layout</text>
+<rect x="34" y="156" width="110" height="128" rx="10" fill="#eef0f4" stroke="#d5dfeb"/>
+<text x="89.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 63</text>
+<text x="89.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">unused</text>
+<rect x="144" y="156" width="110" height="128" rx="10" fill="#dfeaf8" stroke="#d5dfeb"/>
+<text x="199.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 62</text>
+<text x="199.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">subpage</text>
+<text x="199.0" y="249" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">marker</text>
+<rect x="254" y="156" width="332" height="128" rx="10" fill="#e0f3ed" stroke="#d5dfeb"/>
+<text x="420.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 61 … 32</text>
+<text x="420.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">bitmapIdx</text>
+<rect x="586" y="156" width="380" height="128" rx="10" fill="#eee6f6" stroke="#d5dfeb"/>
+<text x="776.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 31 … 0</text>
+<text x="776.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">memoryMapIdx</text>
+<text x="54" y="344" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">0x4000000000000000L</text>
+<text x="54" y="377" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">| ((long) bitmapIdx &lt;&lt; 32)</text>
+<text x="54" y="410" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">| memoryMapIdx</text>
+<text x="34" y="476" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">bitmapIdx identifies an element within one subpage.</text>
+<text x="34" y="507" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">memoryMapIdx identifies the selected page in the legacy buddy tree.</text>
+<text x="34" y="554" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">handle = 0x4000000000000000L | ((long) bitmapIdx &lt;&lt; 32) | memoryMapIdx; marker is bit 62, not 2^64.</text>
+<a href="https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolSubpage.java">
+<text x="34" y="618" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: PoolSubpage.java • Legacy: Netty 4.1.50.Final</text>
+</a></g></svg>

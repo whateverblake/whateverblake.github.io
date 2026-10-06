@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="785" viewBox="0 0 1000 785" role="img" aria-labelledby="title description"><title id="title">Legacy chunk migration thresholds</title><desc id="description">The original approximate “4.16M” values depend on interpreting MiB versus decimal MB; percentages are the authoritative inputs.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="785" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Legacy chunk migration thresholds</text>
+<rect x="42" y="132" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="160" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">qInit</text>
+<text x="63" y="185" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = Integer.MIN_VALUE; maxUsage = 25</text>
+<rect x="42" y="207" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="235" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">q000</text>
+<text x="63" y="260" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = 1; maxUsage = 50</text>
+<rect x="42" y="282" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="310" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">q025</text>
+<text x="63" y="335" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = 25; maxUsage = 75</text>
+<rect x="42" y="357" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="385" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">q050</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = 50; maxUsage = 100</text>
+<rect x="42" y="432" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="460" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">q075</text>
+<text x="63" y="485" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = 75; maxUsage = 100</text>
+<rect x="42" y="507" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="535" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">q100</text>
+<text x="63" y="560" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">minUsage = 100; maxUsage = Integer.MAX_VALUE</text>
+<rect x="42" y="582" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="610" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Threshold calculation</text>
+<text x="63" y="635" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Use the source’s percentage formulas, rounding and integer conversion.</text>
+<text x="34" y="699" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">The original approximate “4.16M” values depend on interpreting MiB versus decimal MB; percentages are the</text>
+<text x="34" y="718" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">authoritative inputs.</text>
+<a href="https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunkList.java">
+<text x="34" y="763" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: PoolChunkList.java • Legacy: Netty 4.1.50.Final</text>
+</a></g></svg>

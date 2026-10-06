@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="675" viewBox="0 0 1000 675" role="img" aria-labelledby="title description"><title id="title">Packet: request and response state</title><desc id="description">Selected original declarations; blank lines omitted. No runtime values are invented.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="675" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">ZOOKEEPER 3.6.2</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Packet: request and response state</text>
+<rect x="34" y="133" width="932" height="395" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">static class Packet {</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    RequestHeader requestHeader;</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    ReplyHeader replyHeader;</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    Record request;</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    Record response;</text>
+<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    ByteBuffer bb;</text>
+<text x="53" y="303" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    /** Client&#x27;s view of the path (may differ due to chroot) **/</text>
+<text x="53" y="327" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    String clientPath;</text>
+<text x="53" y="351" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    /** Servers&#x27;s view of the path (may differ due to chroot) **/</text>
+<text x="53" y="375" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    String serverPath;</text>
+<text x="53" y="399" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    boolean finished;</text>
+<text x="53" y="423" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    AsyncCallback cb;</text>
+<text x="53" y="447" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    Object ctx;</text>
+<text x="53" y="471" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    WatchRegistration watchRegistration;</text>
+<text x="53" y="495" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    public boolean readOnly;</text>
+<text x="34" y="566" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 263; no runtime state is shown.</text>
+<text x="34" y="589" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected original declarations; blank lines omitted. No runtime values are invented.</text>
+<a href="https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java">
+<text x="34" y="653" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: ClientCnxn.java • ZooKeeper 3.6.2</text>
+</a></g></svg>

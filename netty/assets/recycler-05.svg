@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="562" viewBox="0 0 1000 562" role="img" aria-labelledby="title description"><title id="title">Recycle an object back through its handle</title><desc id="description">Recycle an object back through its handle</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="562" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">NETTY 4.1.53.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Recycle an object back through its handle</text>
+<rect x="42" y="135" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="165" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">01  Object.recycle</text>
+<text x="63" y="192" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Application wrapper calls handle.recycle(this).</text>
+<path d="M 500 217 L 500 239" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="244" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="274" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">02  DefaultHandle.recycle</text>
+<text x="63" y="301" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Validate the object and ownership state.</text>
+<path d="M 500 326 L 500 348" stroke="#2161ad" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+<rect x="42" y="353" width="916" height="79" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="383" font-size="20" fill="#2161ad" font-weight="700" text-anchor="start">03  Stack.push</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Choose the same-thread or cross-thread return path.</text>
+<text x="34" y="476" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">English explanatory reconstruction from the named source.</text>
+<a href="https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java">
+<text x="34" y="540" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: Recycler.java • Netty 4.1.53.Final</text>
+</a></g></svg>

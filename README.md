@@ -52,3 +52,20 @@ The Mooncake series has an additional curated introduction at
 After pushing changes, check **Actions → pages build and deployment** on
 GitHub. The homepage lists articles during the Jekyll build; it does not
 need a browser-side database or a manually maintained card list.
+
+## Historical Java source series
+
+The `zookeeper/` and `netty/` folders contain the English Jianshu migration:
+12 ZooKeeper pages and 11 Netty/Java pages, with 69 local English SVG figures.
+The series indexes are `zookeeper/index.md` and `netty/index.md`; both use the
+existing layout and appear in the homepage topic list.
+
+The historical baselines are ZooKeeper 3.6.2, Netty 4.1.53.Final, and OpenJDK
+8u272-b10. The pooled-memory walkthrough explicitly uses the legacy Netty
+4.1.50.Final allocator and describes the 4.1.53 redesign. Source references
+use immutable commits. Reconstructed figures are labeled and carry source
+links; examples of runtime values are illustrative.
+
+`_migration/` retains the original-to-English article manifest, figure
+provenance, translation and review notes, and figure-generation scripts.
+Jekyll excludes this internal directory from the published site.

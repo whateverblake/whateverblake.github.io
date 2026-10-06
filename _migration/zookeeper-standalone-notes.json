@@ -1,0 +1,198 @@
+{
+  "source_baseline": {
+    "version": "ZooKeeper 3.6.2",
+    "commit": "803c7f1a12f85978cb049af5e4ef23bd8b688715",
+    "local_checkout": "/Users/blake/Downloads/jianshu_blog/source-references/zookeeper-3.6.2",
+    "historical_cutoff": "October 2020"
+  },
+  "files": [
+    {
+      "slug": "debugging-environment",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/debugging-environment.md",
+      "original_characters": 1809,
+      "english_characters": 7496,
+      "original_fenced_blocks": 0,
+      "english_fenced_blocks": 4,
+      "java_excerpts_retained": 0,
+      "images": 5
+    },
+    {
+      "slug": "standalone-server-startup",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/standalone-server-startup.md",
+      "original_characters": 19790,
+      "english_characters": 25196,
+      "original_fenced_blocks": 19,
+      "english_fenced_blocks": 19,
+      "java_excerpts_retained": 15,
+      "images": 3
+    },
+    {
+      "slug": "client-startup",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/client-startup.md",
+      "original_characters": 34108,
+      "english_characters": 40283,
+      "original_fenced_blocks": 13,
+      "english_fenced_blocks": 13,
+      "java_excerpts_retained": 13,
+      "images": 5
+    },
+    {
+      "slug": "expiry-queue",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/expiry-queue.md",
+      "original_characters": 4507,
+      "english_characters": 7552,
+      "original_fenced_blocks": 4,
+      "english_fenced_blocks": 4,
+      "java_excerpts_retained": 3,
+      "images": 1
+    },
+    {
+      "slug": "node-creation",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/node-creation.md",
+      "original_characters": 78922,
+      "english_characters": 88700,
+      "original_fenced_blocks": 22,
+      "english_fenced_blocks": 22,
+      "java_excerpts_retained": 22,
+      "images": 3
+    },
+    {
+      "slug": "watch-processing",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/watch-processing.md",
+      "original_characters": 25397,
+      "english_characters": 29599,
+      "original_fenced_blocks": 10,
+      "english_fenced_blocks": 10,
+      "java_excerpts_retained": 10,
+      "images": 1
+    },
+    {
+      "slug": "data-recovery",
+      "file": "/Users/blake/blogs/github_article/whateverblake.github.io/zookeeper/data-recovery.md",
+      "original_characters": 21068,
+      "english_characters": 27904,
+      "original_fenced_blocks": 13,
+      "english_fenced_blocks": 13,
+      "java_excerpts_retained": 11,
+      "images": 7
+    }
+  ],
+  "baseline_differences": [
+    {
+      "file": "zookeeper/client-startup.md",
+      "excerpt": "ConnectStringParser constructor",
+      "difference": "Original uses ConfigUtils.getHostAndPort inside try/catch; 3.6.2 uses NetUtils.getIPV6HostAndPort with last-colon fallback. Original variant retained and explicitly labeled; cannot establish its exact alternate version from export."
+    },
+    {
+      "file": "zookeeper/client-startup.md",
+      "excerpt": "SendThread.run",
+      "difference": "Original author changed MAX_SEND_PING_INTERVAL to 10000000 ms for debugging. Release value is 10000 ms. Both values explained; original executable logic retained."
+    },
+    {
+      "file": "zookeeper/node-creation.md",
+      "excerpt": "DataTree.processTxn",
+      "difference": "Original omits operation cases and exception handling with ........... . Retained and explicitly marked as incomplete reading excerpt, not compilable method."
+    },
+    {
+      "files": [
+        "zookeeper/standalone-server-startup.md",
+        "zookeeper/node-creation.md",
+        "zookeeper/watch-processing.md",
+        "zookeeper/data-recovery.md"
+      ],
+      "difference": "RequestThrottler, persistent watch modes, digest log/snapshot fields, and notification delivery all occur in pinned 3.6.2 source. They have not been incorrectly labeled later additions."
+    }
+  ],
+  "corrections": [
+    {
+      "file": "zookeeper/debugging-environment.md",
+      "items": [
+        "Use conf/zoo_sample.cfg, not zoo_example.cfg.",
+        "Import root Maven reactor and generated Jute sources.",
+        "Follow pinned clean install build command and supported JDK instructions.",
+        "Include provided metrics-core and snappy-java jars on standalone IDE runtime classpath; upgrades/scope edits were original workarounds, not release requirements.",
+        "Use explicit logging config rather than moving checked-in conf resources.",
+        "All original five screenshots reconstructed as setup panels; no IDE execution is claimed."
+      ]
+    },
+    {
+      "file": "zookeeper/standalone-server-startup.md",
+      "items": [
+        "min/max session timeout defaults are 2 and 20 times tickTime when unspecified.",
+        "sessionlessCnxnTimeout concerns a connection lacking a session and is reused for expiration buckets.",
+        "AcceptThread enqueues accepted channels in acceptedQueue, not updateQueue.",
+        "Disabling interests serializes readiness tasks per connection, not every abstract network event."
+      ]
+    },
+    {
+      "file": "zookeeper/client-startup.md",
+      "items": [
+        "Parsed chroot retains /tt leading slash.",
+        "primeConnection queues the handshake; response processing completes it.",
+        "readConnectResult belongs to ClientCnxnSocket.",
+        "ZooKeeper constructor starts connection asynchronously."
+      ]
+    },
+    {
+      "file": "zookeeper/expiry-queue.md",
+      "items": [
+        "Time.currentElapsedTime uses elapsed time rather than epoch wall-clock time.",
+        "Rounding always advances to next interval, including boundary inputs.",
+        "ExpiryQueue creates no management thread; callers consume expiration buckets."
+      ]
+    },
+    {
+      "file": "zookeeper/node-creation.md",
+      "items": [
+        "Corrected missing semicolon after request.setAcl(acl) and stray quotation after incomingBuffer.slice(); visible copy-error note.",
+        "Aggregate default large-request limit is 100 MiB, not 100k; classification defaults disabled.",
+        "Distinguish protocol Request.record from prepared Request.txn.",
+        "Prospective ChangeRecords do not publish live node state before final processing.",
+        "Preallocation is a 64 MiB increment, not fixed log file size.",
+        "txnEntryCRC uses Adler32 in this release.",
+        "Durability depends on forceSync and flush configuration; snapshots are not required per acknowledgment."
+      ]
+    },
+    {
+      "file": "zookeeper/watch-processing.md",
+      "items": [
+        "addWatch provides persistent modes; ordinary one-shot watches use read/existence APIs.",
+        "Recursive registrations cover descendants and retain changed path in event; NodeChildrenChanged is excluded.",
+        "User watchers and callbacks execute on EventThread."
+      ]
+    },
+    {
+      "file": "zookeeper/data-recovery.md",
+      "items": [
+        "Reads are not state-changing transactions.",
+        "Log-only reconstruction is possible with suitable initial state/full retained history, but snapshot-plus-replay is normal.",
+        "Filename suffixes are hexadecimal zxids.",
+        "64 MiB is configurable preallocation increment; physical contiguity and seek elimination are not guaranteed.",
+        "Snapshots are fuzzy and require covering log replay, not strictly all records less than suffix.",
+        "czxid, mzxid, pzxid, child-list cversion, public version/aversion semantics corrected.",
+        "Public dataLength/child counts are derived rather than StatPersisted fields.",
+        "Session timeout map persisted; ephemeral-owner sets reconstructed from nodes.",
+        "Node map keys are full paths.",
+        "Original example filenames, digest values, record contents, and snapshot displays labeled illustrative; no new execution results claimed."
+      ]
+    }
+  ],
+  "verification": {
+    "checks": [
+      "All seven files exist with exact manifest metadata and one H1.",
+      "No CJK Chinese ideographs remain, including in comments and code.",
+      "No Jianshu or upload-images URLs remain.",
+      "All 25 image slots use exact manifest asset paths and nonempty English alt text.",
+      "All original fenced blocks retained in six source analyses.",
+      "All 74 retained Java excerpts preserve normalized executable source, except the two documented punctuation corrections.",
+      "All own-series links use relative .html and resolve to corresponding Markdown files.",
+      "All immutable source references resolve to real paths in the pinned local source checkout.",
+      "Normalized original-excerpt comparison against local 3.6.2 source inspected method differences and omitted excerpts."
+    ],
+    "not_run": [
+      "No ZooKeeper process or IDE debug session was run.",
+      "Site-wide Jekyll rendering and SVG asset creation are owned by parent agent."
+    ],
+    "status": "passed"
+  }
+}

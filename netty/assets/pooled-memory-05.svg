@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" role="img" aria-labelledby="title description"><title id="title">Pooled versus oversized direct allocation</title><desc id="description">Pooling and thread-cache reuse are different layers; not every request allocates new backing memory.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="560" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
+<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
+<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Pooled versus oversized direct allocation</text>
+<rect x="42" y="132" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="160" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Normal / subpage request</text>
+<text x="63" y="185" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Allocate from a pooled chunk and its pages/subpages.</text>
+<rect x="42" y="207" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="235" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Request larger than chunkSize</text>
+<text x="63" y="260" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">Allocate a separate unpooled chunk for that request.</text>
+<rect x="42" y="282" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="310" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Direct memory</text>
+<text x="63" y="335" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">The arena obtains the backing direct buffer.</text>
+<rect x="42" y="357" width="916" height="63" rx="10" fill="white" stroke="#d5dfeb"/>
+<text x="63" y="385" font-size="20" fill="#087e78" font-weight="700" text-anchor="start">Returned ByteBuf</text>
+<text x="63" y="410" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">A view of the allocated region with offset and capacity.</text>
+<text x="34" y="474" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Pooling and thread-cache reuse are different layers; not every request allocates new backing memory.</text>
+<a href="https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java">
+<text x="34" y="538" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: PoolArena.java • Legacy: Netty 4.1.50.Final</text>
+</a></g></svg>

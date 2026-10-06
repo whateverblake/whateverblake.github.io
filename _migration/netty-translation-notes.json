@@ -1,0 +1,228 @@
+{
+  "files": [
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/index.md",
+      "original_lines": 16,
+      "translated_chinese_lines": 9,
+      "figure_count": 0,
+      "source_notes": "This series reads the Netty 4.1 implementation, with related Java reference-processing and zero-copy articles. Historical implementation details should be interpreted against the pinned version rather than assumed to describe every newer release.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/"
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/java-reference-processing.md",
+      "original_lines": 161,
+      "translated_chinese_lines": 24,
+      "figure_count": 7,
+      "source_notes": "This article describes OpenJDK internals, not a Netty class. The original claims of immediate reclamation and a guaranteed full GC have been corrected to distinguish reachability, reference clearing, enqueueing, and physical reclamation. JDK 8 phantom references have different clearing semantics from later JDKs. The code uses the JDK 8 pending-list implementation; later JDK reference processing should not be inferred from it.",
+      "sources": [
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/Reference.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/ReferenceQueue.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/SoftReference.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/WeakReference.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/PhantomReference.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/misc/Cleaner.java"
+      ],
+      "corrections": [
+        "Added missing semicolon in PhantomReference constructor example.",
+        "Qualified GC request and enqueue timing.",
+        "Distinguished JDK 8 phantom clearing semantics from later JDKs."
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/java-zero-copy.md",
+      "original_lines": 221,
+      "translated_chinese_lines": 18,
+      "figure_count": 4,
+      "source_notes": "The original Java socket, `transferTo`, buffered file reader, and mapped file reader examples are retained. `sendfile` targets file-to-socket transfer without application inspection; `mmap` provides file-backed memory for application processing. The original blanket claims about eliminating every CPU copy and immediate disk persistence have been qualified. These are illustrative snippets: close streams/channels in production, handle partial writes and transfers, and do not assume TCP preserves write boundaries.",
+      "sources": [
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
+        "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/nio/MappedByteBuffer.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/DefaultFileRegion.java"
+      ],
+      "corrections": [
+        "MappedByteBuffer.get copies into byte array.",
+        "Shared mappings dirty page-cache pages; writeback is not immediate durability.",
+        "transferTo may be partial and implementation may fall back.",
+        "Original echo stream lacks flush; original clients do not consume echo and lack explicit stream terminator.",
+        "Array and single-map file-size limitations documented."
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/thread-model.md",
+      "original_lines": 391,
+      "translated_chinese_lines": 50,
+      "figure_count": 3,
+      "source_notes": "The original `run` excerpt uses the `nextWakeupNanos` and `curDeadlineNanos` selector-wakeup implementation present in Netty 4.1.53.Final. The event loop combines selected I/O processing, ordinary tasks, and scheduled tasks; its execution budget is influenced by `ioRatio`. Channel affinity describes event-loop execution; handlers explicitly configured with a separate executor can run elsewhere.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/NioEventLoop.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/MultithreadEventLoopGroup.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/concurrent/SingleThreadEventExecutor.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/concurrent/DefaultEventExecutorChooserFactory.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/internal/ThreadExecutorMap.java"
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/pipeline.md",
+      "original_lines": 244,
+      "translated_chinese_lines": 41,
+      "figure_count": 2,
+      "source_notes": "Pipeline traversal is callback propagation, not an automatic visit to every handler: a handler must forward an event when it wants propagation to continue. Outbound calls made through a context begin at the preceding outbound context; calls made through the channel or pipeline begin at the tail. Both lifecycle events and I/O operations participate in the pipeline.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/DefaultChannelPipeline.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/ChannelHandlerMask.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/ChannelInitializer.java"
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/socket-read.md",
+      "original_lines": 275,
+      "translated_chinese_lines": 57,
+      "figure_count": 1,
+      "source_notes": "The default adaptive receive allocator uses minimum 64, initial 1024, and maximum 65536 bytes. Its static size table has 53 entries, although an individual allocator only uses its configured index range. A read-loop \u201cmessage\u201d here means a delivered buffer, not an application-level TCP message. Selector key-set instrumentation can fail or be disabled, in which case Netty uses the plain path.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AdaptiveRecvByteBufAllocator.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/DefaultMaxMessagesRecvByteBufAllocator.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/NioEventLoop.java"
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/server-startup.md",
+      "original_lines": 546,
+      "translated_chinese_lines": 97,
+      "figure_count": 0,
+      "source_notes": "`initAndRegister` returns a future because registration can execute asynchronously on the selected event loop; the initial construction and `init` call execute in the calling thread. The listening channel uses `OP_ACCEPT`, while accepted socket channels use `OP_READ`. Automatic registration of accept/read interest depends on `autoRead`; the default example enables it.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/example/src/main/java/io/netty/example/echo/EchoServer.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/AbstractBootstrap.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/ServerBootstrap.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/socket/nio/NioServerSocketChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/AbstractNioChannel.java"
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/socket-write.md",
+      "original_lines": 588,
+      "translated_chinese_lines": 125,
+      "figure_count": 0,
+      "source_notes": "A successful socket write means bytes were accepted by the local transport, not that the peer application consumed them. Writes can be partial. `incompleteWrite(true)` waits for selector write readiness after no progress; `incompleteWrite(false)` schedules another flush after the spin budget is exhausted. The original description of the false branch as \u201call data flushed\u201d was incorrect. Composite buffers can produce multiple NIO views, and array expansion is not universally impossible.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/ChannelOutboundBuffer.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java"
+      ],
+      "corrections": [
+        "False incompleteWrite branch schedules flush task after budget exhaustion.",
+        "Composite buffers can expose multiple NIO views.",
+        "Queue high/low watermarks signal writability rather than enforce hard capacity."
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/message-framing.md",
+      "original_lines": 352,
+      "translated_chinese_lines": 92,
+      "figure_count": 0,
+      "source_notes": "The original packet-size explanation has been corrected: TCP segmentation and application read boundaries are distinct, and TCP never guarantees application message boundaries. In this baseline the default merge cumulator can reuse a buffer or copy into expanded storage. The length decoder computes total frame size from the field value, field-end offset, and adjustment; `initialBytesToStrip` affects delivery rather than the size used to validate the frame.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/ByteToMessageDecoder.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/LengthFieldBasedFrameDecoder.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/DelimiterBasedFrameDecoder.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/FixedLengthFrameDecoder.java"
+      ],
+      "corrections": [
+        "TCP provides stream rather than message boundaries.",
+        "Field-end offset included in insufficient-header check."
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/recycler.md",
+      "original_lines": 600,
+      "translated_chinese_lines": 171,
+      "figure_count": 8,
+      "source_notes": "This is the Stack/WeakOrderQueue implementation present in Netty 4.1.53.Final. The default maximum delayed queues is `availableProcessors() * 2`, not a universal constant 16. The initial local array is bounded by the configured maximum. Queues weakly reference their producer threads, and the delayed-map keys are weak. Some synchronization and atomics remain on cross-thread paths, despite the absence of a global synchronized object pool. With the default interval 8, the actual counter logic admits the first candidate and then drops eight new candidates before admitting another; the source comment describing every eighth try is imprecise. Recycling is an admission decision, not a guarantee of future reuse; applications must stop using an object once returned.",
+      "sources": [
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/internal/ObjectPool.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/ChannelOutboundBuffer.java"
+      ],
+      "corrections": [
+        "Default delayed queues is processors*2.",
+        "Source counter admits first candidate, then drops8 before next admission.",
+        "Dead final queue can unlink when predecessor exists.",
+        "Initial elements array bounded by configured capacity."
+      ]
+    },
+    {
+      "target_path": "/Users/blake/blogs/github_article/whateverblake.github.io/netty/pooled-memory.md",
+      "original_lines": 967,
+      "translated_chinese_lines": 301,
+      "figure_count": 13,
+      "source_notes": "The allocator excerpts are preserved as a **legacy Netty 4.1.50.Final walkthrough**, an explicit exception to the series baseline. Their `tinySubpagePools`, `memoryMap`, `depthMap`, and tree-index handles do not describe Netty 4.1.53.Final. At 4.1.53, `PoolArena` extends `SizeClasses`, tiny allocations are merged into small size classes, `PoolChunk` manages runs with size-indexed priority queues and a run map, and handles encode run offset, page count, used/subpage flags, and bitmap index. Defaults of `pageSize = 8192` and `maxOrder = 11` still produce a 16 MiB chunk in both versions. Legacy size rounding, cache defaults, and tree formulas above must be read in the historical context. The original explanations of whole-page delivery for tiny requests, changing chunk sizes, cache-trim trigger, handle marker, bitmap mask, and array indexing have been corrected.",
+      "sources": [
+        "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
+        "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java",
+        "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolSubpage.java",
+        "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolThreadCache.java",
+        "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PooledByteBufAllocator.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/buffer/src/main/java/io/netty/buffer/SizeClasses.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/buffer/src/main/java/io/netty/buffer/PoolChunk.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/buffer/src/main/java/io/netty/buffer/PoolSubpage.java",
+        "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/buffer/src/main/java/io/netty/buffer/PooledByteBufAllocator.java"
+      ],
+      "corrections": [
+        "Original legacy allocator labeled 4.1.50.Final, compared with redesigned 4.1.53.Final.",
+        "Tiny index0 is special zero-size case; positive classes1..31.",
+        "Normalized capacity equal to chunkSize is pooled.",
+        "Subpage caller receives unit rather than full page.",
+        "Cache trimming triggered by allocation attempts.",
+        "Legacy handle marker2^62; mask clears marker rather than sign.",
+        "Chunk total size fixed while free bytes change.",
+        "PoolChunkList thresholds and equality documented.",
+        "Removed stray typographic quote after DEFAULT_PAGE_SIZE declaration in original excerpt."
+      ]
+    }
+  ],
+  "versions": {
+    "netty": {
+      "tag": "netty-4.1.53.Final",
+      "commit": "d4a0050ef33cab2542a80e11489a4977a63859f8",
+      "release_date": "2020-10-13"
+    },
+    "legacy_allocator": {
+      "tag": "netty-4.1.50.Final",
+      "commit": "8c5b72aaf02e7f349a9972dd9179b449b5a6067b",
+      "reason": "Original tiny/small and memoryMap/depthMap walkthrough predates4.1.53 allocator redesign; retained with explicit legacy labeling."
+    },
+    "jdk": {
+      "tag": "jdk8u272-b10",
+      "commit": "c3b5603e949d6272d777ef57952833672a97b4e3"
+    }
+  },
+  "checks": [
+    "All11 target pages translated; complete source line order retained.",
+    "Original code fence counts preserved for every page.",
+    "Original figure counts and manifest slot paths preserved (38 Netty/Java slots).",
+    "No Chinese visible prose, comments, example strings, or captions remain.",
+    "Jianshu author self-links converted to local pages; other historical references retained.",
+    "Netty4.1.53 NioEventLoop selector-wakeup API verified.",
+    "Adaptive receive SIZE_TABLE calculated as31+22=53 entries.",
+    "Allocator defaults8192<<11=16777216 verified in4.1.50 and4.1.53.",
+    "Recycler WeakOrderQueue and counter logic inspected in pinned4.1.53.",
+    "OpenJDK Reference/ReferenceQueue/PhantomReference/Cleaner inspected in pinned8u272 source.",
+    "All source references use immutable commits.",
+    "Code-token audit: executable code preserved except missing PhantomReference semicolon and stray DEFAULT_PAGE_SIZE quote repairs; one Recycler prose-only fenced block translated."
+  ],
+  "limitations": [
+    "Source excerpts are explanatory fragments, not standalone compilation units.",
+    "Illustrations are source-derived reconstructions created by parent agent; their visual validation is delegated to parent.",
+    "No git commits or pushes performed.",
+    "Existing root linux-zero-copy.md preserved."
+  ]
+}
