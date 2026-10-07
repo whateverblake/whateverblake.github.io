@@ -1,0 +1,381 @@
+{
+  "netty/assets/java-zero-copy-01.svg": {
+    "source_diagram": "source code reading/netty/内核-内核-copy.drawio",
+    "region": null,
+    "note": "The article's original image was a third-party picture (watermarked); redrawn in the style of the author's sendfile diagram, with the CPU copies routed through the user-space buffer.",
+    "title": "Traditional copy path: disk, page cache, user buffer, socket buffer, network"
+  },
+  "netty/assets/java-zero-copy-02.svg": {
+    "source_diagram": "source code reading/netty/内核-内核-copy.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "sendfile copies from the page cache to the socket buffer inside the kernel"
+  },
+  "netty/assets/java-zero-copy-03.svg": {
+    "source_diagram": "source code reading/netty/非MMAP_复制.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Ordinary read: DMA into the kernel page cache, then a CPU copy to user memory"
+  },
+  "netty/assets/java-zero-copy-04.svg": {
+    "source_diagram": "source code reading/netty/mmap_内存复制.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "mmap: user memory shares the kernel page cache"
+  },
+  "netty/assets/pipeline-01.svg": {
+    "source_diagram": "source code reading/netty/pipeLine_add_handler_prcocess.drawio",
+    "region": [
+      -220,
+      1380,
+      740,
+      1670
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Inbound and outbound event directions through the pipeline"
+  },
+  "netty/assets/pipeline-02.svg": {
+    "source_diagram": "source code reading/netty/pipeline事件触发.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Propagate an event across handler contexts"
+  },
+  "netty/assets/pooled-memory-01.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1640,
+      40,
+      -770,
+      470
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Arena, chunk, page and memory-unit hierarchy"
+  },
+  "netty/assets/pooled-memory-02.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      1840,
+      5380,
+      2430,
+      5660
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Threads bound to arenas in the arena pool"
+  },
+  "netty/assets/pooled-memory-03.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1650,
+      1715,
+      -1040,
+      1835
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "SubpagePools: circular lists of PoolSubpage linked by prev and next"
+  },
+  "netty/assets/pooled-memory-04.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1625,
+      2120,
+      -1205,
+      2200
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "A chunk divided into pages"
+  },
+  "netty/assets/pooled-memory-05.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1625,
+      2120,
+      -1020,
+      2385
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Requests smaller than a chunk use pooled pages; larger requests go straight to off-heap memory"
+  },
+  "netty/assets/pooled-memory-06.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2880,
+      50,
+      3560,
+      480
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "tinySubpagePools: one SubpagePool list per element size from 16 to 496 bytes"
+  },
+  "netty/assets/pooled-memory-07.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2880,
+      520,
+      3560,
+      980
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "smallSubpagePools: one SubpagePool list per element size from 512 to 4096 bytes"
+  },
+  "netty/assets/pooled-memory-08.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -410,
+      2215,
+      660,
+      2525
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "PoolChunkList linked list from qInit to q100, each holding PoolChunks"
+  },
+  "netty/assets/pooled-memory-10.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -295,
+      2600,
+      820,
+      2770
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Free-memory range of the chunks in each PoolChunkList"
+  },
+  "netty/assets/pooled-memory-11.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2670,
+      1715,
+      3020,
+      2070
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Allocation call chain from PooledByteBufAllocator.buffer to Arena.allocate"
+  },
+  "netty/assets/pooled-memory-12.svg": {
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      3460,
+      3270,
+      3975,
+      3720
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Buddy tree over a 16 MiB chunk with 8 KiB pages at layer 11"
+  },
+  "netty/assets/recycler-01.svg": {
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      -620,
+      130,
+      1000,
+      1100
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Recycler ownership and cross-thread queues"
+  },
+  "netty/assets/recycler-05.svg": {
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1280,
+      270,
+      1480,
+      480
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Recycle an object back through its handle"
+  },
+  "netty/assets/recycler-06.svg": {
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1300,
+      530,
+      1650,
+      820
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Stack.push chooses the return path"
+  },
+  "netty/assets/recycler-07.svg": {
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1260,
+      900,
+      1420,
+      1040
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Get an object from Recycler"
+  },
+  "netty/assets/recycler-08.svg": {
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1030,
+      1110,
+      1660,
+      1610
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Dead and active WeakOrderQueue nodes during scavenging"
+  },
+  "netty/assets/socket-read-01.svg": {
+    "source_diagram": "source code reading/netty/size_table.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Adaptive receive buffer SIZE_TABLE"
+  },
+  "netty/assets/thread-model-01.svg": {
+    "source_diagram": "source code reading/netty/netty_thread_model.drawio",
+    "region": [
+      170,
+      20,
+      640,
+      680
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Reactor roles in a Netty NIO server"
+  },
+  "netty/assets/thread-model-02.svg": {
+    "source_diagram": "source code reading/netty/netty_thread_model.drawio",
+    "region": [
+      170,
+      820,
+      640,
+      945
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Three kinds of NioEventLoop work"
+  },
+  "zookeeper/assets/client-startup-04.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
+    "region": null,
+    "note": "Redrawn from the code screenshot embedded in the author's diagram, with the annotations translated to English.",
+    "title": "Packet: request and response state"
+  },
+  "zookeeper/assets/client-startup-05.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_client_connect_server.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Establish the socket, then the session"
+  },
+  "zookeeper/assets/expiry-queue-01.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_io_model.drawio",
+    "region": [
+      100,
+      870,
+      760,
+      1160
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Connections and their timeout points"
+  },
+  "zookeeper/assets/leader-election-01.svg": {
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      90,
+      -270,
+      640,
+      420
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Election votes cross thread and queue boundaries"
+  },
+  "zookeeper/assets/leader-election-02.svg": {
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      -80,
+      580,
+      540,
+      1130
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Election loop: propose, exchange votes, decide"
+  },
+  "zookeeper/assets/leader-election-03.svg": {
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      -570,
+      1180,
+      820,
+      1950
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Peer connection topology for election"
+  },
+  "zookeeper/assets/leader-follower-initialization-01.svg": {
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -100,
+      90,
+      700,
+      440
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Connect followers to the elected leader"
+  },
+  "zookeeper/assets/leader-follower-initialization-02.svg": {
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -560,
+      660,
+      560,
+      1580
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Agree on the new epoch"
+  },
+  "zookeeper/assets/leader-follower-initialization-03.svg": {
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -1000,
+      1900,
+      900,
+      2730
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Synchronize data, then begin serving"
+  },
+  "zookeeper/assets/node-creation-01.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Queue a create request on the client"
+  },
+  "zookeeper/assets/node-creation-02.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": [
+      120,
+      120,
+      1030,
+      640
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Decode the request on the server"
+  },
+  "zookeeper/assets/node-creation-03.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": [
+      1090,
+      590,
+      1300,
+      920
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Standalone request processor chain"
+  },
+  "zookeeper/assets/standalone-server-startup-03.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_io_model.drawio",
+    "region": [
+      100,
+      -20,
+      1460,
+      570
+    ],
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Accept and dispatch NIO work"
+  },
+  "zookeeper/assets/watch-processing-01.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": null,
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "title": "Server request path and request processor chain"
+  }
+}
