@@ -6,7 +6,9 @@ layout: default
 <section class="home-intro">
   <p class="kicker">// source-code walkthroughs</p>
   <h1>Engineering notes</h1>
-  <p>Hi, I’m Blake. I read the source of distributed systems and networking libraries and write down how they work, from the first function call to the bytes on the wire.</p>
+  <p>Hi, I’m Shengbo (Blake) Hu, a senior software engineer with 15 years of building large-scale data systems. Today I work on rewriting parts of Apache Flink in C++; before that, I built Spark, Kafka and ClickHouse pipelines that process more than a billion records a day.</p>
+  <p>These notes are how I learn the systems I depend on. I read the source of distributed systems and networking libraries and write down how they work, from the first function call to the bytes on the wire.</p>
+  <p class="links"><a href="https://github.com/whateverblake">github</a><a href="https://www.linkedin.com/in/shengbo-hu-b0474569/">linkedin</a></p>
   <p class="stats"><span>{{ series.size }} series</span><span>{{ articles.size }} articles</span>{% for s in series %}<span>{{ s.source | split: ' · ' | first }}</span>{% endfor %}</p>
 </section>
 {% for s in series %}

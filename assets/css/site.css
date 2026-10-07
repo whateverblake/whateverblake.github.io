@@ -35,6 +35,10 @@ a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outlin
 .kicker { font-family:var(--mono); font-size:13px; color:var(--green); margin:0 0 12px; }
 .home-intro h1 { font-size:clamp(30px,3.4vw,42px); line-height:1.15; letter-spacing:-.02em; font-weight:600; margin:0 0 14px; }
 .home-intro p { font-size:16.5px; line-height:1.7; color:var(--muted); max-width:660px; margin:0; }
+.home-intro p + p { margin-top:12px; }
+.home-intro .links { margin-top:16px; display:flex; gap:18px; font-family:var(--mono); font-size:13px; }
+.home-intro .links a { text-decoration:none; }
+.home-intro .links a::after { content:" ↗"; color:var(--faint); }
 .home-intro .stats { max-width:none; margin-top:20px; display:flex; flex-wrap:wrap; gap:8px 22px; font-family:var(--mono); font-size:12.5px; color:var(--faint); }
 .home-intro .stats span::before { content:"▸ "; color:var(--line); }
 .series-block { margin-top:26px; padding-top:26px; border-top:1px solid var(--line); }
