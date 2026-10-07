@@ -91,9 +91,9 @@ RUN useradd -m -s /bin/bash debugger && \
     mkdir -p /run/sshd /workspace/build /home/debugger/.ssh && \
     chown -R debugger:debugger /workspace /home/debugger/.ssh && \
     chmod 700 /home/debugger/.ssh && \
-    printf '%s\n' 'PasswordAuthentication yes' 'PermitEmptyPasswords no' \
-      'KbdInteractiveAuthentication no' 'PermitRootLogin yes' \
-      'PubkeyAuthentication yes' 'AllowUsers debugger root' \
+    printf '%s\n' 'PasswordAuthentication no' \
+      'KbdInteractiveAuthentication no' 'PermitRootLogin no' \
+      'PubkeyAuthentication yes' 'AllowUsers debugger' \
       > /etc/ssh/sshd_config.d/mooncake.conf
 COPY ccache.conf /etc/ccache.conf
 # PAM imports /etc/environment for Remote Host SSH commands as well as shells.
@@ -139,10 +139,6 @@ Create `debug-lab/entrypoint.sh`:
 #!/usr/bin/env bash
 set -euo pipefail
 install -o debugger -g debugger -m 600 /run/lab-key.pub /home/debugger/.ssh/authorized_keys
-root_password=$(cat /run/lab-root-password)
-test -n "$root_password"
-printf 'root:%s\n' "$root_password" | chpasswd
-unset root_password
 chown debugger:debugger /workspace/build
 install -d -o debugger -g debugger -m 2775 /workspace/build/ccache
 # Also persist the limit in the cache itself, overriding any older cache config.
@@ -151,17 +147,15 @@ ssh-keygen -A
 exec /usr/sbin/sshd -D -e
 ```
 
-The startup script does five things:
+The startup script does four things:
 
 1. Install the public SSH key for `debugger`.
-2. Read the mounted root password file and apply it inside Linux.
-3. Give `debugger` access to the build directory and cache.
-4. Apply the 10 GB cache limit and create the SSH server's host keys.
-5. Start SSH in the foreground to keep the container running.
+2. Give `debugger` access to the build directory and cache.
+3. Apply the 10 GB cache limit and create the SSH server's host keys.
+4. Start SSH in the foreground to keep the container running.
 
-The Dockerfile makes this program executable. CLion uses key authentication.
-Root password login is also available in this local lab; its password is
-supplied at startup and is not stored in the image.
+The Dockerfile makes this script executable. SSH accepts key login for
+`debugger` only.
 
 ### .dockerignore: exclude credentials from image builds
 
@@ -200,7 +194,6 @@ services:
       - ..:/workspace/mooncake
       - build:/workspace/build
       - ./.local/id_ed25519.pub:/run/lab-key.pub:ro
-      - ./.local/root_password:/run/lab-root-password:ro
     working_dir: /workspace/mooncake
 volumes:
   build:
@@ -216,7 +209,7 @@ volumes:
 | `mem_limit: 8g` | Limit the container to 8 GiB of memory |
 | `..:/workspace/mooncake` | Share the Mac's source directory with Linux |
 | `build:/workspace/build` | Keep build output in a persistent Docker volume |
-| Credential mounts ending in `:ro` | Make these files read-only inside Linux |
+| Public key mount ending in `:ro` | Make the key read-only inside Linux |
 
 Relative paths start from the directory containing `compose.yaml`, so `..`
 means the Mooncake source root. See the
@@ -226,44 +219,14 @@ Only SSH is published to the Mac, on its loopback address. Port 2222 stays free
 for other containers. Before starting, make sure no other container uses the
 name `mooncake-debug` or port 33333.
 
-## 3. Create the SSH credentials
+## 3. Build the Docker image and start Linux
 
-Generate a key pair on the Mac:
-
-```bash
-ssh-keygen -t ed25519 -N '' -C mooncake-debug-lab \
-  -f debug-lab/.local/id_ed25519
-```
-
-The `.pub` file is the public key installed in Linux. The other file is the
-private key used by CLion. If these files already exist, keep them instead of
-overwriting them.
-
-Create the root password file with this command. Python asks for the password
-without displaying it and gives the file permissions that allow only your user
-to read and write it:
+First generate an SSH key pair for logging in to the container. The `.pub`
+file is installed in Linux; CLion uses the private key. Keep both out of Git.
 
 ```bash
-python3 - <<'PY'
-import getpass
-import os
-from pathlib import Path
-
-password_file = Path("debug-lab/.local/root_password")
-if password_file.exists():
-    raise SystemExit("Password file already exists; keep the existing credential.")
-password = getpass.getpass("Choose a root SSH password: ")
-if not password:
-    raise SystemExit("Password must not be empty.")
-fd = os.open(password_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-with os.fdopen(fd, "w") as stream:
-    stream.write(password + "\n")
-PY
+ssh-keygen -t ed25519 -N '' -C mooncake-debug-lab -f debug-lab/.local/id_ed25519
 ```
-
-Keep the password file and private key out of Git.
-
-## 4. Build the Docker image and start Linux
 
 Build the image:
 
@@ -305,10 +268,10 @@ If startup fails, inspect the output:
 docker compose -f debug-lab/compose.yaml logs lab
 ```
 
-Check that both mounted credential files exist as files, and that port 33333
-is free.
+Check that `debug-lab/.local/id_ed25519.pub` exists and that port 33333 is
+free.
 
-## 5. Configure Mooncake with CMake
+## 4. Configure Mooncake with CMake
 
 CMake creates the build rules. Ninja then uses those rules to compile the
 source. Run this command on the Mac; `docker exec` runs CMake inside Linux:
@@ -353,7 +316,7 @@ CMake may download more source dependencies, so configuration also needs
 internet access. We will build the existing `mooncake_master` and
 `mooncake_client` targets from the public source.
 
-## 6. Compile and test a breakpoint
+## 5. Compile and test a breakpoint
 
 For a terminal build, run:
 
@@ -391,7 +354,7 @@ in `mooncake-store/src/master.cpp`.
 This proves that symbols and source mapping work. It does not test Put or Get;
 those need running services, which the next articles start.
 
-## 7. Connect CLion
+## 6. Connect CLion
 
 Open the Mooncake source folder in CLion. In **Settings → Build, Execution,
 Deployment → Toolchains**, create a **Remote Host (SSH)** toolchain named
@@ -425,7 +388,7 @@ In **Settings → Build, Execution, Deployment → CMake**, create this profile:
 | Build directory | `/workspace/build` |
 | Build options | `--parallel 2` |
 
-In **CMake options**, paste the `-D...` options from step 5, separated by spaces.
+In **CMake options**, paste the `-D...` options from step 4, separated by spaces.
 Do not paste `docker exec`, `cmake`, `-S`, `-B`, `-G`, or the trailing shell
 backslashes. CLion supplies the other arguments from its settings.
 
@@ -437,10 +400,10 @@ Stop the session after it reaches the breakpoint.
 From now on CLion configures, builds and debugs. The terminal commands above
 are only an alternative that shows what the IDE does for you.
 
-## 8. Rebuild and stop the environment
+## 7. Rebuild and stop the environment
 
 After changing C++ source, build in CLion or repeat the build command from
-step 6. Restart any running Mooncake process that needs the new executable.
+step 5. Restart any running Mooncake process that needs the new executable.
 
 After changing the Dockerfile, startup program, or cache configuration, run:
 
