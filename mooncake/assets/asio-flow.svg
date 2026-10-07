@@ -1,43 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="956" viewBox="0 0 720 956" role="img" aria-labelledby="title desc">
-<title id="title">From queued work to a callback</title><desc id="desc">One TCP worker runs the event loop; lanes reuse sockets.</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="720" height="956" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">From queued work to a callback</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">One TCP worker runs the event loop; lanes reuse sockets.</text>
-<rect x="64" y="103" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="115" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="136" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">01  Submitter queues a TcpWorkItem</text>
-<text x="84" y="166" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">post(group-&gt;executor, handler) makes work ready.</text>
-<path d="M 360 194 L 360 217" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="221" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="233" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="254" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">02  TCP worker: io_context.run()</text>
-<text x="84" y="284" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">The worker executes the posted runGroupPump().</text>
-<path d="M 360 312 L 360 335" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="339" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="351" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="372" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">03  Pump chooses a lane</text>
-<text x="84" y="402" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Use its connection, or begin async_resolve().</text>
-<path d="M 360 430 L 360 453" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="457" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="469" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="490" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">04  Resolution finishes</text>
-<text x="84" y="520" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Completion handler starts async_connect().</text>
-<path d="M 360 548 L 360 571" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="575" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="587" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="608" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">05  Connection finishes</text>
-<text x="84" y="638" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Completion handler makes the lane usable.</text>
-<path d="M 360 666 L 360 689" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="693" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="705" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="726" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">06  Start the session</text>
-<text x="84" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Async header / body I/O advances through callbacks.</text>
-<path d="M 360 784 L 360 807" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="811" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="823" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="84" y="844" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">07  Session finishes</text>
-<text x="84" y="874" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Update the task, reuse the lane, pump more work.</text>
-<text x="32" y="936" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="610" viewBox="0 0 960 610" role="img" aria-labelledby="t d"><title id="t">From posted work to a running session</title><desc id="d">Everything on the right runs on one thread: TcpTransport::worker() inside io_context.run().</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="610" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">From posted work to a running session</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">Everything on the right runs on one thread: TcpTransport::worker() inside io_context.run().</text>
+<rect x="66.0" y="86.0" width="168.0" height="32.0" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1"/>
+<text x="150.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#1a7f37" font-weight="600" text-anchor="middle">submitting thread</text>
+<path d="M 150.0 118.0 L 150.0 576.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="411.3" y="86.0" width="217.4" height="32.0" rx="6" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#bc4c00" font-weight="600" text-anchor="middle">TCP worker · io_context</text>
+<path d="M 520.0 118.0 L 520.0 576.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="772.5" y="86.0" width="135.1" height="32.0" rx="6" fill="#f6f8fa" stroke="#59636e" stroke-width="1"/>
+<text x="840.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#59636e" font-weight="600" text-anchor="middle">OS / resolver</text>
+<path d="M 840.0 118.0 L 840.0 576.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<path d="M 150.0 156.0 L 520.0 156.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<text x="335.0" y="148.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1a7f37" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">asio::post(group-&gt;executor, runGroupPump)</text>
+<rect x="452.5" y="180.0" width="135.0" height="26.0" rx="5" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="197.5" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="600" text-anchor="middle">runGroupPump()</text>
+<text x="520.0" y="222.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">lane needs a connection → startLaneConnect()</text>
+<path d="M 587.5 193.0 L 840.0 193.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<text x="713.8" y="186.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">async_resolve()</text>
+<path d="M 840.0 248.0 L 520.0 248.0" fill="none" stroke="#59636e" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a-59636e)"/>
+<text x="680.0" y="241.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">completion handler</text>
+<rect x="428.7" y="272.0" width="182.6" height="26.0" rx="5" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="289.5" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="600" text-anchor="middle">handleLaneResolved()</text>
+<path d="M 611.3 285.0 L 840.0 285.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<text x="725.6" y="278.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">async_connect()</text>
+<path d="M 840.0 340.0 L 520.0 340.0" fill="none" stroke="#59636e" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a-59636e)"/>
+<text x="680.0" y="333.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">completion handler</text>
+<rect x="424.7" y="364.0" width="190.5" height="26.0" rx="5" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="381.5" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="600" text-anchor="middle">handleLaneConnected()</text>
+<text x="520.0" y="406.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">lane is usable</text>
+<rect x="436.6" y="426.0" width="166.7" height="26.0" rx="5" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="443.5" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="600" text-anchor="middle">startLaneSession()</text>
+<text x="520.0" y="468.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">ClientSession: async header + body I/O</text>
+<path d="M 603.4 439.0 L 840.0 439.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<text x="721.7" y="432.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">socket I/O</text>
+<path d="M 840.0 494.0 L 520.0 494.0" fill="none" stroke="#59636e" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a-59636e)"/>
+<text x="680.0" y="487.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">completion handler</text>
+<rect x="428.7" y="518.0" width="182.6" height="26.0" rx="5" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<text x="520.0" y="535.5" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="600" text-anchor="middle">handleLaneTerminal()</text>
+<text x="520.0" y="560.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">update task · reuse lane · pump again</text>
+<text x="32.0" y="596.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">post() only queues a handler. Callbacks run later on the worker; &quot;step into&quot; cannot follow them.</text></svg>

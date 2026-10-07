@@ -1,522 +1,592 @@
-"""Regenerate the blog's dependency-free SVG diagrams with Python 3.
+"""Regenerate the Mooncake series diagrams as dependency-free SVG files.
 
-Run from any directory: python3 /path/to/mooncake/assets/draw_diagrams.py
-All output is written beside this file. Text and geometry are kept explicit
-so the technical diagrams remain easy to review and edit.
+Run: python3 mooncake/assets/draw_diagrams.py
+Output is written beside this file. All diagrams share one canvas width,
+one type scale and one colour per role, so they scale identically on the page:
+
+  master  blue    owner  purple    caller  green    TCP data  orange
 """
 
 from html import escape
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent
-INK = "#15283f"
-MUTED = "#536579"
-BLUE = "#2563b0"
-TEAL = "#087f78"
-PURPLE = "#7651ac"
-ORANGE = "#b35a13"
+W = 960
+SANS = "IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif"
+MONO = "JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace"
+INK, MUTED, FAINT, LINE, PANEL = "#1f2328", "#59636e", "#818b98", "#d1d9e0", "#f6f8fa"
+ROLE = {  # stroke/text colour, tint
+    "master": ("#0969da", "#ddf4ff"),
+    "owner": ("#8250df", "#fbefff"),
+    "caller": ("#1a7f37", "#dafbe1"),
+    "data": ("#bc4c00", "#fff1e5"),
+    "neutral": ("#59636e", "#f6f8fa"),
+}
+WARN = []
 
 
-class Drawing:
-    def __init__(self, title, subtitle, height, width=720):
-        self.height = height
-        self.parts = [f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">
-<title id="title">{escape(title)}</title><desc id="desc">{escape(subtitle)}</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="{width}" height="{height}" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">''']
-        self.text(32, 43, title, 27, INK, True)
-        self.text(32, 75, subtitle, 18, MUTED)
-
-    def text(self, x, y, text, size=21, color=INK, bold=False, anchor="start"):
-        self.parts.append(f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" font-weight="{700 if bold else 400}" text-anchor="{anchor}">{escape(text)}</text>')
-
-    def box(self, x, y, w, h, title, lines=(), color=BLUE):
-        self.parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>')
-        self.parts.append(f'<rect x="{x}" y="{y+12}" width="5" height="{h-24}" rx="2" fill="{color}"/>')
-        self.text(x+20, y+33, title, 22, color, True)
-        for i, line in enumerate(lines):
-            self.text(x+20, y+63+i*27, line, 20)
-
-    def arrow(self, x1, y1, x2, y2, color=BLUE, dashed=False):
-        dash = ' stroke-dasharray="7 6"' if dashed else ''
-        self.parts.append(f'<path d="M {x1} {y1} L {x2} {y2}" fill="none" stroke="{color}" stroke-width="2.5"{dash} marker-end="url(#arrow)"/>')
-
-    def line(self, x1, y1, x2, y2):
-        self.parts.append(f'<path d="M {x1} {y1} L {x2} {y2}" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>')
-
-    def save(self, name):
-        self.text(32, self.height-20, "MOONCAKE  /  SOURCE WALKTHROUGH", 12, MUTED, True)
-        self.parts.append('</g></svg>')
-        (OUT / (name+'.svg')).write_text('\n'.join(self.parts)+'\n')
+def width_of(text, size, mono=False):
+    return len(text) * size * (0.61 if mono else 0.53)
 
 
-def steps(name, title, subtitle, rows, color):
-    d = Drawing(title, subtitle, 130+len(rows)*118)
-    for i, (heading, detail) in enumerate(rows):
-        y = 103+i*118
-        d.box(64, y, 592, 89, f'{i+1:02}  {heading}', [detail], color)
-        if i < len(rows)-1:
-            d.arrow(360, y+91, 360, y+114, color)
-    d.save(name)
+class Diagram:
+    def __init__(self, name, height, title, subtitle=""):
+        self.name, self.h, self.parts = name, height, []
+        self.title, self.subtitle = title, subtitle
+        self.text(32, 40, title, 20, INK, 600)
+        if subtitle:
+            self.text(32, 64, subtitle, 13.5, MUTED)
+
+    # primitives -----------------------------------------------------------
+    def text(self, x, y, s, size=13.5, color=INK, weight=400, mono=False, anchor="start", halo=False):
+        fam = MONO if mono else SANS
+        extra = ' paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"' if halo else ""
+        self.parts.append(
+            f'<text x="{x:.1f}" y="{y:.1f}" font-family="{fam}" font-size="{size}" fill="{color}" '
+            f'font-weight="{weight}" text-anchor="{anchor}"{extra}>{escape(s)}</text>')
+
+    def rect(self, x, y, w, h, fill="#ffffff", stroke=LINE, rx=6, dash=None, sw=1):
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        self.parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{rx}" '
+                          f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"{d}/>')
+
+    def line(self, pts, color=LINE, dash=None, sw=1.5, arrow=False):
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        m = f' marker-end="url(#a-{color[1:]})"' if arrow else ""
+        path = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in pts)
+        self.parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="{sw}"{d}{m}/>')
+
+    # building blocks --------------------------------------------------------
+    def node(self, x, y, w, h, head, lines=(), role="neutral", head_mono=True, tag=None, size=13):
+        """A white box with a coloured header line and optional body lines."""
+        color, _ = ROLE[role]
+        self.rect(x, y, w, h)
+        self.parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="4" height="{h:.1f}" rx="2" fill="{color}"/>')
+        self.text(x + 16, y + 22, head, 14 if head_mono else 14.5, color, 600, mono=head_mono)
+        self._check(head, 14, head_mono, w - 24 - (width_of(tag, 11, True) + 18 if tag else 0))
+        if tag:
+            tw = width_of(tag, 11, True) + 12
+            self.rect(x + w - tw - 8, y + 8, tw, 18, PANEL, LINE, 4)
+            self.text(x + w - 8 - tw / 2, y + 21, tag, 11, MUTED, 500, True, "middle")
+        for i, s in enumerate(lines):
+            mono = s.startswith("`")
+            s = s.strip("`")
+            self.text(x + 16, y + 44 + i * 19, s, size - (0.5 if mono else 0), INK if not mono else MUTED, mono=mono)
+            self._check(s, size, mono, w - 24)
+        return dict(x=x, y=y, w=w, h=h, cx=x + w / 2, cy=y + h / 2, l=x, r=x + w, t=y, b=y + h)
+
+    def group(self, x, y, w, h, label, role="neutral", note=None):
+        color, tint = ROLE[role]
+        self.rect(x, y, w, h, tint, color, 8, None, 1)
+        self.text(x + 14, y + 22, label, 12, color, 700, True)
+        if note:
+            self.text(x + w - 14, y + 22, note, 12, MUTED, 400, False, "end")
+
+    def arrow(self, pts, role="neutral", dash=None, label=None, at=0.5, dy=-7, anchor="middle", sw=1.6, lsize=12.5):
+        color = ROLE[role][0]
+        self.line(pts, color, dash, sw, True)
+        if label:
+            (x1, y1), (x2, y2) = pts[0], pts[-1]
+            if len(pts) > 2:
+                (x1, y1), (x2, y2) = pts[len(pts) // 2 - 1], pts[len(pts) // 2]
+            self.text(x1 + (x2 - x1) * at, y1 + (y2 - y1) * at + dy, label, lsize, color, 500, False, anchor, True)
+
+    def tag(self, x, y, s, role="neutral"):
+        color, tint = ROLE[role]
+        tw = width_of(s, 11.5, True) + 14
+        self.rect(x, y, tw, 20, tint, color, 4)
+        self.text(x + tw / 2, y + 14, s, 11.5, color, 600, True, "middle")
+        return tw
+
+    def legend(self, items, y):
+        x = 32
+        for label, role, dash in items:
+            color = ROLE[role][0]
+            self.line([(x, y), (x + 34, y)], color, dash, 1.8, True)
+            self.text(x + 44, y + 4.5, label, 12.5, MUTED)
+            x += 60 + width_of(label, 12.5)
+
+    def lifelines(self, actors, top, bottom):
+        """Sequence-diagram columns: [(x, label, role), ...]."""
+        for x, label, role in actors:
+            color, tint = ROLE[role]
+            w = max(120, width_of(label, 13.5, True) + 28)
+            self.rect(x - w / 2, top, w, 32, tint, color, 6)
+            self.text(x, top + 21, label, 13.5, color, 600, True, "middle")
+            self.line([(x, top + 32), (x, bottom)], LINE, "4 4", 1.2)
+
+    def msg(self, x1, x2, y, label, role="neutral", dash=None, note=None):
+        self.arrow([(x1, y), (x2, y)], role, dash, label, 0.5, -8)
+        if note:
+            self.text((x1 + x2) / 2, y + 17, note, 11.5, FAINT, 400, False, "middle")
+
+    def step(self, x, y, n, role="neutral"):
+        color, _ = ROLE[role]
+        self.parts.append(f'<circle cx="{x}" cy="{y}" r="10" fill="{color}"/>')
+        self.text(x, y + 4.2, str(n), 11.5, "#ffffff", 700, True, "middle")
+
+    def _check(self, s, size, mono, room):
+        if width_of(s, size, mono) > room + 2:
+            WARN.append(f"{self.name}: '{s}' ({width_of(s, size, mono):.0f}px > {room:.0f}px)")
+
+    def save(self):
+        markers = "".join(
+            f'<marker id="a-{c[1:]}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
+            f'orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="{c}"/></marker>'
+            for c in [v[0] for v in ROLE.values()] + [LINE])
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{self.h}" viewBox="0 0 {W} {self.h}" '
+               f'role="img" aria-labelledby="t d"><title id="t">{escape(self.title)}</title>'
+               f'<desc id="d">{escape(self.subtitle)}</desc><defs>{markers}</defs>'
+               f'<rect width="{W}" height="{self.h}" fill="#ffffff"/>' + "\n".join(self.parts) + "</svg>\n")
+        (OUT / f"{self.name}.svg").write_text(svg)
 
 
-d = Drawing('One cluster, three processes', 'The master chooses a location. Clients move the bytes.', 570)
-d.box(204, 110, 312, 102, 'MASTER', ['Keys • replicas • free space'], BLUE)
-d.box(32, 346, 292, 110, 'CALLER', ['Put / Get API', 'Local staging buffer'], TEAL)
-d.box(396, 346, 292, 110, 'OWNER', ['Mounted memory pool', 'Stores object bytes'], PURPLE)
-d.arrow(170, 340, 270, 220, BLUE)
-d.text(39, 258, 'Placement RPCs', 20, BLUE)
-d.arrow(548, 340, 456, 220, BLUE)
-d.text(496, 234, 'Mount + heartbeat', 19, BLUE)
-d.arrow(325, 330, 390, 330, PURPLE)
-d.arrow(325, 387, 390, 387, ORANGE)
-d.text(360, 314, 'P2P metadata', 19, PURPLE, anchor='middle')
-d.text(360, 491, 'TCP data: caller → owner on Put', 22, ORANGE, True, 'middle')
-d.text(360, 520, 'Get returns bytes from owner → caller', 20, MUTED, anchor='middle')
-d.save('cluster')
-
-steps('master-startup', 'Start the master', 'One process • non-HA path • fresh state', [
-    ('Parse and validate configuration', 'main() builds the effective MasterConfig.'),
-    ('Construct the RPC server', 'Address, port, and worker count are configured.'),
-    ('Construct the service objects', 'WrappedMasterService owns MasterService.'),
-    ('Initialize state and start workers', 'Managers exist before any owner mounts memory.'),
-    ('Start the HTTP admin server', 'Monitoring and management use a separate port.'),
-    ('Register RPC handlers', 'Bind PutStart, MountSegment, Ping, and others.'),
-    ('Run the RPC server', 'A serving thread starts; main waits for shutdown.'),
-], BLUE)
-
-d = Drawing('What the master keeps', 'These are records and coordination state, not payload pools.', 605)
-d.box(32, 110, 656, 89, 'MasterService', ['Owns metadata, managers, and background work.'], BLUE)
-d.arrow(184, 201, 184, 226)
-d.arrow(536, 201, 536, 226)
-d.box(32, 231, 304, 143, 'Object metadata', ['Tenant + key', 'Replica state + address', 'Writer + lease'], BLUE)
-d.box(384, 231, 304, 143, 'SegmentManager', ['Mounted owner regions', 'Free-space allocators', 'Client / host indexes'], PURPLE)
-d.box(32, 398, 304, 143, 'ClientTaskManager', ['Copy / move assignments', 'Status + retry state', 'Owners execute tasks'], TEAL)
-d.box(384, 398, 304, 143, 'Background workers', ['Expiry + eviction', 'Replica / task cleanup', 'Drain jobs + admission'], ORANGE)
-d.save('master-state')
-
-steps('owner-startup', 'Turn a client into an owner', 'Standalone mooncake_client • TCP • P2PHANDSHAKE', [
-    ('Create RealClient and Client', 'Prepare process resources and parse settings.'),
-    ('Connect to the Master service', 'Check service version and request storage settings.'),
-    ('Initialize the Transfer Engine', 'Create metadata state and the handshake listener.'),
-    ('Install TCP and create the submitter', 'Start the data listener and I/O worker.'),
-    ('Allocate storage and register it', 'Prepare a global pool; register its address range.'),
-    ('Mount the segment at the master', 'Record capacity and start heartbeat / task polling.'),
-    ('Finish standalone service startup', 'Register client RPC handlers and start that server.'),
-], PURPLE)
-
-d = Drawing('One pool, three descriptions', 'Example owner: 64 MiB global pool, zero local staging.', 865)
-d.box(32, 109, 656, 117, 'OWNER PROCESS: actual memory', ['Allocated pool holds the object bytes.', 'RealClient keeps the CPU allocation alive.'], PURPLE)
-d.arrow(360, 231, 360, 259, PURPLE)
-d.box(32, 267, 656, 141, '1  MemoryRegion: engine bookkeeping', ['Reserve in registering_memory_regions_.', 'Register with the installed transport.', 'Commit into local_memory_regions_.'], TEAL)
-d.arrow(360, 414, 360, 445, TEAL)
-d.box(32, 452, 656, 117, '2  SegmentDesc: peer transfer metadata', ['TCP endpoint + BufferDesc address ranges.', 'Peers request it through the P2P handshake.'], PURPLE)
-d.arrow(360, 574, 360, 607, BLUE)
-d.box(32, 614, 656, 143, '3  Store Segment: master-visible capacity', ['UUID + logical name + base + size + TE endpoint.', 'MountSegment RPC sends this record to the master.', 'Master creates an allocator for the reported range.'], BLUE)
-d.text(360, 808, 'Local buffer registration alone does not mount storage.', 21, MUTED, anchor='middle')
-d.save('owner-memory')
-
-d = Drawing('Inside one owner process', 'Object relationships • classic Transfer Engine • TCP + P2P', 1390)
-d.box(112, 112, 496, 111, 'RealClient', ['High-level API + process-owned buffers', 'Inherits PyClient; client_ holds Client.'], PURPLE)
-d.arrow(360, 228, 360, 261, PURPLE)
-d.box(112, 268, 496, 111, 'Client', ['MasterClient handles Store RPCs.', 'TransferSubmitter uses the same engine below.'], TEAL)
-d.arrow(360, 384, 360, 426, TEAL)
-d.text(379, 411, 'transfer_engine_', 18, MUTED)
-d.box(112, 433, 496, 85, 'TransferEngine', ['Public transfer API'], TEAL)
-d.arrow(360, 523, 360, 565, TEAL)
-d.text(379, 550, 'impl_', 18, MUTED)
-d.box(112, 572, 496, 111, 'TransferEngineImpl', ['Registration state + transport coordination', 'Holds MultiTransport and TransferMetadata.'], TEAL)
-d.arrow(224, 688, 184, 747, TEAL)
-d.arrow(496, 688, 540, 747, PURPLE)
-d.text(32, 719, 'multi_transports_', 18, MUTED)
-d.text(535, 719, 'metadata_', 18, MUTED)
-d.box(32, 754, 300, 111, 'MultiTransport', ['transport_map_["tcp"]', 'Selects the transport.'], TEAL)
-d.box(392, 754, 296, 165, 'TransferMetadata', ['ONE shared object', 'SegmentDesc / BufferDesc', 'Peer cache + local info', 'Handshake callbacks'], PURPLE)
-d.arrow(337, 810, 387, 810, PURPLE, True)
-d.arrow(184, 870, 184, 940, TEAL)
-d.text(204, 907, 'Transport pointer', 17, MUTED)
-d.box(32, 947, 300, 139, 'TcpTransport', ['Implements Transport', 'context_ holds TcpContext.', 'thread_ runs TCP I/O.'], ORANGE)
-d.parts.append(f'<path d="M 333 1010 L 361 1010 L 361 886 L 387 886" fill="none" stroke="{PURPLE}" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>')
-d.arrow(664, 924, 664, 961, PURPLE)
-d.text(421, 955, 'handshake_plugin_', 17, MUTED)
-d.box(392, 968, 296, 118, 'SocketHandShakePlugin', ['Implements HandShakePlugin', 'Separate P2P listener'], PURPLE)
-d.arrow(184, 1091, 184, 1140, ORANGE)
-d.box(32, 1147, 300, 138, 'TcpContext', ['io_context: event-loop state', 'acceptor: new connections', 'validate_addr_: range check'], ORANGE)
-d.text(394, 1182, 'Solid: member relationship', 19, INK, True)
-d.text(394, 1215, 'Dashed: shared metadata', 19, PURPLE, True)
-d.text(394, 1248, 'Arrows do not imply', 19, MUTED)
-d.text(394, 1274, 'one thread per object.', 19, MUTED)
-d.text(360, 1335, 'Transfer metadata describes memory; the master tracks keys.', 21, INK, True, 'middle')
-d.save('owner-objects')
-
-d = Drawing('The owner: classes and important members', 'CPU memory · TCP + P2PHANDSHAKE · all objects are in one process', 1480, width=1200)
-
-def class_group(x, y, w, h, title, fill, stroke):
-    d.parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="{fill}" stroke="{stroke}" stroke-width="2"/>')
-    d.text(x+22, y+35, title, 25, stroke, True)
-
-class_group(24, 109, 1152, 1241, 'RealClient : PyClient', '#fff4e8', ORANGE)
-d.text(48, 177, 'High-level Store API + backing allocations', 22)
-d.text(48, 213, 'client_ holds the Client shown below.', 21, MUTED)
-d.text(48, 245, 'client_ and client_buffer_allocator_ are inherited from PyClient.', 18, MUTED)
-d.box(770, 150, 382, 104, 'ClientBufferAllocator', ['client_buffer_allocator_', 'Local staging memory'], ORANGE)
-
-class_group(48, 280, 1104, 1043, 'Client', '#eaf3ff', BLUE)
-d.box(72, 346, 312, 142, 'MasterClient', ['master_client_', 'Store RPCs to the master', 'MountSegment / PutStart'], BLUE)
-d.box(432, 346, 312, 142, 'TransferSubmitter', ['transfer_submitter_', 'engine_: TransferEngine&', 'Uses the same engine below'], TEAL)
-d.box(792, 346, 336, 142, 'mounted_segments_', ['UUID → Segment', 'Owner-side Store records', 'No master allocator here'], BLUE)
-d.arrow(588, 493, 588, 541, TEAL, True)
-d.text(609, 524, 'engine_ reference', 19, TEAL)
-
-class_group(72, 548, 1056, 748, 'TransferEngine', '#f0edf9', PURPLE)
-d.text(95, 613, 'Client::transfer_engine_ holds this public API wrapper.', 20, MUTED)
-d.arrow(700, 602, 700, 643, PURPLE)
-d.text(718, 628, 'impl_', 19, PURPLE)
-
-class_group(96, 650, 1008, 624, 'TransferEngineImpl', '#faf8ff', PURPLE)
-d.text(120, 718, 'Local registration bookkeeping:', 20, MUTED)
-d.text(120, 748, 'local_memory_regions_  ·  registering_memory_regions_', 21)
-d.text(120, 776, 'multi_transports_ ↓', 18, TEAL)
-d.text(624, 776, 'metadata_ ↓', 18, PURPLE)
-
-class_group(120, 792, 432, 458, 'MultiTransport', '#e4f4f0', TEAL)
-d.text(142, 856, 'transport_map_["tcp"]', 21)
-d.text(142, 885, 'shared_ptr<Transport> → TcpTransport', 19)
-d.text(142, 918, 'metadata_', 20, PURPLE)
-d.arrow(557, 911, 619, 911, PURPLE, True)
-
-class_group(142, 953, 388, 273, 'TcpTransport : Transport', '#fff4e8', ORANGE)
-d.text(163, 1019, 'thread_: runs the TCP event loop', 20)
-d.text(163, 1052, 'metadata_: inherited shared pointer', 19, PURPLE)
-d.text(163, 1083, 'context_ ↓', 19, ORANGE)
-d.box(162, 1095, 348, 110, 'TcpContext', ['io_context: event-loop state', 'acceptor: TCP data port D'], ORANGE)
-d.parts.append(f'<path d="M 533 1050 L 586 1050 L 586 947 L 619 947" fill="none" stroke="{PURPLE}" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>')
-
-class_group(624, 792, 456, 458, 'TransferMetadata (shared)', '#eee7f9', PURPLE)
-d.text(646, 856, 'local_rpc_meta_: handshake endpoint H', 20)
-d.text(646, 887, 'segment_id_to_desc_map_', 21)
-d.text(646, 918, 'segment_name_to_id_map_', 21)
-d.text(646, 949, 'Shared with the TCP transport', 20, MUTED)
-d.text(646, 980, 'handshake_plugin_ ↓', 18, PURPLE)
-d.box(644, 996, 416, 229, 'SocketHandShakePlugin', [], PURPLE)
-d.text(664, 1057, 'listen_fd_: listens on handshake port H', 19)
-d.text(664, 1088, 'listener_: accepts connections', 19)
-d.text(664, 1125, 'on_metadata_callback_ →', 19)
-d.text(664, 1155, 'TransferMetadata::receivePeerMetadata', 19)
-d.text(664, 1193, 'Other callbacks: connection / notify / probe', 18)
-
-d.text(40, 1385, 'Nested boxes: held objects / state, not exclusive ownership or separate threads.', 21, MUTED)
-d.text(40, 1414, 'Dashed arrows: references. Both metadata_ arrows reach the same shared object.', 21, PURPLE)
-d.save('owner-class-map')
-
-d = Drawing('Master service: key metadata and available storage', 'TCP + CPU memory · nested boxes show the main member relationships', 1470, width=1200)
-class_group(24, 110, 1152, 1280, 'MasterService', '#eaf3ff', BLUE)
-class_group(48, 186, 664, 1170, 'metadata_shards_: 1024 MetadataShard', '#f0edf9', PURPLE)
-d.text(72, 252, 'Find an object by tenant + key', 22, PURPLE)
-class_group(72, 281, 616, 1048, 'MetadataShard  [s]', '#faf8ff', PURPLE)
-d.text(96, 347, 'mutex: protects this shard', 21)
-d.text(96, 379, 'tenants: TenantId → TenantState', 21)
-class_group(96, 402, 568, 900, 'TenantState', '#e4f4f0', TEAL)
-d.text(120, 469, 'metadata: string key → ObjectMetadata', 21)
-d.text(120, 501, 'processing_keys: keys with unfinished writes', 21)
-class_group(120, 553, 520, 720, 'ObjectMetadata  [key]', '#f7fcfa', TEAL)
-d.text(144, 619, 'tenant_id · user_key · writer client_id', 21)
-d.text(144, 651, 'size · lease_timeout', 21)
-d.text(144, 691, 'replicas_: vector<Replica>', 21, TEAL)
-class_group(144, 716, 472, 530, 'Replica', '#fff4e8', ORANGE)
-d.text(168, 782, 'id_: ReplicaID (uint64_t)', 21)
-d.text(168, 813, 'status_: ReplicaStatus enum', 21)
-d.text(168, 844, 'data_: variant holding MemoryReplicaData', 20)
-class_group(168, 866, 424, 354, 'MemoryReplicaData', '#fffaf1', ORANGE)
-d.text(192, 933, 'buffer: unique_ptr<AllocatedBuffer>', 20)
-d.box(192, 966, 376, 227, 'AllocatedBuffer', [], ORANGE)
-d.text(212, 1032, 'buffer_ptr_: address in the owner', 19)
-d.text(212, 1063, 'size_ · protocol = "tcp"', 20)
-d.text(212, 1094, 'offset_handle_: reserved range', 19)
-d.text(212, 1130, 'allocator_: weak_ptr', 20, PURPLE)
-d.text(212, 1168, 'No payload stored in this object.', 18, MUTED)
-
-class_group(752, 186, 400, 1170, 'SegmentManager', '#e4f4f0', TEAL)
-d.text(776, 252, 'segment_manager_: storage capacity', 19, TEAL)
-d.box(776, 292, 352, 170, 'mounted_segments_', ['Segment UUID → MountedSegment', 'segment: owner pool description', 'status: SegmentStatus', 'buf_allocator: shared_ptr'], BLUE)
-d.box(776, 505, 352, 157, 'AllocatorManager', ['allocator_manager_', 'allocators_: name → vector', 'of shared allocator pointers'], TEAL)
-d.arrow(952, 667, 952, 721, TEAL)
-d.text(775, 701, 'Same allocator', 19, TEAL)
-d.box(776, 728, 352, 209, 'OffsetBufferAllocator', ['base_ · total_size_ · endpoint'], TEAL)
-d.box(796, 846, 312, 73, 'OffsetAllocator', ['Free blocks and size bins'], TEAL)
-d.parts.append(f'<path d="M 1129 421 L 1140 421 L 1140 818 L 1131 818" fill="none" stroke="{TEAL}" stroke-width="2.5" marker-end="url(#arrow)"/>')
-d.parts.append(f'<path d="M 570 1124 L 732 1124 L 732 819 L 771 819" fill="none" stroke="{PURPLE}" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>')
-d.box(776, 998, 352, 294, 'Other segment indexes', [], BLUE)
-d.text(796, 1060, 'client_segments_', 21)
-d.text(796, 1091, 'owner UUID → segment UUIDs', 19)
-d.text(796, 1133, 'client_by_name_', 21)
-d.text(796, 1174, 'segment_id_by_name_', 21)
-d.text(796, 1215, 'segments_by_host_', 21)
-d.text(796, 1259, 'These locate pools, not keys.', 19, MUTED)
-d.text(40, 1424, 'Solid arrows: shared allocator references. Dashed arrow: AllocatedBuffer holds a weak reference.', 21, MUTED)
-d.save('master-class-map')
-
-steps('master-key-lookup', 'Get follows the key to its replica', 'Example after a successful Put: one readable 4096-byte replica', [
-    ('GetReplicaList("blog/example")', 'Resolve the request to tenant "default" + the full key.'),
-    ('MetadataAccessorRO selects shard s', 'For this key: s = hash("blog/example") % 1024.'),
-    ('shard.tenants.find(tenant_id)', 'Find this tenant’s state inside the selected shard.'),
-    ('tenant.metadata.find("blog/example")', 'Find the ObjectMetadata created by PutStart.'),
-    ('Visit ObjectMetadata::replicas_', 'PutEnd made replica 101 COMPLETE; check readability.'),
-    ('Build Replica::Descriptor', '127.0.0.1:16001 · address 0x70002000 · 4096 bytes'),
-    ('Caller reads from the owner', 'P2P resolves the data endpoint; TCP returns the bytes.'),
-], BLUE)
-
-d = Drawing('One owner pool, three places holding descriptions', 'TCP + P2PHANDSHAKE · the memory stays in the owner process', 1200, width=1200)
-class_group(24, 126, 368, 711, 'OWNER', '#fff4e8', ORANGE)
-d.box(48, 187, 320, 102, 'RealClient', ['segment_ptrs_: backing memory', 'Example: 64 MiB pool'], ORANGE)
-d.box(48, 313, 320, 137, 'TransferEngineImpl', [], TEAL)
-d.text(68, 375, 'registering_memory_regions_', 18)
-d.text(68, 404, '       ↓ registration succeeds', 18, MUTED)
-d.text(68, 433, 'local_memory_regions_', 18)
-d.box(48, 475, 320, 229, 'TransferMetadata', [], PURPLE)
-d.text(68, 537, 'segment_id_to_desc_map_[0]', 18)
-d.text(68, 567, '→ local SegmentDesc', 20)
-d.text(68, 598, '    buffers[] → BufferDesc', 19)
-d.text(68, 629, '    addr = owner pool base', 18)
-d.text(68, 660, '    length = registered size', 18)
-d.box(48, 715, 320, 109, 'Client', ['mounted_segments_', 'UUID → Segment'], BLUE)
-
-class_group(430, 126, 342, 711, 'MASTER', '#eaf3ff', BLUE)
-d.box(454, 187, 294, 227, 'SegmentManager', [], BLUE)
-d.text(474, 249, 'mounted_segments_[UUID]', 18)
-d.text(474, 280, '→ MountedSegment', 20)
-d.text(474, 311, '    segment: Store Segment', 18)
-d.text(474, 342, '    status: OK', 18)
-d.text(474, 373, '    buf_allocator', 18)
-d.arrow(601, 419, 601, 448, TEAL)
-d.box(454, 455, 294, 145, 'OffsetBufferAllocator', ['Free / reserved ranges', 'within the owner pool', 'Bookkeeping only'], TEAL)
-d.text(454, 651, 'Store UUID identifies the pool.', 18, MUTED)
-d.text(454, 680, 'No SegmentDesc in this record.', 18, MUTED)
-d.text(454, 775, 'Also: client / name / host indexes', 18, MUTED)
-
-class_group(810, 126, 366, 711, 'REQUESTING CLIENT', '#e4f4f0', TEAL)
-d.box(834, 187, 318, 304, 'TransferMetadata', [], PURPLE)
-d.text(854, 249, 'segment_name_to_id_map_', 18)
-d.text(854, 280, 'owner endpoint → remote ID', 18)
-d.text(854, 320, 'segment_id_to_desc_map_', 18)
-d.text(854, 351, 'remote ID → SegmentDesc', 18)
-d.text(854, 391, 'A decoded copy of the', 20)
-d.text(854, 422, "owner's description", 20)
-d.text(854, 461, 'Example remote ID: 1', 18, MUTED)
-d.text(834, 547, 'Fetched on the first cache miss.', 18, MUTED)
-d.text(834, 589, 'Not a local memory registration.', 18, MUTED)
-d.text(834, 621, 'Not a Store mount by this client.', 18, MUTED)
-d.text(834, 680, 'No copy of the whole pool.', 20, TEAL, True)
-d.text(834, 775, 'Object range comes from master.', 18, MUTED)
-
-for x in [208, 601, 993]:
-    d.line(x, 853, x, 1110)
-d.text(404, 886, '1  MountSegment: Store Segment', 19, BLUE, False, 'middle')
-d.arrow(208, 904, 601, 904, BLUE)
-d.text(797, 957, '2  PutStart reply: allocated range', 19, BLUE, False, 'middle')
-d.arrow(601, 975, 993, 975, BLUE)
-d.text(601, 1032, '3  Peer fetches via P2P; owner replies with encoded SegmentDesc', 20, PURPLE, False, 'middle')
-d.arrow(208, 1050, 993, 1050, PURPLE, True)
-d.text(600, 1131, 'Mounting announces capacity. Peer discovery caches metadata. A later WRITE moves bytes.', 22, INK, True, 'middle')
-d.save('owner-memory-distribution')
-
-d = Drawing('Start two different listeners', 'Startup runs top to bottom; both listeners remain active.', 1370)
-listener_steps = [
-    ('1  Client::InitTransferEngine()', 'Initialize the engine, then install the TCP transport.', TEAL),
-    ('2  TransferEngineImpl::init()', 'Choose H; create TransferMetadata + MultiTransport.', TEAL),
-    ('3  addRpcMetaEntry()', 'Save handshake address; register peer callbacks.', PURPLE),
-    ('4  Start the handshake listener', 'SocketHandShakePlugin::startDaemon() listens on H.', PURPLE),
-    ('5  TcpTransport::install()', 'Choose D; store the TCP endpoint in SegmentDesc.', ORANGE),
-    ('6  Construct TcpContext', 'acceptor(io_context) binds and listens on D.', ORANGE),
-    ('7  Start the TCP worker', 'doAccept() starts acceptance; io_context.run() runs I/O.', ORANGE),
-]
-for i, (title, detail, color) in enumerate(listener_steps):
-    y = 108 + i * 122
-    d.box(32, y, 656, 92, title, [detail], color)
-    if i < len(listener_steps)-1:
-        d.arrow(360, y+97, 360, y+116, color)
-d.text(360, 985, 'RUNNING AFTER THIS STAGE', 19, MUTED, True, 'middle')
-d.box(32, 1010, 656, 117, 'SocketHandShakePlugin listens on H', ['listen_fd_: listening socket for metadata / control', 'listener_: thread accepting peer connections'], PURPLE)
-d.box(32, 1150, 656, 117, 'TcpContext::acceptor listens on D', ['TcpTransport owns the context and runs the worker.', 'ServerSession handles each accepted data connection.'], ORANGE)
-d.text(360, 1319, 'Global memory is registered and mounted later.', 22, INK, True, 'middle')
-d.save('owner-listeners')
-
-d = Drawing('Mount a segment: owner → master', 'Register the range locally, then announce storage capacity.', 1180)
-d.text(32, 123, 'OWNER PROCESS', 20, PURPLE, True)
-d.text(382, 123, 'MASTER PROCESS', 20, BLUE, True)
-d.line(360, 143, 360, 1119)
-d.box(32, 153, 304, 89, '1  RealClient', ['Allocate the global pool.'], PURPLE)
-d.arrow(184, 247, 184, 277, PURPLE)
-d.box(32, 284, 304, 111, '2  Client', ['MountSegmentAndGetId()', 'Validate / check overlap.'], TEAL)
-d.arrow(184, 400, 184, 430, TEAL)
-d.box(32, 437, 304, 111, '3  Transfer Engine', ['Register the address range.', 'TCP updates BufferDesc.'], TEAL)
-d.arrow(184, 553, 184, 587, TEAL)
-d.box(32, 594, 304, 89, '4  MasterClient', ['Send Segment + client UUID.'], TEAL)
-d.text(384, 241, 'The RPC carries metadata.', 21, BLUE, True)
-d.text(384, 273, 'The pool stays in the owner.', 20, MUTED)
-d.text(384, 329, 'Segment UUID: which pool?', 20, MUTED)
-d.text(384, 361, 'Client UUID: whose pool?', 20, MUTED)
-d.arrow(339, 639, 379, 639, BLUE)
-d.box(382, 594, 306, 89, 'WrappedMasterService', ['RPC entry → service method'], BLUE)
-d.arrow(536, 688, 536, 723, BLUE)
-d.box(382, 730, 306, 111, 'MasterService', ['Acquire segment access.', 'Queue owner liveness ID.'], BLUE)
-d.arrow(536, 846, 536, 877, BLUE)
-d.box(382, 884, 306, 111, 'ScopedSegmentAccess', ['Create the allocator.', 'Insert record and indexes.'], BLUE)
-d.box(32, 1020, 304, 111, '5  Client: finish mount', ['Save Segment in local map.', 'Start heartbeat / task poll.'], PURPLE)
-d.parts.append(f'<path d="M 536 1000 L 536 1065 L 341 1065" fill="none" stroke="{BLUE}" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>')
-d.text(554, 1045, 'Success', 20, BLUE)
-d.save('segment-mount-flow')
-
-d = Drawing('Where the mounted segment lives', 'Two processes • two maps • one payload pool', 1120)
-d.box(32, 110, 656, 89, 'MASTER: SegmentManager', ['Records mounted capacity and controls allocation.'], BLUE)
-d.arrow(184, 204, 184, 235, BLUE)
-d.arrow(536, 204, 536, 235, BLUE)
-d.box(32, 242, 304, 143, 'mounted_segments_[id]', ['MountedSegment record', 'segment + status OK', 'buf_allocator'], BLUE)
-d.box(382, 242, 306, 143, 'allocator_manager_', ['AllocatorManager', 'name → allocator pointers', 'Used by allocation strategy'], BLUE)
-d.arrow(184, 390, 268, 474, TEAL)
-d.arrow(536, 390, 452, 474, TEAL)
-d.text(360, 430, 'Same object', 19, TEAL, True, 'middle')
-d.box(112, 481, 496, 143, 'OffsetBufferAllocator', ['Segment name + base + capacity + endpoint', 'OffsetAllocator tracks free / reserved ranges.', 'No owner payload is copied into the master.'], TEAL)
-d.box(32, 656, 656, 116, 'Other indexes in SegmentManager', ['Client → segment IDs; name → client / segment ID', 'Host → names → IDs; capacity and usage tracking'], BLUE)
-d.line(32, 810, 688, 810)
-d.box(32, 845, 656, 143, 'OWNER: Client + RealClient', ['Client::mounted_segments_[id] stores a Segment.', 'RealClient keeps the real 64 MiB memory allocation.', 'The owner map has no master-side allocator field.'], PURPLE)
-d.text(360, 1040, 'Mount: make a pool available.', 22, INK, True, 'middle')
-d.text(360, 1072, 'Later Put: reserve a range inside that pool.', 22, INK, True, 'middle')
-d.save('segment-mount-state')
-
-d = Drawing('Same client stack, two roles', 'CPU memory · TCP + P2PHANDSHAKE · different memory settings', 1010, width=960)
-for i, (title, detail) in enumerate([
-    ('RealClient::create()', 'Create the same high-level client object in both processes.'),
-    ('RealClient::setup_internal()', 'Owner calls directly; caller enters through setup_real().'),
-    ('Client::Create()', 'Construct Client and connect to the Master service.'),
-    ('Initialize transfers', 'Create Transfer Engine, TCP listeners, and TransferSubmitter.'),
-]):
-    y=110+i*120
-    d.box(144,y,672,89,title,[detail],TEAL)
-    if i<3:d.arrow(480,y+94,480,y+114,TEAL)
-d.arrow(360,564,248,632,PURPLE)
-d.arrow(600,564,712,632,TEAL)
-d.box(32,639,432,222,'OWNER: contributes memory',[
-    'global: 64 MiB · local: 0',
-    'Register the global pool.',
-    'MountSegment → Master service.',
-    'Start heartbeat and task polling.',
-],PURPLE)
-d.box(496,639,432,222,'CALLER: Put / Get',[
-    'global: 0 · local: 16 MiB',
-    'Register local staging memory.',
-    'No global pool to mount.',
-    'Call put() and get_buffer().',
-],TEAL)
-d.text(480,909,'Both roles have a Transfer Engine and TCP listeners.',24,INK,True,'middle')
-d.text(480,947,'The owner executable adds its client RPC server after setup.',21,MUTED,False,'middle')
-d.save('client-role-workflow')
-
-d = Drawing('Get reuses the same caller', 'One completed memory replica · TCP protocol v2', 775)
-for x,label,color in [(111,'CALLER',TEAL),(360,'MASTER',BLUE),(609,'OWNER',PURPLE)]:
-    d.box(x-79,108,158,56,label,color=color)
-    d.line(x,177,x,655)
-for y,x1,x2,label,color in [
-    (220,111,360,'Query the key',BLUE),
-    (300,360,111,'Replicas + lease',BLUE),
-    (453,111,609,'READ header: owner address + length',ORANGE),
-    (533,609,111,'Status response',ORANGE),
-    (605,609,111,'Value bytes → caller local buffer',ORANGE),
-]:
-    d.text((x1+x2)/2,y-15,label,20,color,False,'middle')
-    d.arrow(x1,y,x2,y,color,x2<x1)
-d.text(360,365,'Choose a replica and allocate a local destination.',20,INK,False,'middle')
-d.text(360,396,'Reuse peer metadata, or fetch it through P2P.',19,MUTED,False,'middle')
-d.text(360,694,'get_buffer() returns a handle to the received bytes.',22,INK,True,'middle')
-d.text(360,730,'No new client, no global allocation, and no PutEnd.',20,MUTED,False,'middle')
-d.save('get-sequence')
-
-d = Drawing('A Put has three milestones', 'One new key • one memory replica • first peer connection', 850)
-xs = [111, 360, 609]
-for x, label, color in zip(xs, ['CALLER', 'MASTER', 'OWNER'], [TEAL, BLUE, PURPLE]):
-    d.box(x-79, 108, 158, 56, label, color=color)
-    d.line(x, 177, x, 776)
-
-def msg(y, a, b, label, color, dashed=False):
-    d.text((xs[a]+xs[b])/2, y-14, label, 20, color, False, 'middle')
-    d.arrow(xs[a], y, xs[b], y, color, dashed)
-
-msg(220, 0, 1, '1  PutStart', BLUE)
-msg(287, 1, 0, 'Reserved replica', BLUE, True)
-msg(365, 0, 2, 'P2P handshake: request peer description', PURPLE)
-msg(424, 2, 0, 'TCP endpoint + registered buffer ranges', PURPLE, True)
-msg(503, 0, 2, '2  TCP WRITE: header + object bytes', ORANGE)
-msg(575, 2, 0, 'v2 acknowledgement: body received', ORANGE, True)
-msg(654, 0, 1, '3  PutEnd', BLUE)
-msg(723, 1, 0, 'Replica COMPLETE', BLUE, True)
-d.text(360, 803, 'The master never forwards the object payload.', 22, INK, True, 'middle')
-d.save('put-sequence')
-
-d = Drawing('Allocate an offset, not a new pool', 'Illustrative addresses • 4096-byte object • no extra rounding', 642)
-d.box(32, 112, 656, 115, 'MASTER: allocation bookkeeping', ['Pick a free block; split it; record the replica.', 'Returned address = owner base + byte offset'], BLUE)
-d.arrow(360, 232, 360, 274, BLUE)
-d.text(360, 312, '0x70000000 + 0x2000 = 0x70002000', 25, INK, True, 'middle')
-d.box(32, 347, 656, 194, 'OWNER: existing global memory pool', [], PURPLE)
-for x, w, fill, label in [(53, 180, '#e6edf7', 'Earlier ranges'), (233, 207, '#dcd1ed', '4096 bytes'), (440, 228, '#e0f2eb', 'Remaining space')]:
-    d.parts.append(f'<rect x="{x}" y="408" width="{w}" height="65" fill="{fill}" stroke="white" stroke-width="2"/>')
-    d.text(x+w/2, 447, label, 18, INK, True, 'middle')
-d.text(233, 505, '↑ chosen offset 0x2000', 20, PURPLE)
-d.text(360, 590, 'Freeing a block can merge neighboring free ranges.', 21, MUTED, anchor='middle')
-d.save('offset-allocation')
-
-steps('asio-flow', 'From queued work to a callback', 'One TCP worker runs the event loop; lanes reuse sockets.', [
-    ('Submitter queues a TcpWorkItem', 'post(group->executor, handler) makes work ready.'),
-    ('TCP worker: io_context.run()', 'The worker executes the posted runGroupPump().'),
-    ('Pump chooses a lane', 'Use its connection, or begin async_resolve().'),
-    ('Resolution finishes', 'Completion handler starts async_connect().'),
-    ('Connection finishes', 'Completion handler makes the lane usable.'),
-    ('Start the session', 'Async header / body I/O advances through callbacks.'),
-    ('Session finishes', 'Update the task, reuse the lane, pump more work.'),
-], TEAL)
-
-d = Drawing('TCP Write: two sessions', 'Protocol v2 • CPU memory • logical order of completion', 688)
-d.box(32, 108, 306, 89, 'ClientSession', ['Runs in the caller'], TEAL)
-d.box(382, 108, 306, 89, 'ServerSession', ['Runs in the owner'], PURPLE)
-d.line(150, 209, 150, 590)
-d.line(570, 209, 570, 590)
-for y, label in [(263, 'WRITE header: address + length'), (349, 'Body: bytes from local staging buffer')]:
-    d.text(360, y-17, label, 20, ORANGE, False, 'middle')
-    d.arrow(150, y, 570, y, ORANGE)
-d.box(341, 382, 347, 91, 'Owner memory', ['readBody() fills the target.'], PURPLE)
-d.text(360, 514, 'Success status after the complete body', 20, PURPLE, False, 'middle')
-d.arrow(570, 532, 150, 532, PURPLE, True)
-d.text(360, 610, 'Complete when body write + acknowledgement succeed.', 21, INK, True, 'middle')
-d.text(360, 640, 'Then the Store caller sends PutEnd to the master.', 20, MUTED, False, 'middle')
-d.save('tcp-write')
+# ---------------------------------------------------------------------------
+# Series overview
+# ---------------------------------------------------------------------------
+def cluster():
+    d = Diagram("cluster", 470, "One cluster, three processes",
+                "The master decides where an object goes. Clients move the bytes themselves.")
+    m = d.node(330, 96, 300, 86, "mooncake_master", ["keys → replica locations", "mounted segments, free space"], "master", tag=":50051")
+    c = d.node(40, 268, 270, 86, "caller · RealClient", ["Put / Get API", "16 MiB staging buffer"], "caller")
+    o = d.node(650, 268, 270, 86, "owner · mooncake_client", ["64 MiB mounted pool", "holds the object bytes"], "owner", tag=":H :D")
+    d.arrow([(c["cx"] - 40, c["t"]), (m["l"] + 30, m["b"])], "master", "6 4", "PutStart · PutEnd · GetReplicaList", 0.5, -14, "end")
+    d.arrow([(o["cx"] + 40, o["t"]), (m["r"] - 30, m["b"])], "master", "6 4", "MountSegment · heartbeat", 0.5, -14, "start")
+    d.arrow([(c["r"], 292), (o["l"], 292)], "owner", "6 4", "P2P on :H — SegmentDesc", 0.5, -8)
+    d.arrow([(c["r"], 334), (o["l"], 334)], "data", None, "TCP on :D — object bytes", 0.5, -8, sw=2.6)
+    d.text(480, 392, "The object payload never passes through the master.", 13.5, INK, 600, anchor="middle")
+    d.legend([("control RPC", "master", "6 4"), ("peer metadata", "owner", "6 4"), ("object bytes", "data", None)], 440)
+    d.save()
 
 
-d = Drawing('One peer group, several TCP connections',
-            'Caller objects → TCP connections → owner sessions · two lanes shown',
-            1200, width=960)
-class_group(32, 110, 896, 715, 'CALLER: PeerConnectionGroup', '#eaf3ff', BLUE)
-d.text(56, 178, 'key = owner host + data port D     |     lanes = vector of lane pointers', 20, INK)
-d.box(192, 210, 576, 88, 'queue: waiting TcpWorkItem objects', ['Work C waits while A and B are active below.'], BLUE)
-d.arrow(480, 303, 480, 329, BLUE)
-d.text(480, 357, 'runGroupPump() assigns work to available lanes', 22, BLUE, True, 'middle')
-d.arrow(365, 373, 269, 408, TEAL)
-d.arrow(595, 373, 691, 408, TEAL)
-for x, lane_id, work in [(64, 0, 'A'), (486, 1, 'B')]:
-    center = x+205
-    class_group(x, 415, 410, 379, f'ConnectionLane {lane_id}', '#e7f4f0', TEAL)
-    d.text(x+22, 481, f'current = work {work}     state = BUSY', 20, INK)
-    d.box(x+20, 504, 370, 88, 'session → ClientSession', ['Runs this work item’s transfer.'], TEAL)
-    d.arrow(center, 597, center, 654, TEAL)
-    d.text(center+16, 631, 'socket_', 18, TEAL)
-    d.box(x+20, 661, 370, 108, f'socket → TCP socket {lane_id}',
-          ['Same object as session.socket_', 'One reusable caller-side socket'], ORANGE)
-    d.arrow(center, 774, center, 928, ORANGE)
-    d.text(center+16, 869, f'Connection {lane_id}', 19, ORANGE, True)
-    d.text(center+16, 896, 'to owner port D', 18, ORANGE)
-class_group(32, 938, 896, 158, 'OWNER: TcpContext::acceptor listens on data port D', '#f1ebf8', PURPLE)
-for x, lane_id in [(84, 0), (506, 1)]:
-    d.box(x, 982, 370, 90, f'ServerSession {lane_id}',
-          ['Uses its own accepted socket.'], PURPLE)
-d.text(480, 1136, 'All caller lanes share one io_context and TCP worker.', 23, INK, True, 'middle')
-d.text(480, 1166, 'Each lane is a connection slot; it does not create a thread.', 20, MUTED, False, 'middle')
-d.save('tcp-lanes')
+# ---------------------------------------------------------------------------
+# Part 1 — Master
+# ---------------------------------------------------------------------------
+def master_startup():
+    d = Diagram("master-startup", 560, "How mooncake_master starts",
+                "main() builds everything, then hands the RPC listener to its own thread.")
+    d.group(32, 86, 470, 440, "main()  ·  master.cpp", "master")
+    rows = [
+        ("1  load config", "flags + optional --config_path → MasterConfig"),
+        ("2  coro_rpc_server", "address, port, worker count — not serving yet"),
+        ("3  WrappedMasterService", "constructs MasterService: state + workers"),
+        ("4  MasterAdminServer::Start()", "HTTP admin routes on :9003"),
+        ("5  RegisterRpcService()", "bind PutStart, MountSegment, Ping, …"),
+        ("6  start serving thread", "main() then waits for a shutdown signal"),
+    ]
+    ys = []
+    for i, (h, b) in enumerate(rows):
+        y = 112 + i * 68
+        d.node(50, y, 434, 54, h, [b], "master")
+        ys.append(y)
+        if i:
+            d.line([(267, y - 14), (267, y)], ROLE["master"][0], None, 1.4, True)
+    w = d.node(560, 112, 368, 172, "MasterService workers", [
+        "`EvictionThreadFunc`", "`ClientMonitorFunc`", "`TaskCleanupThreadFunc`",
+        "`JobDispatchThreadFunc`", "`replica_cleanup_worker_`", "`DynamicReplicationAdmissionThreadFunc`"], "neutral", size=12.5)
+    d.arrow([(484, ys[2] + 27), (522, ys[2] + 27), (522, 230), (560, 230)], "neutral", None)
+    d.text(492, ys[2] + 20, "start", 12.5, MUTED, 500, False, "start", True)
+    a = d.node(560, 318, 368, 54, "HTTP admin  :9003", ["/health · /metrics/summary · /get_all_segments"], "neutral")
+    d.arrow([(484, ys[3] + 27), (560, ys[3] + 27)], "neutral")
+    r = d.node(560, ys[5], 368, 54, "server.start()  :50051", ["RPC listener — the master is now usable"], "master")
+    d.arrow([(484, ys[5] + 27), (560, ys[5] + 27)], "master", None, "thread", 0.5, -7)
+    d.save()
+
+
+def master_class_map():
+    d = Diagram("master-class-map", 660, "MasterService keeps two indexes",
+                "Left: where are this key's replicas?   Right: where can a new replica be placed?")
+    top = d.node(330, 86, 300, 48, "MasterService", [], "master")
+    left = [
+        ("metadata_shards_[s]", "1024 MetadataShard, one mutex each"),
+        ("tenants[tenant_id]", "TenantState: metadata, processing_keys"),
+        ("metadata[key]", "ObjectMetadata: size, writer id, lease"),
+        ("replicas_[i]", "Replica: id_, status_, data_"),
+        ("data_ → buffer", "MemoryReplicaData → AllocatedBuffer"),
+        ("AllocatedBuffer", "buffer_ptr_ (owner address), size_"),
+    ]
+    right = [
+        ("segment_manager_", "SegmentManager"),
+        ("mounted_segments_[uuid]", "MountedSegment: segment, status"),
+        ("buf_allocator", "shared_ptr to the segment's allocator"),
+        ("OffsetBufferAllocator", "base, size, te_endpoint"),
+        ("OffsetAllocator", "free blocks and size bins"),
+    ]
+    d.text(40, 172, "find a key", 12, ROLE["master"][0], 700, True)
+    d.text(540, 172, "find free space", 12, ROLE["owner"][0], 700, True)
+    L = []
+    for i, (h, b) in enumerate(left):
+        n = d.node(40, 184 + i * 72, 380, 56, h, [b], "master")
+        if i:
+            d.line([(230, n["t"] - 16), (230, n["t"])], ROLE["master"][0], None, 1.4, True)
+        L.append(n)
+    R = []
+    for i, (h, b) in enumerate(right):
+        n = d.node(540, 184 + i * 72, 380, 56, h, [b], "owner")
+        if i:
+            d.line([(730, n["t"] - 16), (730, n["t"])], ROLE["owner"][0], None, 1.4, True)
+        R.append(n)
+    d.line([(top["cx"] - 60, top["b"]), (top["cx"] - 60, 150), (230, 150), (230, 184)], ROLE["master"][0], None, 1.4, True)
+    d.line([(top["cx"] + 60, top["b"]), (top["cx"] + 60, 150), (730, 150), (730, 184)], ROLE["owner"][0], None, 1.4, True)
+    d.arrow([(L[5]["r"], L[5]["cy"]), (455, L[5]["cy"]), (455, R[3]["cy"]), (R[3]["l"], R[3]["cy"])], "neutral", "5 4")
+    d.text(462, (L[5]["cy"] + R[3]["cy"]) / 2 + 4, "allocator_", 11.5, MUTED, 500, True)
+    d.text(462, (L[5]["cy"] + R[3]["cy"]) / 2 + 20, "weak_ptr", 11.5, FAINT, 400, True)
+    d.text(480, 640, "The master stores addresses and sizes only. The object bytes stay in the owner.", 12.5, MUTED, anchor="middle")
+    d.save()
+
+
+def master_key_lookup():
+    d = Diagram("master-key-lookup", 560, "Put writes the record, Get follows it",
+                "Example: key \"blog/example\", default tenant, one 4096-byte memory replica.")
+    chain = [
+        ("\"default\" + \"blog/example\"", "object identity: tenant + full key"),
+        ("shard s = hash(key) % 1024", "the hash picks a shard, not an owner"),
+        ("tenants[\"default\"]", "TenantState inside shard s"),
+        ("metadata[\"blog/example\"]", "ObjectMetadata — full key compared"),
+        ("replicas_[0]  id 101", "status PROCESSING → COMPLETE"),
+        ("127.0.0.1:16001 · 0x70002000 · 4096", "Replica::Descriptor sent to the reader"),
+    ]
+    for i, (h, b) in enumerate(chain):
+        n = d.node(250, 92 + i * 72, 460, 56, h, [b], "master")
+        if i:
+            d.line([(480, n["t"] - 16), (480, n["t"])], ROLE["master"][0], None, 1.4, True)
+    put = d.node(32, 92, 186, 200, "PutStart", ["inserts metadata", "reserves 4096 bytes", "replica PROCESSING", "key in processing_keys"], "caller", head_mono=True)
+    end = d.node(32, 310, 186, 92, "PutEnd", ["replica COMPLETE", "key leaves processing"], "caller")
+    get = d.node(742, 92, 186, 310, "GetReplicaList", ["same identity", "same shard", "same tenant map", "same key", "readable replicas only", "builds descriptors", "grants a read lease"], "data")
+    d.arrow([(put["r"], 120), (250, 120)], "caller")
+    d.arrow([(end["r"], 412 - 48), (250, 412 - 48)], "caller")
+    d.arrow([(get["l"], 120), (710, 120)], "data")
+    d.arrow([(get["l"], 484), (710, 484)], "data")
+    d.text(480, 536, "Different keys can share a shard; they never share an ObjectMetadata.", 12.5, MUTED, anchor="middle")
+    d.save()
+
+
+# ---------------------------------------------------------------------------
+# Part 2 — Owner
+# ---------------------------------------------------------------------------
+def owner_class_map():
+    rows = [
+        (0, "RealClient", "Store API · owns the pool in segment_ptrs_", "owner"),
+        (1, "client_buffer_allocator_", "ClientBufferAllocator — local staging", "owner"),
+        (1, "client_  :  Client", "the Store client", "owner"),
+        (2, "master_client_  :  MasterClient", "RPCs to the master", "master"),
+        (2, "transfer_submitter_", "TransferSubmitter — uses the same engine", "neutral"),
+        (2, "mounted_segments_", "UUID → Segment (owner side)", "neutral"),
+        (2, "transfer_engine_  :  TransferEngine", "public transfer API", "neutral"),
+        (3, "impl_  :  TransferEngineImpl", "memory regions · transports · metadata", "neutral"),
+        (4, "multi_transports_  :  MultiTransport", "transport_map_[\"tcp\"]", "neutral"),
+        (5, "TcpTransport", "thread_ runs the TCP event loop", "data"),
+        (6, "context_  :  TcpContext", "io_context · acceptor on port D", "data"),
+        (4, "metadata_  :  TransferMetadata", "shared · local + peer SegmentDesc", "owner"),
+        (5, "handshake_plugin_", "SocketHandShakePlugin · listen_fd_ on port H", "owner"),
+    ]
+    top, step, ind = 92, 40, 34
+    d = Diagram("owner-class-map", top + len(rows) * step + 64, "Inside one owner process",
+                "Member names as they appear in the debugger. Indentation = \"holds\".")
+    pos = []
+    for i, (lvl, name, note, role) in enumerate(rows):
+        y = top + i * step
+        x = 40 + lvl * ind
+        color = ROLE[role][0]
+        w = width_of(name, 13.5, True) + 30
+        d.rect(x, y, w, 28, "#ffffff", color, 5)
+        d.text(x + 14, y + 19, name, 13.5, color, 600, True)
+        d.text(x + w + 14, y + 19, note, 13, MUTED)
+        pos.append((lvl, x, y))
+    # tree connectors
+    for i, (lvl, x, y) in enumerate(pos):
+        if lvl == 0:
+            continue
+        j = max(k for k in range(i) if pos[k][0] == lvl - 1)
+        px, py = pos[j][1] + 14, pos[j][2] + 28
+        d.line([(px, py), (px, y + 14), (x, y + 14)], LINE, None, 1.3)
+    # shared metadata
+    def row_end(i):
+        lvl, x, y = pos[i]
+        return x + width_of(rows[i][1], 13.5, True) + 30 + 14 + width_of(rows[i][2], 13) + 12
+    ty = pos[11][2]
+    d.arrow([(row_end(9), pos[9][2] + 14), (800, pos[9][2] + 14), (800, ty + 14), (row_end(11), ty + 14)], "owner", "5 4")
+    d.text(810, (pos[9][2] + ty) / 2 + 10, "same object", 11.5, ROLE["owner"][0], 600, True)
+    d.text(810, (pos[9][2] + ty) / 2 + 25, "(shared_ptr)", 11.5, MUTED, 400, True)
+    d.text(40, top + len(rows) * step + 30, "Boxes are members, not threads. Only TcpTransport::thread_ and the plugin's listener_ are extra threads.", 12.5, MUTED)
+    d.save()
+
+
+def owner_startup():
+    d = Diagram("owner-startup", 600, "How an owner starts",
+                "mooncake_client --global_segment_size='64 MB' --local_buffer_size=0 --protocol=tcp")
+    d.lifelines([(110, "owner · main thread", "owner"), (820, "mooncake_master", "master")], 86, 560)
+    steps = [
+        ("RealClient::create()", None),
+        ("Client::Create() → MasterClient::Connect()", ("ServiceReady → version", "master")),
+        ("TransferEngineImpl::init()", None),
+        ("TcpTransport::install()", None),
+        ("allocate 64 MiB · registerLocalMemory()", None),
+        ("Client::MountSegment()", ("MountSegment(Segment, client UUID)", "master")),
+        ("EnsureStorageControlPlaneStarted()", ("heartbeat + task poll · every 1 s", "master")),
+        ("client RPC server on :50052", None),
+    ]
+    notes = {2: "handshake listener on port H", 3: "TCP data listener on port D", 4: "BufferDesc added to SegmentDesc"}
+    for i, (s, rpc) in enumerate(steps):
+        y = 150 + i * 52
+        d.step(110, y, i + 1, "owner")
+        d.text(132, y + 5, s, 13.5, INK, 500, True)
+        if i in notes:
+            d.text(132, y + 22, notes[i], 12, MUTED)
+        if rpc:
+            d.arrow([(500, y), (820, y)], rpc[1], "6 4" if i != 6 else "2 3", rpc[0], 0.5, -8)
+    d.text(32, 586, "Steps 1–7 run inside setup_internal(); the RPC server starts only after the pool is mounted.", 12.5, MUTED)
+    d.save()
+
+
+def owner_listeners():
+    d = Diagram("owner-listeners", 430, "Two listeners, two ports",
+                "A peer asks port H where the memory is, then sends bytes to port D.")
+    d.group(32, 86, 580, 300, "owner process", "owner")
+    h = d.node(56, 122, 470, 104, "SocketHandShakePlugin", ["socket: listen_fd_  ·  thread: listener_ (accept loop)",
+                                                          "answers with TransferMetadata::receivePeerMetadata()",
+                                                          "replies: SegmentDesc — data endpoint + buffers"], "owner")
+    t = d.node(56, 252, 470, 104, "TcpContext  (owned by TcpTransport)", ["socket: acceptor  ·  thread: TcpTransport::thread_",
+                                                                       "io_context.run() drives every session",
+                                                                       "each connection → one ServerSession"], "data")
+    for n, lab, role in [(h, "H", "owner"), (t, "D", "data")]:
+        c, tint = ROLE[role]
+        d.rect(592, n["cy"] - 18, 40, 36, tint, c, 6, None, 1.5)
+        d.text(612, n["cy"] + 5, lab, 15, c, 700, True, "middle")
+        d.line([(n["r"], n["cy"]), (592, n["cy"])], c, None, 1.4)
+    p = d.node(790, 150, 140, 180, "peer client", ["Transfer Engine", "+ TCP"], "caller")
+    d.arrow([(790, h["cy"]), (632, h["cy"])], "owner", "6 4", "1  get SegmentDesc", 0.5, -8)
+    d.arrow([(790, t["cy"]), (632, t["cy"])], "data", None, "2  WRITE / READ", 0.5, -8, sw=2.2)
+    d.text(32, 412, "H and D are chosen automatically at startup; read them from the logs.", 12.5, MUTED)
+    d.save()
+
+
+def owner_memory():
+    d = Diagram("owner-memory", 420, "One pool, three descriptions",
+                "The 64 MiB allocation exists once. Three records describe it for three audiences.")
+    color, tint = ROLE["owner"]
+    d.rect(80, 92, 800, 54, tint, color, 6, None, 1.5)
+    d.text(100, 116, "64 MiB pool  @ 0x70000000", 15, color, 700, True)
+    d.text(100, 136, "RealClient::segment_ptrs_ keeps the allocation alive", 12.5, MUTED)
+    cols = [
+        ("MemoryRegion", "TransferEngineImpl", ["local_memory_regions_[addr]", "lets transports touch it"], "neutral"),
+        ("BufferDesc in SegmentDesc", "TransferMetadata", ["SegmentDesc::buffers", "tells peers how to reach it"], "owner"),
+        ("Store Segment", "Client  →  master", ["uuid · name · base · size", "offers it as storage"], "master"),
+    ]
+    for i, (h, where, lines, role) in enumerate(cols):
+        x = 80 + i * 280
+        n = d.node(x, 220, 240, 110, h, [where] + lines, role, head_mono=True)
+        d.arrow([(n["cx"], n["t"]), (n["cx"], 146)], role, "5 4")
+        d.text(n["cx"] + 6, 190, f"{i + 1}", 12, ROLE[role][0], 700, True)
+    d.text(480, 372, "Registering, mounting and describing never copy the pool. Only a later WRITE moves bytes.", 12.5, MUTED, anchor="middle")
+    d.save()
+
+
+def segment_mount_flow():
+    actors = [(110, "RealClient", "owner"), (290, "Client", "owner"), (470, "TransferEngine", "owner"),
+              (650, "MasterClient", "owner"), (850, "MasterService", "master")]
+    d = Diagram("segment-mount-flow", 690, "Mounting a segment",
+                "Register the range locally first, then announce it to the master.")
+    d.lifelines(actors, 86, 660)
+    y = 150
+    d.msg(110, 290, y, "MountSegment(ptr, 64 MiB)", "owner"); y += 40
+    d.text(298, y, "check overlap with mounted_segments_", 12, MUTED); y += 40
+    d.msg(290, 470, y, "registerLocalMemory()", "owner"); y += 30
+    d.text(478, y, "MemoryRegion: pending → committed", 12, MUTED); y += 18
+    d.text(478, y, "TCP adds BufferDesc to SegmentDesc", 12, MUTED); y += 30
+    d.msg(470, 290, y, "ok", "owner", "4 4"); y += 40
+    d.text(298, y, "build Segment{uuid, name, base, size, te_endpoint}", 12, MUTED); y += 40
+    d.msg(290, 650, y, "MountSegment(segment)", "owner"); y += 46
+    d.msg(650, 850, y, "RPC: Segment + client UUID", "master"); y += 30
+    for s in ["client UUID → client_ping_queue_", "ScopedSegmentAccess::MountSegment()",
+              "  new OffsetBufferAllocator", "  insert MountedSegment + indexes"]:
+        d.text(660, y, s, 12, MUTED, mono=s.startswith("  ")); y += 18
+    y += 14
+    d.msg(850, 290, y, "OK", "master", "4 4"); y += 44
+    d.text(298, y - 6, "mounted_segments_[uuid] = segment", 12, MUTED, mono=True); y += 18
+    d.text(298, y, "start heartbeat + task polling (once)", 12, MUTED)
+    d.save()
+
+
+def segment_mount_state():
+    d = Diagram("segment-mount-state", 560, "Where a mounted segment is recorded",
+                "The master keeps bookkeeping for the pool. The owner keeps the pool itself.")
+    d.group(32, 86, 560, 440, "master · SegmentManager", "master")
+    ms = d.node(52, 122, 300, 92, "mounted_segments_[uuid]", ["MountedSegment", "segment · status = OK", "buf_allocator"], "master")
+    am = d.node(372, 122, 200, 92, "allocator_manager_", ["name →", "vector of allocators"], "master")
+    oa = d.node(160, 262, 300, 76, "OffsetBufferAllocator", ["one per segment · free / reserved", "ranges inside the owner pool"], "master")
+    d.arrow([(ms["cx"], ms["b"]), (ms["cx"], oa["t"])], "master")
+    d.arrow([(am["cx"], am["b"]), (am["cx"], 240), (oa["r"] - 40, 240), (oa["r"] - 40, oa["t"])], "master")
+    d.text(380, 234, "same object", 11.5, ROLE["master"][0], 600, True)
+    d.node(52, 368, 520, 136, "other indexes", [
+        "`client_segments_      client UUID → segment UUIDs`",
+        "`client_by_name_       name → client UUID`",
+        "`segment_id_by_name_   name → one segment UUID`",
+        "`segments_by_host_     host → names → segment UUIDs`"], "neutral", size=13)
+    d.group(620, 86, 308, 440, "owner process", "owner")
+    p = d.node(640, 122, 268, 92, "RealClient", ["segment_ptrs_", "→ the real 64 MiB pool"], "owner")
+    c = d.node(640, 262, 268, 92, "Client", ["mounted_segments_[uuid]", "→ Segment (no allocator)"], "owner")
+    d.text(640, 400, "A member named mounted_segments_", 12.5, MUTED)
+    d.text(640, 418, "exists on both sides with", 12.5, MUTED)
+    d.text(640, 436, "different value types.", 12.5, MUTED)
+    d.save()
+
+
+def owner_memory_distribution():
+    d = Diagram("owner-memory-distribution", 560, "Who learns about the owner's memory, and when",
+                "Three processes. Only the owner holds the bytes; the others hold descriptions.")
+    cols = [(40, "owner", "owner"), (360, "master", "master"), (680, "requesting client", "caller")]
+    for x, label, role in cols:
+        d.group(x, 86, 240, 300, label, role)
+    d.node(56, 118, 208, 74, "RealClient", ["segment_ptrs_ — 64 MiB"], "owner")
+    d.node(56, 204, 208, 74, "TransferEngineImpl", ["local_memory_regions_"], "owner")
+    d.node(56, 290, 208, 80, "TransferMetadata", ["SegmentDesc at ID 0", "buffers[0] = the pool"], "owner")
+    d.node(376, 118, 208, 74, "SegmentManager", ["MountedSegment + status"], "master")
+    d.node(376, 204, 208, 90, "OffsetBufferAllocator", ["free / reserved ranges", "bookkeeping only"], "master")
+    d.node(696, 118, 208, 92, "AllocatedBuffer", ["Descriptor from PutStart", "0x70002000 · 4096 bytes"], "caller")
+    d.node(696, 222, 208, 92, "TransferMetadata", ["decoded owner SegmentDesc", "under a local ID, e.g. 1"], "caller")
+    for x in (160, 480, 800):
+        d.line([(x, 386), (x, 540)], LINE, "4 4", 1.2)
+    y = 420
+    d.arrow([(160, y), (480, y)], "master", "6 4", "1  MountSegment: Segment + client UUID", 0.5, -8)
+    d.arrow([(480, y + 36), (800, y + 36)], "master", "6 4", "2  PutStart reply: one 4096-byte range", 0.5, -8)
+    d.arrow([(800, y + 72), (160, y + 72)], "owner", "6 4", "3  P2P fetch: owner replies with its SegmentDesc", 0.5, -8)
+    d.arrow([(800, y + 108), (160, y + 108)], "data", None, "4  TCP WRITE moves the bytes", 0.5, -8, sw=2.2)
+    d.save()
+
+
+# ---------------------------------------------------------------------------
+# Part 3 — Put and Get
+# ---------------------------------------------------------------------------
+def client_role_workflow():
+    d = Diagram("client-role-workflow", 440, "Same client stack, two roles",
+                "Owner and caller run the same setup; only the memory sizes differ.")
+    shared = d.node(250, 86, 460, 128, "shared setup · RealClient::setup_internal()", [
+        "Client::Create() — connect to the master",
+        "TransferEngineImpl::init() — handshake listener",
+        "TcpTransport::install() — data listener + worker",
+        "TransferSubmitter + ClientBufferAllocator",
+    ], "neutral", head_mono=True)
+    o = d.node(60, 280, 380, 130, "owner", ["global 64 MiB · local 0", "register + mount the global pool", "heartbeat + task polling", "then: client RPC server :50052"], "owner")
+    c = d.node(520, 280, 380, 130, "caller", ["global 0 · local 16 MiB", "register the staging buffer only", "no mount, no heartbeat thread", "then: put() and get_buffer()"], "caller")
+    d.arrow([(shared["cx"] - 80, shared["b"]), (o["cx"], o["t"])], "owner")
+    d.arrow([(shared["cx"] + 80, shared["b"]), (c["cx"], c["t"])], "caller")
+    d.save()
+
+
+def put_sequence():
+    d = Diagram("put-sequence", 600, "One Put, three milestones",
+                "New key · one memory replica · first contact with this owner")
+    xs = dict(caller=140, master=480, owner=820)
+    d.lifelines([(xs["caller"], "caller", "caller"), (xs["master"], "master", "master"), (xs["owner"], "owner", "owner")], 86, 560)
+    y = 160
+    d.text(32, y - 16, "1", 13, ROLE["master"][0], 700, True)
+    d.msg(xs["caller"], xs["master"], y, "PutStart(key, 4096 bytes)", "master"); y += 44
+    d.msg(xs["master"], xs["caller"], y, "replica: 127.0.0.1:16001 · 0x70002000 · 4096", "master", "5 4"); y += 56
+    d.msg(xs["caller"], xs["owner"], y, "P2P handshake on port H (first time only)", "owner"); y += 44
+    d.msg(xs["owner"], xs["caller"], y, "SegmentDesc: data port D + registered buffers", "owner", "5 4"); y += 56
+    d.text(32, y - 16, "2", 13, ROLE["data"][0], 700, True)
+    d.msg(xs["caller"], xs["owner"], y, "TCP WRITE: header (addr, len) + 4096 bytes", "data"); y += 44
+    d.msg(xs["owner"], xs["caller"], y, "v2 status: whole body received", "data", "5 4"); y += 56
+    d.text(32, y - 16, "3", 13, ROLE["master"][0], 700, True)
+    d.msg(xs["caller"], xs["master"], y, "PutEnd(key)", "master"); y += 44
+    d.msg(xs["master"], xs["caller"], y, "OK — replica COMPLETE", "master", "5 4")
+    d.text(480, 586, "1 reserve space  ·  2 move the bytes  ·  3 make the object readable", 13, INK, 600, anchor="middle")
+    d.save()
+
+
+def get_sequence():
+    d = Diagram("get-sequence", 480, "Get for the same key",
+                "Same caller, cached owner SegmentDesc, reusable TCP connection")
+    xs = dict(caller=140, master=480, owner=820)
+    d.lifelines([(xs["caller"], "caller", "caller"), (xs["master"], "master", "master"), (xs["owner"], "owner", "owner")], 86, 440)
+    y = 160
+    d.msg(xs["caller"], xs["master"], y, "GetReplicaList(key)", "master"); y += 44
+    d.msg(xs["master"], xs["caller"], y, "readable replicas + lease", "master", "5 4"); y += 50
+    d.text(xs["caller"] + 10, y, "SelectBestReplica() · allocate a local destination", 12, MUTED); y += 40
+    d.msg(xs["caller"], xs["owner"], y, "TCP READ: header (0x70002000, 4096)", "data"); y += 44
+    d.msg(xs["owner"], xs["caller"], y, "v2 status, then 4096 bytes", "data", "5 4"); y += 50
+    d.text(480, y + 6, "get_buffer() returns a handle. No allocation on the owner, no PutEnd.", 13, INK, 600, anchor="middle")
+    d.save()
+
+
+def tcp_lanes():
+    d = Diagram("tcp-lanes", 600, "One peer group, several connections",
+                "Caller side: work queue and lanes.  Owner side: one listening port, one session per connection.")
+    d.group(32, 86, 896, 300, "caller · PeerConnectionGroup  (key: owner host + data port D)", "caller")
+    q = d.node(56, 122, 260, 92, "queue", ["work C waits", "lanes 0 and 1 are busy"], "caller")
+    pump = d.node(56, 240, 260, 72, "runGroupPump()", ["assigns work to free lanes"], "caller")
+    d.arrow([(q["cx"], q["b"]), (q["cx"], pump["t"])], "caller")
+    for i, (x, work, op) in enumerate([(360, "A", "WRITE 4096 → 0x70002000"), (650, "B", "READ 4096 ← 0x70008000")]):
+        d.rect(x, 116, 260, 250, "#ffffff", ROLE["caller"][0], 6)
+        d.text(x + 14, 138, f"ConnectionLane {i}", 13.5, ROLE["caller"][0], 700, True)
+        d.text(x + 14, 158, f"current = work {work} · BUSY", 12.5, MUTED)
+        d.node(x + 14, 172, 232, 72, "session", ["ClientSession", op], "caller", size=12.5)
+        d.node(x + 14, 262, 232, 62, f"socket  (TCP {i})", ["same object as session.socket_"], "data", size=12.5)
+        d.line([(x + 130, 244), (x + 130, 262)], ROLE["caller"][0], None, 1.3, True)
+        d.arrow([(x + 130, 386), (x + 130, 444)], "data", None, f"connection {i}", 0.5, 6, "start", 2.2)
+    d.arrow([(pump["r"], pump["cy"]), (360, pump["cy"])], "caller", None, "assign", 0.5, -7)
+    d.group(32, 444, 896, 112, "owner · TcpContext::acceptor on data port D", "owner")
+    d.node(374, 478, 232, 58, "ServerSession 0", ["its own accepted socket"], "owner", size=12.5)
+    d.node(664, 478, 232, 58, "ServerSession 1", ["its own accepted socket"], "owner", size=12.5)
+    d.text(56, 512, "lanes_per_peer = 4 by default", 12.5, MUTED)
+    d.text(56, 530, "a lane is a connection slot, not a thread", 12.5, MUTED)
+    d.text(480, 584, "All lanes share the caller's single TCP worker thread and io_context.", 12.5, MUTED, anchor="middle")
+    d.save()
+
+
+def asio_flow():
+    d = Diagram("asio-flow", 610, "From posted work to a running session",
+                "Everything on the right runs on one thread: TcpTransport::worker() inside io_context.run().")
+    d.lifelines([(150, "submitting thread", "caller"), (520, "TCP worker · io_context", "data"), (840, "OS / resolver", "neutral")], 86, 576)
+    y = 156
+    d.msg(150, 520, y, "asio::post(group->executor, runGroupPump)", "caller"); y += 40
+    rows = [
+        ("runGroupPump()", "lane needs a connection → startLaneConnect()", "async_resolve()", True),
+        ("handleLaneResolved()", "", "async_connect()", True),
+        ("handleLaneConnected()", "lane is usable", None, False),
+        ("startLaneSession()", "ClientSession: async header + body I/O", "socket I/O", True),
+        ("handleLaneTerminal()", "update task · reuse lane · pump again", None, False),
+    ]
+    for head, note, out, back in rows:
+        c, tint = ROLE["data"]
+        w = width_of(head, 13, True) + 24
+        d.rect(520 - w / 2, y - 16, w, 26, tint, c, 5)
+        d.text(520, y + 1.5, head, 13, c, 600, True, "middle")
+        if note:
+            d.text(520, y + 26, note, 12, MUTED, anchor="middle")
+        if out:
+            d.arrow([(520 + w / 2, y - 3), (840, y - 3)], "neutral", None, out, 0.5, -7)
+            d.arrow([(840, y + 52), (520, y + 52)], "neutral", "4 4", "completion handler", 0.5, -7)
+            y += 92
+        else:
+            y += 62
+    d.text(32, 596, "post() only queues a handler. Callbacks run later on the worker; \"step into\" cannot follow them.", 12.5, MUTED)
+    d.save()
+
+
+def tcp_write():
+    d = Diagram("tcp-write", 470, "A TCP WRITE between two sessions",
+                "Protocol v2 · CPU memory · the order the caller waits for")
+    d.lifelines([(180, "ClientSession · caller", "caller"), (620, "ServerSession · owner", "owner")], 86, 400)
+    y = 160
+    d.msg(180, 620, y, "header: WRITE · 0x70002000 · 4096", "data"); y += 32
+    d.text(628, y, "readHeader() · check range is registered", 12, MUTED); y += 40
+    d.msg(180, 620, y, "body: 4096 bytes from the staging buffer", "data"); y += 32
+    d.text(628, y, "readBody() → owner memory 0x70002000", 12, MUTED); y += 40
+    d.msg(620, 180, y, "status: success (after the full body)", "owner", "5 4"); y += 32
+    d.text(628, y, "wait for the next header on this socket", 12, MUTED)
+    d.text(480, 424, "Done = body written AND status received. Then the caller sends PutEnd to the master.", 13, INK, 600, anchor="middle")
+    d.save()
+
+
+ALL = [cluster, master_startup, master_class_map, master_key_lookup, owner_class_map, owner_startup,
+       owner_listeners, owner_memory, segment_mount_flow, segment_mount_state, owner_memory_distribution,
+       client_role_workflow, put_sequence, get_sequence, tcp_lanes, asio_flow, tcp_write]
+
+if __name__ == "__main__":
+    for f in ALL:
+        f()
+    for w in WARN:
+        print("overflow?", w)
+    print(f"wrote {len(ALL)} diagrams")

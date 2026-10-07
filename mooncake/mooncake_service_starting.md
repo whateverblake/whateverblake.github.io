@@ -11,77 +11,74 @@ description: "Trace startup, metadata structures, replica lookup, and the worker
 
 # Mooncake Master service: startup, metadata, and key lookup
 
-The master keeps the information needed to find and manage stored objects.
-It records keys, replica locations, mounted memory segments, and client state.
-For the memory path in this guide, clients hold the value bytes in their own
-memory. The master manages the records and available space.
+The master is Mooncake's bookkeeper. It records keys, where their replicas
+live, which client memory is mounted, and which clients are alive. It never
+stores the object bytes: those stay in the owners' memory.
 
-This chapter follows a fresh master using CPU memory and TCP. High availability
-(HA), snapshots, and snapshot restore are disabled. The following client
-chapters use `P2PHANDSHAKE` for Transfer Engine metadata exchange. That setting
-belongs to the client transfer setup; it does not replace the master RPC server.
-RPC means remote procedure call: one process asks another process to run a
-named operation.
+This article starts a master, walks through its startup, and then follows one
+key from Put to Get through the master's data structures.
 
-Start with the two branches in this class map. The left branch answers
-**“where are this key's replicas?”** The right branch answers
-**“where can a new replica be allocated?”** Click the image for full size.
+> **Setup:** one master, CPU memory, TCP. High availability (HA), snapshots
+> and snapshot restore are off. The clients in later articles use
+> `P2PHANDSHAKE` for Transfer Engine metadata; that is a client setting and
+> does not replace the master's RPC server.
+
+The master keeps two indexes. The left one answers **"where are this key's
+replicas?"** The right one answers **"where can a new replica go?"**
 
 [![MasterService class map: metadata shards contain tenant key maps, ObjectMetadata and Replica records; SegmentManager holds mounted segments and allocators. AllocatedBuffer links a replica's address range to its allocator.](assets/master-class-map.svg)](assets/master-class-map.svg)
 
-`MasterService` owns both branches. `ObjectMetadata` is the link missing
-between `TenantState` and `Replica` in a first sketch: the tenant's key map
-stores an `ObjectMetadata`, and its `replicas_` vector stores the replicas.
-For a memory replica, `Replica::data_` holds `MemoryReplicaData`, which owns
-an `AllocatedBuffer`.
+A few points about this map:
 
-`AllocatedBuffer` records an address in an owner process. Its `allocator_`
-is a **weak reference** to the segment's allocator on the master. The actual
-object bytes remain in the owner. `Replica::status_` is a `ReplicaStatus`
-enum; `Replica::id_` is a numeric replica ID. Neither is the Store segment UUID.
+- `ObjectMetadata` sits between `TenantState` and `Replica`. The tenant's key
+  map stores an `ObjectMetadata`, and its `replicas_` vector stores the
+  replicas.
+- For a memory replica, `Replica::data_` holds `MemoryReplicaData`, which owns
+  an `AllocatedBuffer`.
+- `AllocatedBuffer` stores an **address in the owner process**. Its
+  `allocator_` is a weak reference to that segment's allocator on the master.
+- `Replica::status_` is a `ReplicaStatus` enum and `Replica::id_` is a numeric
+  replica ID. Neither one is the Store segment UUID.
 
-The source links use commit `719735896c86b56fabec6cf3e825fb2ea640597a`.
-Start with the [environment setup](environment_setting_up.html) if the Linux
-container and binaries are not ready. The [series index](index.html) shows the
-full reading order.
+If the container and binaries are not ready yet, start with the
+[environment setup](environment_setting_up.html).
 
 ## 1. Start a master for debugging
 
-In CLion, select the `mooncake_master` target and the `Mooncake Debug` profile.
-Use the remote SSH toolchain from the setup guide. Keep **Before launch →
-Build** enabled. Paste these program arguments into the run configuration:
+In CLion, pick the `mooncake_master` target and the `Mooncake Debug` profile
+(remote SSH toolchain, **Before launch → Build** enabled). Use these program
+arguments:
 
 ```text
 --rpc_address=127.0.0.1 --rpc_port=50051 --rpc_thread_num=2 --enable_ha=false --client_ttl=36000 --put_start_discard_timeout_sec=36000 --put_start_release_timeout_sec=72000 --default_kv_lease_ttl=10m --enable_metric_reporting=false
 ```
 
-These are the original debug settings for this walkthrough. They are not all
-upstream defaults. The long timeouts make it easier to pause at breakpoints.
+These are debug settings, not all upstream defaults. The very long timeouts
+stop the master from cleaning things up while you sit at a breakpoint.
 
-| Argument | Meaning in this example |
+| Argument | Meaning here |
 |---|---|
-| `rpc_address=127.0.0.1` | Listen on loopback inside the Linux container. Run the example clients in that container too. |
-| `rpc_port=50051` | Port used for master RPC requests. |
-| `rpc_thread_num=2` | Configure two RPC workers. Other service threads also exist. |
-| `enable_ha=false` | Use the single-master startup branch. |
-| `client_ttl=36000` | Keep a client alive for up to ten hours without another heartbeat. |
-| `put_start_discard_timeout_sec=36000` | Set the unfinished-write discard timeout to ten hours. |
-| `put_start_release_timeout_sec=72000` | Set the later allocation-release timeout to twenty hours. |
-| `default_kv_lease_ttl=10m` | Use a ten-minute object lease duration. The parsed field is `600000` milliseconds. |
-| `enable_metric_reporting=false` | Disable periodic metric log messages. The HTTP admin server still starts. |
+| `rpc_address=127.0.0.1` | Listen on loopback inside the container. Run the clients in the same container. |
+| `rpc_port=50051` | Port for master RPC requests. |
+| `rpc_thread_num=2` | Two RPC workers. The master has other threads too. |
+| `enable_ha=false` | Take the single-master startup path. |
+| `client_ttl=36000` | A client stays alive for ten hours without a heartbeat. |
+| `put_start_discard_timeout_sec=36000` | Discard an unfinished write after ten hours. |
+| `put_start_release_timeout_sec=72000` | Release that write's allocation after twenty hours. |
+| `default_kv_lease_ttl=10m` | Object lease of ten minutes (stored as `600000` ms). |
+| `enable_metric_reporting=false` | No periodic metric log lines. The HTTP admin server still starts. |
 
-A lease is a time window that protects an object from ordinary eviction.
-Client expiry and object leases are separate mechanisms. Likewise, discarding
-an unfinished write and releasing its allocation are separate cleanup stages.
+A **lease** is a time window that protects an object from normal eviction.
+Client expiry and object leases are separate mechanisms. So are discarding an
+unfinished write and releasing its allocation: they are two cleanup stages.
 
-For a terminal run, open a shell **inside the container** from the Mac:
+To run from a terminal instead, open a shell **inside the container**:
 
 ```bash
 docker exec -it -u debugger mooncake-debug bash
 ```
 
-Then run this command in that Linux shell. Do not start a second copy if CLion
-already has a master running on port 50051.
+Then start the master. Skip this if CLion already runs one on port 50051.
 
 ```bash
 MC_RPC_PROTOCOL=tcp /workspace/build/mooncake-store/src/mooncake_master \
@@ -96,35 +93,34 @@ MC_RPC_PROTOCOL=tcp /workspace/build/mooncake-store/src/mooncake_master \
   --enable_metric_reporting=false
 ```
 
-`MC_RPC_PROTOCOL=tcp` selects TCP for this run. In CLion, use the same environment
-setting if an inherited environment might select RDMA. The binary path comes
-from the build directory in the setup guide. Change it if your build directory
+`MC_RPC_PROTOCOL=tcp` forces TCP. Set the same variable in CLion if your
+environment might select RDMA. Adjust the binary path if your build directory
 is different.
 
 ## 2. Follow the startup sequence
 
-Start at `main()` in [master.cpp][master]. The following diagram separates
-construction, registration, and serving.
+Start at `main()` in [master.cpp][master]. It builds every object first and
+starts serving last:
 
-[![Master startup from configuration through service construction, RPC registration, and serving](assets/master-startup.svg)](assets/master-startup.svg)
+[![Master startup: main() loads config, constructs the RPC server and services, starts the admin server, registers handlers, and starts the serving thread. MasterService starts its background workers during construction.](assets/master-startup.svg)](assets/master-startup.svg)
 
-First, `main()` parses command-line flags. If `--config_path` is supplied, it
-loads the configuration file. `LoadConfigFromCmdline()` then applies command-line
-settings. Explicit flags generally override file values. RPC port and thread
-count also have compatibility rules for older `port` and `max_threads` flags.
+**Load the configuration.** `main()` parses the command-line flags and, if
+`--config_path` is given, a config file. `LoadConfigFromCmdline()` then applies
+the flags; explicit flags usually win over file values. The RPC port and
+thread count also accept the older `port` and `max_threads` flags.
 `ResolveRpcAddressFromInterfaceOrDie()` handles an optional network interface.
 
-Next, the program validates settings and selects the startup branch. This guide
-uses `enable_ha=false`, so it does not create a `MasterServiceSupervisor`.
-Instead, it uses a dummy view version of zero. A view version identifies a
-leadership term in HA operation; that role is unnecessary here.
+**Pick the startup branch.** With `enable_ha=false` there is no
+`MasterServiceSupervisor`. The master uses a dummy view version of zero. (In
+HA mode, a view version identifies a leadership term.)
 
-The non-HA branch constructs `coro_rpc::coro_rpc_server`. It passes the configured
-worker count, address, port, connection timeout, and TCP_NODELAY setting. Creating
-this object is one step. Calling its serving function comes later.
+**Construct the RPC server.** The non-HA branch creates
+`coro_rpc::coro_rpc_server` with the worker count, address, port, connection
+timeout and TCP_NODELAY setting. Creating it does not start serving; that
+happens at the very end.
 
-The next statement creates a shared `WrappedMasterService`. Its constructor
-constructs a `MasterService` member. Configuration is converted along this path:
+**Construct the service.** Next comes a shared `WrappedMasterService`, which
+contains a `MasterService`. The configuration is narrowed at each layer:
 
 ```text
 MasterConfig
@@ -132,57 +128,52 @@ MasterConfig
   -> MasterServiceConfig
 ```
 
-These types select the settings needed by each layer. See [master_config.h][config]
-and `WrappedMasterService::WrappedMasterService()` in [rpc_service.cpp][rpc].
-The wrapper exposes RPC-facing operations. `MasterService` owns the main state
-and implements their behavior. They run in the same process.
+See [master_config.h][config] and `WrappedMasterService::WrappedMasterService()`
+in [rpc_service.cpp][rpc]. The wrapper exposes the RPC operations;
+`MasterService` holds the state and does the work. Both live in the same
+process.
 
-## 3. Inspect the state created by MasterService
+## 3. What MasterService creates
 
-`MasterService::MasterService()` initializes its members, checks configuration,
-and starts background work. Read it in [master_service.cpp][service].
-
-[![Master state linking object metadata, mounted segments, allocators, and client tasks](assets/master-state.svg)](assets/master-state.svg)
-
-The main structures answer different questions:
+`MasterService::MasterService()` initializes its members, checks the
+configuration and starts the background workers. Read it in
+[master_service.cpp][service]. Each structure answers one question:
 
 | Structure | Question it answers |
 |---|---|
-| Object metadata | Which replicas belong to this key, and what is their state? |
+| Object metadata | Which replicas belong to this key, and what state are they in? |
 | `SegmentManager` | Which client memory regions are mounted and available? |
-| Allocation strategy | Which suitable segments should receive a new allocation? |
-| Client liveness state | Which clients are still responding? |
-| `ClientTaskManager` | Which copy or move tasks are pending, running, or finished? |
+| Allocation strategy | Which segments should receive a new allocation? |
+| Client liveness state | Which clients still respond? |
+| `ClientTaskManager` | Which copy or move tasks are pending, running or done? |
 
-A replica is one stored copy of an object. `ObjectMetadata` records its size,
-writer identity, timing information, pin state, and replica list. The key map is
-organized within tenant state. A tenant is a logical namespace; the basic
-single-tenant setup uses the default tenant. See `ObjectMetadata` and
-`TenantState` in [master_service.h][service-header].
+**Object metadata.** A replica is one stored copy of an object.
+`ObjectMetadata` records its size, the writer's identity, timing, pin state and
+the replica list. Keys are grouped by tenant. A tenant is a logical
+namespace; a single-tenant setup uses the default tenant. See `ObjectMetadata`
+and `TenantState` in [master_service.h][service-header].
 
-A segment describes a region supplied by a client. It includes a base address,
-size, logical name, and Transfer Engine endpoint. A mounted segment also has a
-status and allocator. See `Segment` in [types.h][types] and `MountedSegment` in
+**Segments.** A segment is a region of client memory: base address, size,
+logical name and Transfer Engine endpoint. A mounted segment also has a status
+and an allocator. See `Segment` in [types.h][types] and `MountedSegment` in
 [segment.h][segment-header].
 
-`SegmentManager` starts with empty indexes in this fresh run. Its constructor
-stores allocation settings. It does not create the clients'
-large memory buffers. When a client later calls `MountSegment`,
-`ScopedSegmentAccess::MountSegment()` creates allocator bookkeeping for that
-reported region. With this configuration, it uses `OffsetBufferAllocator`.
-See [segment.cpp][segment].
+**SegmentManager.** In a fresh master it is empty. Its constructor only stores
+allocation settings; it does not create any large buffers. When a client later
+calls `MountSegment`, `ScopedSegmentAccess::MountSegment()` creates allocator
+bookkeeping for that region. With this configuration that is an
+`OffsetBufferAllocator`. See [segment.cpp][segment].
 
-Several indexes make different lookups possible: segment ID to mounted record,
-client ID to its segments, segment name to client ID, and host to available
-segments. Seeing these maps empty before clients start is expected.
+The manager keeps several indexes: segment ID → mounted record, client ID →
+segments, segment name → client ID, and host → available segments. They are
+all empty until a client mounts memory.
 
-`ClientTaskManager` also starts as management state. Its constructor saves task
-limits, timeouts, and retry settings. It does not start a thread itself. See
-[task_manager.h][tasks].
+**ClientTaskManager.** Its constructor stores task limits, timeouts and retry
+settings. It does not start a thread. See [task_manager.h][tasks].
 
-### The exact path from a key to its replica records
+### From a key to its replica records
 
-The relevant members in [master_service.h][service-header] form this chain:
+These members in [master_service.h][service-header] form one chain:
 
 ```text
 MasterService::metadata_shards_             array of 1024 MetadataShard
@@ -193,38 +184,37 @@ MasterService::metadata_shards_             array of 1024 MetadataShard
           .buffer                          unique_ptr<AllocatedBuffer>
 ```
 
-Each `MetadataShard` has its own mutex. A shard is one part of the metadata
-table inside this Master service; it is not an owner machine. One tenant can
-have keys in many shards, so `TenantState` here is that tenant's state within
-one shard.
+Each `MetadataShard` has its own mutex. A shard is a slice of the metadata
+table inside the master; it is not an owner machine. One tenant can have keys
+in many shards, so a `TenantState` is that tenant's state *within one shard*.
 
-| Structure | Important members for this example |
+| Structure | Members that matter here |
 | --- | --- |
 | `TenantState` | `metadata` holds key records; `processing_keys` tracks unfinished writes. |
-| `ObjectMetadata` | `tenant_id`, `user_key`, writer `client_id`, `size`, lease timing, and `replicas_`. |
-| `Replica` | `id_`, `status_`, and `data_`; the selected data type is `MemoryReplicaData`. |
+| `ObjectMetadata` | `tenant_id`, `user_key`, writer `client_id`, `size`, lease timing, `replicas_`. |
+| `Replica` | `id_`, `status_`, `data_` (here: `MemoryReplicaData`). |
 | `MemoryReplicaData` | `buffer`, a `unique_ptr<AllocatedBuffer>`. |
-| `AllocatedBuffer` | `buffer_ptr_`, `size_`, TCP `protocol`, `offset_handle_`, and weak `allocator_`. |
+| `AllocatedBuffer` | `buffer_ptr_`, `size_`, TCP `protocol`, `offset_handle_`, weak `allocator_`. |
 
-`SegmentManager::mounted_segments_` is a different index:
-`segment UUID → MountedSegment`. A `MountedSegment` combines a Store
-`Segment`, its status, and a shared pointer to its allocator.
-`allocator_manager_.allocators_` groups allocator pointers by logical segment
-name. The mounted record and allocator manager refer to the same allocator.
-`client_segments_` maps each owner client UUID to its segment UUIDs.
+The free-space side is a separate index. `SegmentManager::mounted_segments_`
+maps `segment UUID → MountedSegment`, which holds a Store `Segment`, its status
+and a shared pointer to its allocator. `allocator_manager_.allocators_` groups
+the same allocator pointers by segment name, and `client_segments_` maps each
+owner's client UUID to its segment UUIDs.
 
-The allocation strategy chooses a segment, and `OffsetBufferAllocator`
-reserves a range within it. The resulting `AllocatedBuffer` becomes part of
-a `Replica`, which is then placed in the key's `ObjectMetadata`. The master
-can therefore find a key without searching every mounted segment.
+The two sides meet during a Put: the allocation strategy picks a segment, the
+`OffsetBufferAllocator` reserves a range in it, and the resulting
+`AllocatedBuffer` becomes part of a `Replica` inside the key's
+`ObjectMetadata`. That is why the master can find a key without searching
+every segment.
 
-See the [replica structures][replica] and [buffer/descriptor definitions][allocator-header]
-for the complete types.
+Full types: [replica structures][replica] and
+[buffer and descriptor definitions][allocator-header].
 
-## 4. Example: what is stored after Put?
+## 4. Example: what Put stores
 
-Use the default tenant, one owner, and one memory replica. The key is new,
-and no routing group is assigned. The application calls:
+Take the default tenant, one owner and one memory replica. The key is new and
+has no routing group. The application does:
 
 ```cpp
 std::string key = "blog/example";
@@ -232,14 +222,13 @@ std::string value(4096, 'x');
 // The configured client calls put(key, value), with one memory replica.
 ```
 
-Assume the owner has already mounted a 64 MiB pool at `0x70000000`. Its
-logical segment name is `127.0.0.1:12345`, and its Transfer Engine handshake
-endpoint is `127.0.0.1:16001`. These addresses and IDs are illustrative; the
-actual port and allocation addresses vary by run.
+Assume the owner already mounted a 64 MiB pool at `0x70000000`, with logical
+name `127.0.0.1:12345` and Transfer Engine endpoint `127.0.0.1:16001`. These
+values are illustrative; real ports and addresses change on every run.
 
-### Before Put: capacity exists, but the key does not
+### Before Put: space exists, the key does not
 
-The master's segment branch already contains a mounted pool:
+The segment side already has the pool:
 
 ```text
 segment_manager_.mounted_segments_[segment_uuid_A]
@@ -251,32 +240,27 @@ segment_manager_.mounted_segments_[segment_uuid_A]
   buf_allocator       → OffsetBufferAllocator for this pool
 ```
 
-There is no `ObjectMetadata` for `blog/example` yet. Mounting the owner
-created capacity, not a key/value entry.
+There is no `ObjectMetadata` for `blog/example` yet. Mounting created
+capacity, not a key.
 
-### PutStart: reserve space and insert the key record
+### PutStart: reserve space and insert the key
 
-`Client::Put()` asks the master to reserve space through `PutStart()`.
-`MasterService::PutStart()` constructs the request's object identity from
-the tenant and key and determines its metadata shard.
-
-For our default-tenant key with no routing group, the shard index is:
+`Client::Put()` calls `PutStart()`. `MasterService::PutStart()` builds the
+object identity from the tenant and key and picks its shard:
 
 ```cpp
 const size_t s = std::hash<std::string>{}("blog/example") % 1024;
 ```
 
-The diagram and snapshots use `s` rather than inventing a fixed number.
-The numeric result of `std::hash` can depend on the C++ library. Put and Get
-use the same routing function in the same Master service.
+We write `s` instead of a number because `std::hash` results depend on the C++
+library. What matters is that Put and Get use the same function in the same
+master.
 
-`AllocateAndInsertMetadata()` asks the allocation strategy for a memory
-replica. Suppose the allocator reserves 4096 bytes at offset `0x2000`, giving
-owner address `0x70002000`. The method inserts an `ObjectMetadata` into
-`tenant_state.metadata`, moves the replica into it, and inserts the key into
-`processing_keys`.
-
-This is a simplified debugger view, not a serialized file format:
+`AllocateAndInsertMetadata()` asks the allocation strategy for space.
+Suppose the allocator reserves 4096 bytes at offset `0x2000`, so the owner
+address is `0x70002000`. The method inserts an `ObjectMetadata` into
+`tenant_state.metadata`, moves the replica into it, and adds the key to
+`processing_keys`:
 
 ```text
 metadata_shards_[s]
@@ -299,63 +283,61 @@ metadata_shards_[s]
             offset_handle_ = reserved-range handle
 ```
 
-`client_id` identifies the **writer** that began the Put. It is not necessarily
-the owner holding the replica. The segment branch records the owner.
+This is a simplified debugger view, not a file format. Note that `client_id`
+is the **writer** that started the Put, not necessarily the owner. The segment
+side records the owner.
 
-The master returns a replica descriptor to the writer. The writer then sends
-the bytes directly to the owner over TCP. The master never writes through
-`buffer_ptr_`; that address is meaningful in the owner process.
+The master sends a replica descriptor back to the writer. The writer then
+sends the bytes **directly to the owner** over TCP. The master never writes
+through `buffer_ptr_`; that address only means something inside the owner.
 
 ### PutEnd: make the replica readable
 
-After the transfer succeeds, the writer calls `PutEnd()`. The master verifies
-the writer identity and completes the targeted replica. For this one-replica
-example, the changes are:
+When the transfer succeeds, the writer calls `PutEnd()`. The master checks the
+writer's identity and completes the replica:
 
 ```text
 replicas_[0].status_: PROCESSING → COMPLETE
 processing_keys:      remove "blog/example"
 ```
 
-The key, replica ID, address, and length remain associated in the same metadata
-record. At the end of a successful Put, the owner holds the 4096 value bytes,
-and the master holds the information needed to find them.
+Now the owner holds the 4096 bytes and the master holds everything needed to
+find them.
 
-[![Put creates the key-to-replica record, changes its status after the transfer, and Get later follows that same record to the owner's address.](assets/master-key-lookup.svg)](assets/master-key-lookup.svg)
+[![Put creates the key-to-replica record and marks it COMPLETE after the transfer; Get follows the same record to the owner's address.](assets/master-key-lookup.svg)](assets/master-key-lookup.svg)
 
-Follow `AllocateAndInsertMetadata()`, `PutStart()`, and `PutEnd()` in
-[master_service.cpp][service] for the insert and state transitions.
+Follow `AllocateAndInsertMetadata()`, `PutStart()` and `PutEnd()` in
+[master_service.cpp][service].
 
-## 5. How does Get find the same key and its replicas?
+## 5. How Get finds the same key
 
-The high-level read enters `RealClient::get_buffer_internal()`, which calls
-`Client::Query(key)`. `MasterClient::GetReplicaList()` sends the request to
-the Master service. This RPC asks for locations; it does not return the
-object's value bytes.
+A read enters `RealClient::get_buffer_internal()`, which calls
+`Client::Query(key)`. `MasterClient::GetReplicaList()` sends the RPC. It asks
+for locations only; no value bytes come back from the master.
 
-### Resolve the object identity and follow the indexes
+### Resolve the identity and walk the indexes
 
-Your screenshot shows the start of `MasterService::GetReplicaList()`:
+`MasterService::GetReplicaList()` starts like this:
 
 ```cpp
 const auto object_id = MakeObjectIdentityForRequest(key, tenant_id);
 MetadataAccessorRO accessor(this, object_id);
 ```
 
-`MakeObjectIdentityForRequest()` returns the effective tenant ID and the
-unchanged user key. In this single-tenant setup, the effective tenant is
-`TenantId::Default()`. This identity is not a new UUID.
+`MakeObjectIdentityForRequest()` returns the effective tenant and the
+unchanged key. Here the tenant is `TenantId::Default()`. No new UUID is
+created.
 
-`MetadataAccessorRO` is a lookup-and-lock helper, not another metadata table.
-Its constructor performs these steps:
+`MetadataAccessorRO` is a lookup-and-lock helper, not another table. Its
+constructor:
 
-1. Call `getMetadataShardIndex(tenant_id, user_key)` to find shard `s`.
-2. Acquire read access to that shard through `MetadataShardAccessorRO`.
-3. Call `shard.tenants.find(tenant_id)` to locate the tenant's state.
-4. Call `tenant_state.metadata.find(user_key)` to locate `ObjectMetadata`.
-5. Keep the lookup result and lock available while the service reads it.
+1. calls `getMetadataShardIndex(tenant_id, user_key)` to find shard `s`;
+2. takes read access to that shard through `MetadataShardAccessorRO`;
+3. calls `shard.tenants.find(tenant_id)`;
+4. calls `tenant_state.metadata.find(user_key)`;
+5. keeps the result and the lock while the service reads it.
 
-For the example, this resolves the same path used by Put:
+That is exactly the path Put used:
 
 ```text
 "default" + "blog/example"
@@ -367,35 +349,32 @@ For the example, this resolves the same path used by Put:
   → owner address 0x70002000, length 4096
 ```
 
-**The hash chooses a shard; the full key identifies the object.** Different
-keys can hash to the same shard. They still occupy distinct entries in the
-tenant's `unordered_map`, which compares the actual key strings. A hash
-collision does not mean two keys share an object record.
+> **The hash picks a shard; the full key picks the object.** Different keys
+> can land in the same shard, but the tenant's `unordered_map` compares full
+> key strings, so they never share a record.
 
-This example has no group routing. The real `getMetadataShardIndex()` first
-checks the routing table, then uses ordinary tenant/key hashing when no group
-is assigned. Both Put and Get use this helper. The shard number does not
-identify an owner or encode a memory address; those come from the replica.
+`getMetadataShardIndex()` first checks the routing table for a group and
+falls back to tenant/key hashing when there is none. Put and Get both use it.
+The shard number says nothing about which owner holds the data; that comes
+from the replica.
 
-### Return readable replicas, not every recorded replica
+### Only readable replicas are returned
 
-`accessor.Exists()` checks that the key has valid metadata.
-`GetReplicaList()` then visits `metadata.replicas_` and applies
-`IsReplicaReadable()` to each replica. For a memory replica, it requires:
+`accessor.Exists()` checks that the key has valid metadata. Then
+`GetReplicaList()` runs `IsReplicaReadable()` on each replica. A memory
+replica is readable when:
 
-- `status_ == ReplicaStatus::COMPLETE`;
-- a valid memory allocation handle;
-- a transport endpoint not marked invalid by the master.
+- `status_ == ReplicaStatus::COMPLETE`,
+- its memory allocation handle is valid, and
+- the master has not marked its transport endpoint invalid.
 
-If a new Put is still `PROCESSING`, its sole replica is not returned as a
-readable result. A missing/invalid object returns `OBJECT_NOT_FOUND`; a
-record with no ready replica can return `REPLICA_IS_NOT_READY`. The exact
-error depends on the record's state.
+A Put that is still `PROCESSING` is not returned. A missing or invalid object
+gives `OBJECT_NOT_FOUND`; a record with no ready replica can give
+`REPLICA_IS_NOT_READY`.
 
-For each readable replica, `replica.get_descriptor()` produces a serializable
-`Replica::Descriptor`. The in-memory `unique_ptr`, weak allocator reference,
-and offset handle are not sent to the reader. For our completed replica, the
-response contains this simplified structure:
+For each readable replica, `replica.get_descriptor()` builds a serializable
+`Replica::Descriptor`. The `unique_ptr`, weak allocator reference and offset
+handle stay on the master. The reader gets:
 
 ```text
 Replica::Descriptor
@@ -409,104 +388,94 @@ Replica::Descriptor
       transport_endpoint_ = "127.0.0.1:16001"
 ```
 
-`AllocatedBuffer::get_descriptor()` obtains the endpoint from the associated
-allocator. The endpoint identifies the owner; the address and size identify
-the allocated range within its memory. The master also grants a read lease
-and returns its duration so ordinary reclamation does not remove the replica
-while a timely read is in progress.
+`AllocatedBuffer::get_descriptor()` takes the endpoint from the allocator. The
+endpoint identifies the owner; address and size identify the range inside its
+memory. The master also grants a **read lease** and returns its length, so
+normal reclamation does not remove the replica during a timely read.
 
-If the key has several replicas, the same lookup returns a list of readable
-descriptors. The caller's `SelectBestReplica()` chooses a candidate from that
-list. It does not search every owner for the key.
+With several replicas, the reader gets a list and its `SelectBestReplica()`
+picks one. Nobody searches every owner for the key.
 
-### Convert the replica location into a TCP read
+### Turn the location into a TCP read
 
-The reader opens the owner's Transfer Engine endpoint. On a metadata cache
-miss, it fetches the owner's `SegmentDesc` through P2P. That description gives
-the TCP data host and port; the replica descriptor gives the object's address
-and length. The reader sends a READ request to that data endpoint, and the
-owner returns the bytes from `0x70002000`.
-
-These are three separate lookups:
+The reader opens the owner's Transfer Engine endpoint. On a cache miss it
+fetches the owner's `SegmentDesc` through P2P, which gives the TCP data host
+and port. It then sends a READ for `0x70002000`, and the owner returns the
+bytes. Three different lookups are involved:
 
 | Lookup | Result |
 | --- | --- |
-| Tenant + key in the Master service | The object's readable replica descriptors. |
-| Owner endpoint in the reader's Transfer Engine metadata | Owner `SegmentDesc`, including its TCP data endpoint. |
-| Object address in the owner's registered pool | The actual 4096 value bytes. |
+| Tenant + key in the master | Readable replica descriptors. |
+| Owner endpoint in the reader's Transfer Engine metadata | The owner's `SegmentDesc`, including its TCP data endpoint. |
+| Object address in the owner's registered pool | The 4096 value bytes. |
 
-The Master service's `ObjectMetadata` is therefore different from the Transfer
-Engine's `SegmentDesc`. The first maps a key to stored copies. The second
-describes how to reach registered memory at an engine endpoint.
+So the master's `ObjectMetadata` and the Transfer Engine's `SegmentDesc` are
+different things. The first maps a key to its copies. The second describes
+how to reach registered memory behind an endpoint.
 
-See [`MetadataAccessorRO` and `getShardIndex()`][service-header],
-[`GetReplicaList()` and `IsReplicaReadable()`][service], and
+Sources: [`MetadataAccessorRO` and `getShardIndex()`][service-header],
+[`GetReplicaList()` and `IsReplicaReadable()`][service],
 [`AllocatedBuffer::get_descriptor()`][allocator-source]. The
-[Put/Get walkthrough](mooncake_put-get_path.html) follows the remaining TCP calls.
+[Put and Get article](mooncake_put-get_path.html) follows the TCP calls.
 
-## 6. Background workers start before RPC serving
+## 6. Background workers
 
-Near the end of `MasterService` construction, these workers start. They can run
-while `main()` continues toward admin startup and RPC registration.
+Near the end of its constructor, `MasterService` starts these workers. They
+run while `main()` continues to the admin server and RPC registration.
 
-| Worker function or component | Work it performs |
+| Worker | What it does |
 |---|---|
-| `EvictionThreadFunc()` | Checks memory pressure and selects objects for eviction. It also handles cleanup of abandoned processing replicas. |
-| `ClientMonitorFunc()` | Processes heartbeat records, detects expired clients, and cleans affected segments and replicas. |
-| `TaskCleanupThreadFunc()` | Prunes expired and finished tasks, expired soft pins, and old dynamic-replication state. |
+| `EvictionThreadFunc()` | Watches memory pressure and evicts objects; cleans up abandoned processing replicas. |
+| `ClientMonitorFunc()` | Processes heartbeats, detects expired clients, cleans their segments and replicas. |
+| `TaskCleanupThreadFunc()` | Prunes expired and finished tasks, expired soft pins and old dynamic-replication state. |
 | `replica_cleanup_worker_` | Runs `ClearInvalidHandles()` when cleanup is scheduled. |
 | `JobDispatchThreadFunc()` | Advances segment drain jobs through `ProcessDrainJobs()`. |
-| `DynamicReplicationAdmissionThreadFunc()` | Processes queued proposals for additional memory replicas. |
+| `DynamicReplicationAdmissionThreadFunc()` | Processes queued proposals for extra memory replicas. |
 
-All six start on the basic path. The dynamic-replication thread starts even when
-`dynamic_replication_mode` is `off`; starting a worker does not mean the feature
-is generating requests. These are C++ function/component names. The operating
-system's displayed thread names may differ.
+All six start on this path, even the dynamic-replication thread when
+`dynamic_replication_mode` is `off`: a running worker does not mean the
+feature is active. These are C++ names; OS thread names may differ.
 
-The replica cleanup worker sleeps until scheduled. Its callback removes stale
-completed replicas, then removes object metadata when no valid replicas remain.
-Ordinary non-HA segment unmount can schedule this work after preventing new
-allocations. The helper combines repeated pending cleanup requests; see
-`BackgroundWorker` in [background_worker.h][background].
+The replica cleanup worker sleeps until scheduled. It removes stale completed
+replicas, then removes object metadata that has no valid replicas left. A
+normal segment unmount can schedule it after blocking new allocations, and
+repeated requests are merged; see `BackgroundWorker` in
+[background_worker.h][background].
 
-A soft pin is an additional time-based retention preference. It differs from a
-hard pin, which has stronger protection. Expired soft-pin bookkeeping is cleaned
-by the task cleanup worker, even though it is not itself a client task.
+A **soft pin** is a time-based retention hint, weaker than a hard pin. The
+task cleanup worker removes expired soft pins even though they are not tasks.
 
 ### How drain jobs use client tasks
 
-A drain job moves replicas away from selected segments so those segments can be
-taken out of use. This explains why both a job dispatcher and a task manager
-exist.
+A drain job moves replicas off chosen segments so those segments can be
+retired. That is why both a job dispatcher and a task manager exist:
 
-1. `CreateDrainJob()` marks source segments `DRAINING`. They remain readable but
-   stop accepting new allocations.
-2. `ProcessDrainJobs()` checks current task results and plans more work.
-3. `ScheduleDrainJobTasks()` finds eligible objects and target segments. It
-   respects the job's concurrency limit. Leases, hard pins, incomplete replicas,
-   or another replication operation can block a move.
-4. `CreateMoveTask()` submits a `REPLICA_MOVE` task through `ClientTaskManager`.
-   It assigns the task to the client that owns the source segment.
-5. That client fetches assigned work through `FetchTasks()` and reports completion
-   through `MarkTaskToComplete()`.
-6. The dispatcher records successes or failures and may retry. Segments with no
-   remaining replicas become `DRAINED`.
+1. `CreateDrainJob()` marks the source segments `DRAINING`. They stay
+   readable but accept no new allocations.
+2. `ProcessDrainJobs()` checks task results and plans more work.
+3. `ScheduleDrainJobTasks()` finds objects and target segments within the
+   job's concurrency limit. Leases, hard pins, incomplete replicas or another
+   replication in progress can block a move.
+4. `CreateMoveTask()` submits a `REPLICA_MOVE` task through
+   `ClientTaskManager`, assigned to the client that owns the source segment.
+5. That client fetches work with `FetchTasks()` and reports back with
+   `MarkTaskToComplete()`.
+6. The dispatcher records the result and may retry. A segment with no
+   replicas left becomes `DRAINED`.
 
-The dispatcher coordinates this process. The owning client performs the data
-movement. A drain job can contain many individual tasks. These functions are
-all in [master_service.cpp][service].
+The master coordinates; the owning client moves the data. All of these
+functions are in [master_service.cpp][service].
 
-## 7. Start the admin server and register RPC handlers
+## 7. Admin server and RPC handlers
 
-After service construction, `main()` creates `MasterAdminServer` and calls
-`Start()`. It then attaches the wrapped service and marks it available.
-The default admin port is 9003. This is separate from RPC port 50051.
+After the service is built, `main()` creates `MasterAdminServer`, calls
+`Start()`, attaches the wrapped service and marks it available. The admin
+server listens on port 9003 by default, separate from RPC port 50051.
 
-`MasterAdminServer::Start()` registers HTTP handlers and starts the HTTP server.
-With `enable_metric_reporting=false`, it skips only the periodic metric logging
-thread. HTTP routes remain available. See [master_admin_service.cpp][admin].
-
-From another Linux shell in the same container, inspect the running service:
+`MasterAdminServer::Start()` registers HTTP handlers and starts the HTTP
+server. With `enable_metric_reporting=false` it only skips the periodic metric
+log thread. See [master_admin_service.cpp][admin]. From another shell in the
+container:
 
 ```bash
 curl -sS http://127.0.0.1:9003/health
@@ -514,53 +483,50 @@ curl -sS http://127.0.0.1:9003/metrics/summary
 curl -sS http://127.0.0.1:9003/get_all_segments
 ```
 
-An empty segment list is normal before an owner mounts memory. The admin service
-also provides key inspection and management operations such as drain jobs.
+An empty segment list is normal before an owner mounts memory. The admin API
+also offers key inspection and management operations such as drain jobs.
 
-Next, `RegisterRpcService()` binds methods on the existing wrapper to the RPC
-server. Examples include `MountSegment`, `Ping`, `PutStart`, `PutEnd`, and
-`GetReplicaList`. Registration tells the server which method handles each
-request. It does not create another master service. See [rpc_service.cpp][rpc].
+`RegisterRpcService()` then binds the wrapper's methods to the RPC server:
+`MountSegment`, `Ping`, `PutStart`, `PutEnd`, `GetReplicaList` and more. This
+only tells the server which method handles which request. See
+[rpc_service.cpp][rpc].
 
-Finally, a separate thread calls `server.start()`. Main waits for either a
-shutdown signal or the serving thread to finish. The early log line saying
-“Master service started” appears before this call, so that line alone does not
-prove the RPC listener is ready.
+Finally, a separate thread calls `server.start()`, and `main()` waits for a
+shutdown signal or for that thread to end.
+
+> **Note:** the log line "Master service started" is printed *before*
+> `server.start()`. It does not prove that the RPC listener is ready.
 
 ## 8. Breakpoints and shutdown
 
-Use these source symbols as breakpoints. Function breakpoints can show overloads;
-select the constructor or function named in the table.
+Use these function breakpoints. Some names have overloads; pick the
+constructor or function named here.
 
 | Breakpoint | What to inspect |
 |---|---|
-| `main` in `master.cpp` | Entry point before configuration is loaded. |
-| `LoadConfigFromCmdline` | File values, explicit flags, and effective RPC settings. |
-| `WrappedMasterService::WrappedMasterService` | Configuration passed into the wrapper. |
-| `MasterService::MasterService` | Empty state, manager members, and worker startup. |
+| `main` in `master.cpp` | Entry, before configuration loads. |
+| `LoadConfigFromCmdline` | File values, explicit flags, effective RPC settings. |
+| `WrappedMasterService::WrappedMasterService` | Configuration passed to the wrapper. |
+| `MasterService::MasterService` | Empty state, managers, worker startup. |
 | `MasterAdminServer::Start` | HTTP routes and the metric logging condition. |
-| `RegisterRpcService` | Wrapper methods attached to the RPC server. |
-| `MasterService::MountSegment` | First owner registration, covered next. |
-| `MasterService::AllocateAndInsertMetadata` | The new key, selected allocator, and `PROCESSING` replica. |
-| `MasterService::PutEnd` | Replica transition to `COMPLETE` and removal of the processing marker. |
-| `MasterService::MakeObjectIdentityForRequest` | Effective tenant ID and unchanged key. |
-| `MasterService::MetadataAccessorRO::MetadataAccessorRO` | `shard_idx_`, tenant lookup, and key iterator. |
-| `MasterService::GetReplicaList` | Readable descriptors and returned lease duration. |
-| `MasterService::~MasterService` | Worker stop flags and joins during shutdown. |
+| `RegisterRpcService` | Methods attached to the RPC server. |
+| `MasterService::MountSegment` | First owner registration (next article). |
+| `MasterService::AllocateAndInsertMetadata` | New key, chosen allocator, `PROCESSING` replica. |
+| `MasterService::PutEnd` | `COMPLETE` transition and removal from `processing_keys`. |
+| `MasterService::MakeObjectIdentityForRequest` | Effective tenant and unchanged key. |
+| `MasterService::MetadataAccessorRO::MetadataAccessorRO` | `shard_idx_`, tenant lookup, key iterator. |
+| `MasterService::GetReplicaList` | Readable descriptors and lease length. |
+| `MasterService::~MasterService` | Worker stop flags and joins at shutdown. |
 
-Some workers run continuously. Disable their breakpoints when inspecting another
-path, or they may repeatedly interrupt the session.
+Some workers run all the time. Disable their breakpoints while you inspect
+something else, or they will keep interrupting you.
 
-For the foreground terminal run, press **Ctrl+C**. The SIGINT handler requests
-shutdown. Main calls `server.stop()` and joins the serving thread. Leaving the
-scope destroys the admin server and wrapped service. The admin destructor stops
-HTTP service. `MasterService` stops helper workers, wakes sleeping threads, and
-joins its workers before destruction finishes.
-
-A debugger's force-stop action may terminate the process directly. Use a normal
-signal when you want to step through this shutdown path.
-
-Next: [start an owner client and mount its memory](mooncake_owner_starting.html).
+To stop a terminal run, press **Ctrl+C**. The SIGINT handler requests
+shutdown: `main()` calls `server.stop()`, joins the serving thread, and then
+destroys the admin server and the service. `MasterService` stops and wakes its
+workers and joins them before it is destroyed. A debugger's force-stop kills
+the process instead, so send a normal signal if you want to step through
+shutdown.
 
 [master]: https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/master.cpp
 [config]: https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/master_config.h

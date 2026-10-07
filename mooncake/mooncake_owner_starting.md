@@ -11,50 +11,42 @@ description: "Follow the class relationships, TCP listeners, memory registration
 
 # How a Mooncake owner starts and mounts memory
 
-[Series index](index.html) · [Environment setup](environment_setting_up.html) · [Previous: master startup](mooncake_service_starting.html) · [Next: the Put path](mooncake_put-get_path.html)
+An **owner** is a client that lends its memory to the cluster. The master
+records that memory as capacity and decides where objects go, but the object
+bytes always stay in the owner.
 
-The owner is the process that supplies memory for stored objects. The master
-records this capacity and chooses space for objects. The object bytes stay in
-the owner's memory.
+This article starts the public `mooncake_client` program as an owner and
+follows it until its 64 MiB pool is mounted on the master.
 
-This chapter follows the public `mooncake_client` program using CPU memory,
-TCP, and `P2PHANDSHAKE`. Peer-to-peer (P2P) metadata exchange lets one Transfer Engine
-ask another engine for its transport description. The Master service still
-manages object placement and owner liveness.
+> **Setup:** CPU memory · TCP · `P2PHANDSHAKE`. In P2P mode one Transfer Engine
+> asks another directly for its transport description; there is no external
+> metadata server. The master still decides object placement and tracks
+> whether the owner is alive.
 
-Start with this class map. It shows the main objects and the member names
-you will see in the debugger. Click the diagram to read it at full size.
+Start with the objects inside the owner process. Indentation means "holds":
 
-[![Nested owner class map: RealClient holds Client and ClientBufferAllocator. Client holds MasterClient, TransferSubmitter, mounted segment records, and TransferEngine. TransferEngineImpl holds MultiTransport and shared TransferMetadata. TCP owns its context and worker; the metadata plugin owns the handshake listener.](assets/owner-class-map.svg)](assets/owner-class-map.svg)
+[![Owner class map: RealClient holds Client and ClientBufferAllocator. Client holds MasterClient, TransferSubmitter, mounted segment records and TransferEngine. TransferEngineImpl holds MultiTransport and the shared TransferMetadata. TcpTransport owns TcpContext; the metadata plugin owns the handshake listener.](assets/owner-class-map.svg)](assets/owner-class-map.svg)
 
-Read the nested boxes from the outside in. `RealClient` holds `Client`;
-`Client` holds `TransferEngine`; and its `impl_` holds the transport and
-metadata state. The boxes describe member relationships, including shared
-pointers. They do not mean that every object has its own thread.
+Three details help when you read the source:
 
-Three details help when following the source:
-
-- `TransferSubmitter` belongs to `Client`. Its `engine_` references the same
+- `TransferSubmitter` belongs to `Client`. Its `engine_` refers to the **same**
   `TransferEngine` that `Client::transfer_engine_` holds.
-- `TransferEngineImpl`, `MultiTransport`, and `TcpTransport` share one
-  `TransferMetadata` object. The dashed arrows show the extra references.
+- `TransferEngineImpl`, `MultiTransport` and `TcpTransport` share **one**
+  `TransferMetadata` object (the dashed arrow).
 - `Client::mounted_segments_` holds Store `Segment` records. The maps inside
-  `TransferMetadata` hold Transfer Engine descriptions and IDs. These maps
-  serve different purposes.
+  `TransferMetadata` hold Transfer Engine descriptions. They serve different
+  purposes.
 
-The source reference is commit
-[`719735896c86b56fabec6cf3e825fb2ea640597a`](https://github.com/kvcache-ai/Mooncake/tree/719735896c86b56fabec6cf3e825fb2ea640597a).
-We follow the `TransferEngineImpl` implementation used by this TCP setup.
-Source links name the relevant symbols so you can find them even when line
-numbers change.
+All source links use commit
+[`719735896c86b56fabec6cf3e825fb2ea640597a`](https://github.com/kvcache-ai/Mooncake/tree/719735896c86b56fabec6cf3e825fb2ea640597a)
+and the `TransferEngineImpl` implementation used by this TCP setup.
 
 ## 1. Start one owner
 
-First build the programs using the [environment guide](environment_setting_up.html).
-Start the master as shown in the [previous chapter](mooncake_service_starting.html).
-It must listen at `127.0.0.1:50051` inside the same Linux container.
-
-In another terminal **inside that Linux container**, run:
+Build the programs with the [environment guide](environment_setting_up.html)
+and start the master from the [previous article](mooncake_service_starting.html).
+It must listen on `127.0.0.1:50051` in the same container. Then, in another
+terminal **inside the container**:
 
 ```bash
 cd /workspace/build/mooncake-store/src
@@ -68,69 +60,56 @@ cd /workspace/build/mooncake-store/src
   --port=50052
 ```
 
-Use the same arguments in a CLion run configuration for `mooncake_client`.
-Keep the build step enabled before launch. All addresses here are Linux
-loopback addresses; they are suitable for processes in this one container.
+Use the same arguments in a CLion run configuration for `mooncake_client`,
+with the build step enabled. All addresses are container loopback addresses.
 
-Mooncake's size parser treats `MB` as `1024 × 1024` bytes. Therefore, `'64 MB'`
-means **64 MiB**, or 67,108,864 bytes. The parser does not accept `MiB` as a
-suffix. See `try_string_to_byte_size` in
-[utils.h](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/utils.h).
+> **Note:** Mooncake's size parser reads `MB` as `1024 × 1024` bytes, so
+> `'64 MB'` is **64 MiB** (67,108,864 bytes). It does not accept `MiB`. See
+> `try_string_to_byte_size` in
+> [utils.h](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/utils.h).
 
-The zero local buffer is intentional. This owner still supplies 64 MiB of
-global storage. Its local transfer buffer is a separate allocation.
+`--local_buffer_size=0` is intentional. This owner still contributes 64 MiB of
+global storage; the local transfer buffer is a separate allocation that it
+simply does not need.
 
-## 2. See how the objects fit together
+## 2. How the objects fit together
 
-Several objects work together inside the owner process. Each handles a
-different part of the job: the Store API, master requests, transfer selection,
-peer metadata, or socket I/O. They are not separate services or processes.
+The objects in the map are all inside one process. Each one owns one job: the
+Store API, master requests, transfer submission, peer metadata or socket I/O.
 
-Use the opening class map alongside the table below. The map groups the
-objects; the table explains what each member does.
-
-### Follow the members in the debugger
-
-| Object | Important member or relationship | Purpose |
+| Object | Key member | Job |
 | --- | --- | --- |
-| `RealClient` | Inherits `PyClient`; its inherited `client_` points to `Client`. | Provides the high-level API and manages this process's buffers and services. |
-| `Client` | `master_client_` is a `MasterClient`. | Sends Store RPCs, such as `MountSegment`, `Ping`, and `PutStart`, to the master. |
-| `Client` | `transfer_engine_` points to `TransferEngine`. | Holds the engine used to register memory and move bytes. |
-| `Client` | `transfer_submitter_` points to `TransferSubmitter`. | Submits Store data transfers through the Transfer Engine. |
-| `TransferSubmitter` | `engine_` is a reference to that same `TransferEngine`. | Uses the client's engine; it does not create a second engine. |
-| `TransferEngine` | `impl_` points to `TransferEngineImpl` in this setup. | Exposes the public transfer API and delegates to its implementation. |
-| `TransferEngineImpl` | `multi_transports_` points to `MultiTransport`. | Manages installed transports and routes requests to them. |
-| `TransferEngineImpl` | `metadata_` points to `TransferMetadata`. | Keeps local and peer transport descriptions available to the engine. |
-| `MultiTransport` | `transport_map_["tcp"]` holds a `shared_ptr<Transport>` whose object is a `TcpTransport`. | Selects the concrete transport for a request. |
-| `TcpTransport` | Inherits `Transport`; `context_` points to `TcpContext`, and `thread_` is its worker. | Implements TCP memory registration and data transfer. |
-| `TcpContext` | Contains `io_context`, `acceptor`, and a validation callback. | Tracks asynchronous I/O, accepts data connections, and checks requested memory ranges. |
-| `TransferMetadata` | `handshake_plugin_` points to a `HandShakePlugin`; P2P uses `SocketHandShakePlugin`. | Exchanges transport descriptions with peers through the handshake listener. |
+| `RealClient` | Inherits `PyClient`; inherited `client_` points to `Client`. | High-level API; owns this process's buffers and services. |
+| `Client` | `master_client_` is a `MasterClient`. | Sends Store RPCs such as `MountSegment`, `Ping` and `PutStart`. |
+| `Client` | `transfer_engine_` points to `TransferEngine`. | The engine that registers memory and moves bytes. |
+| `Client` | `transfer_submitter_` points to `TransferSubmitter`. | Submits Store data transfers to the engine. |
+| `TransferSubmitter` | `engine_` refers to that same `TransferEngine`. | Uses the client's engine; never creates a second one. |
+| `TransferEngine` | `impl_` points to `TransferEngineImpl`. | Public transfer API; delegates to the implementation. |
+| `TransferEngineImpl` | `multi_transports_` points to `MultiTransport`. | Manages installed transports and routes requests. |
+| `TransferEngineImpl` | `metadata_` points to `TransferMetadata`. | Holds local and peer transport descriptions. |
+| `MultiTransport` | `transport_map_["tcp"]` holds a `shared_ptr<Transport>` to a `TcpTransport`. | Picks the transport for each request. |
+| `TcpTransport` | Inherits `Transport`; `context_` → `TcpContext`; `thread_` is its worker. | TCP memory registration and data transfer. |
+| `TcpContext` | `io_context`, `acceptor`, a validation callback. | Runs async I/O, accepts data connections, checks memory ranges. |
+| `TransferMetadata` | `handshake_plugin_` → `SocketHandShakePlugin` in P2P mode. | Exchanges descriptions with peers through the handshake listener. |
 
-`RealClient` also holds `client_buffer_allocator_` through its `PyClient`
-base. That allocator manages local staging space. Its global storage
-allocations are managed separately. The later memory sections explain both.
+Through its `PyClient` base, `RealClient` also holds
+`client_buffer_allocator_`, which manages local staging space. Global storage
+is managed separately; sections 6–8 cover both.
 
-### `Transport` is an interface; `TcpTransport` is an implementation
+### `Transport` is the interface, `TcpTransport` the implementation
 
-`Transport` defines the common operations that transport implementations
-provide. In this setup, `TcpTransport` implements those operations.
+`Transport` defines the operations every transport provides, and
+`TcpTransport` implements them. `MultiTransport`'s map stores the base type,
+and its `"tcp"` entry points to a `TcpTransport`: one object, seen through its
+base class. Despite its name, `MultiTransport` can manage a single protocol,
+and it is not an I/O thread.
 
-The map in `MultiTransport` uses the common `Transport` type. Its `"tcp"` entry points
-to a `TcpTransport`. There is no extra TCP object hidden behind a separate
-generic transport service: these are the base and derived types of the same
-object.
+### One shared `TransferMetadata`
 
-Likewise, the name `MultiTransport` does not mean that this owner must use
-several protocols. It can manage just TCP. It is not itself an I/O thread.
-
-### One shared `TransferMetadata`, not three copies
-
-`TransferEngineImpl` creates the metadata object and passes it to
-`MultiTransport`. When TCP is installed, `MultiTransport` passes that same
-object to `TcpTransport::install()`. TCP stores the shared pointer in
-`metadata_`, a member inherited from `Transport`.
-
-That gives three paths to the same metadata state:
+`TransferEngineImpl` creates the metadata object and gives it to
+`MultiTransport`. When TCP is installed, `MultiTransport` passes the same
+object to `TcpTransport::install()`, which keeps it in `metadata_` (inherited
+from `Transport`):
 
 ```text
 TransferEngineImpl::metadata_ ──────────┐
@@ -138,291 +117,250 @@ MultiTransport::metadata_ ─────────────┼──> one 
 TcpTransport's inherited metadata_ ───┘
 ```
 
-This sharing matters during memory registration. TCP adds a `BufferDesc` to
-the local description through `TransferMetadata::addLocalMemoryBuffer()`.
-The handshake handler reads from the same metadata object when a peer asks
-for the owner's description. The engine does not need to copy that update
-between three independent metadata managers.
+This matters during memory registration. TCP adds a `BufferDesc` to the local
+description through `TransferMetadata::addLocalMemoryBuffer()`, and the
+handshake handler reads the same object when a peer asks for it. Nothing has
+to be copied between three metadata managers.
 
-`TransferMetadata` contains the local/peer segment-description maps, segment
-name-to-ID map, and local handshake endpoint information. In P2P mode,
-`handshake_plugin_` provides the socket-based metadata exchange. The external
-metadata `storage_plugin_` is not created on this path.
+`TransferMetadata` holds the local and peer segment-description maps, the
+name-to-ID map and the local handshake endpoint. In P2P mode
+`handshake_plugin_` does the socket exchange; no external `storage_plugin_` is
+created.
 
-This is **Transfer Engine metadata**, such as endpoints and registered
-address ranges. The Master service holds different metadata: keys, replica
-states, and storage placement.
+> This is **Transfer Engine metadata**: endpoints and registered address
+> ranges. The master holds a different kind: keys, replica states and
+> placement.
 
 ### `TcpContext` connects the sockets to the worker
 
-`TcpTransport` allocates its `TcpContext` and starts `thread_`. That worker
-calls `context_->doAccept()` and then `context_->io_context.run()`.
+`TcpTransport` creates its `TcpContext` and starts `thread_`. That thread calls
+`context_->doAccept()` and then `context_->io_context.run()`.
 
-- `io_context` tracks pending asynchronous operations and ready callbacks.
-- `acceptor` listens for new TCP data connections. It is constructed with
-  that `io_context`.
-- A completed accept creates a `ServerSession` with the accepted socket.
-  Its asynchronous reads and writes use the socket's executor, which connects
-  them to the same event loop.
-- The validation callback uses the shared metadata to check whether an
-  incoming address range is registered.
+- `io_context` tracks pending async operations and ready callbacks. It is an
+  object, not a thread.
+- `acceptor` listens for TCP data connections. It is built with that
+  `io_context`.
+- Each accepted connection becomes a `ServerSession`. Its async reads and
+  writes use the socket's executor, so they run on the same event loop. There
+  is no thread per connection.
+- The validation callback uses the shared metadata to check that an incoming
+  address range is registered.
 
-`io_context` is an object, not a thread. `thread_` is the actual thread that
-runs its event loop. A `ServerSession` does not need another worker for each
-connection, or its own explicit `io_context` member.
+The sending side uses the same event loop: `lane_runtime_` stores an executor
+from the context, and connection groups, resolvers and sockets use it. The
+next article follows that path through `PeerConnectionGroup` and
+`ClientSession`.
 
-The sending side also uses this event loop. `lane_runtime_` stores an
-executor obtained from the context. Connection groups, resolvers, and sockets
-use that executor to schedule outgoing work. The next article follows this
-path through `PeerConnectionGroup` and `ClientSession`.
+The P2P handshake listener is a different socket on a different thread.
+Sharing `TransferMetadata` does not merge them.
 
-The P2P handshake listener is separate from this TCP data listener. Sharing
-`TransferMetadata` does not make their sockets or worker threads the same.
+### When each piece becomes ready
 
-### Put the object map next to the startup sequence
+The class map shows *what* exists. This shows *when* it starts:
 
-The relationship diagram shows **what exists and how it is connected**.
-The following diagram shows **when the main pieces become ready**.
+[![Owner startup: create RealClient, connect to the master, initialize the Transfer Engine and TCP, allocate and register the pool, mount it on the master, start heartbeats, then start the client RPC server.](assets/owner-startup.svg)](assets/owner-startup.svg)
 
-[![Owner startup sequence](assets/owner-startup.svg)](assets/owner-startup.svg)
+## 3. Connect to the master first
 
-## 3. Connect to the master before creating the engine
+`main()` initializes `ResourceTracker` before any other thread so it can set up
+signal handling. `RealClient::create()` builds the client and registers it with
+the tracker, then `main()` calls `setup_internal()`.
 
-In `main()`, `ResourceTracker` is initialized before other threads. This lets
-it prepare signal handling. `RealClient::create()` constructs the client and
-registers it with the tracker. Then `main()` calls `setup_internal()`.
+Our `--host` includes a port, so `127.0.0.1:12345` becomes the logical client
+name. Without a port, setup can pick a free one and retry; that branch is not
+used here.
 
-Our `--host` includes an explicit port, so setup uses `127.0.0.1:12345` as
-the logical client name. When no port is supplied, setup can choose a name
-with an available port and retry creation. That branch is outside this example.
+`setup_internal()` calls `Client::Create()`, which builds `Client` and connects
+to the master. `MasterClient::Connect()` calls the master's
+`WrappedMasterService::ServiceReady()`; the reply carries the Store version,
+and the client checks that it matches its own. `Client::Create()` then asks
+for storage configuration and initializes the Transfer Engine.
 
-`setup_internal()` calls `Client::Create()`. This factory constructs `Client`
-and connects to the master. `MasterClient::Connect()` calls the remote
-`WrappedMasterService::ServiceReady()` method. The reply contains the Store
-version, and the client checks that it matches its own version.
-
-Next, `Client::Create()` requests storage configuration, then initializes the
-Transfer Engine for TCP transfers.
-
-Follow `RealClient::setup_internal` in
+Read `RealClient::setup_internal` in
 [real_client.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/real_client.cpp),
 `Client::Create` in
-[client_service.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/client_service.cpp),
+[client_service.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/client_service.cpp)
 and `MasterClient::Connect` in
 [master_client.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/master_client.cpp).
 
 ## 4. Start the metadata and TCP listeners
 
-The owner needs two separate listeners. The **handshake listener** answers
-peer requests for transport information. The **TCP data listener** accepts
-connections that read or write object bytes.
+The owner needs two listeners:
 
-The listening socket for the handshake belongs to `SocketHandShakePlugin`.
-The listening socket for TCP data is `TcpContext::acceptor`; `TcpTransport`
-owns that context and runs its I/O worker.
+- The **handshake listener** (port **H**) answers peers that ask for the
+  owner's transport description. Its socket belongs to `SocketHandShakePlugin`.
+- The **TCP data listener** (port **D**) accepts connections that read or write
+  object bytes. Its socket is `TcpContext::acceptor`, run by `TcpTransport`'s
+  worker.
 
-In the diagram, **H** means the selected handshake port and **D** means the
-selected data port. They are labels, not configuration values. The public
-revision chooses available ports automatically.
+H and D are labels, not settings: the public revision picks both ports
+automatically.
 
-[![Listener startup: SocketHandShakePlugin listens on handshake port H through listen_fd_. TcpContext::acceptor listens on data port D, driven by the TcpTransport worker.](assets/owner-listeners.svg)](assets/owner-listeners.svg)
+[![Two listeners: SocketHandShakePlugin listens on handshake port H; TcpContext::acceptor listens on data port D. A peer first asks H for the SegmentDesc, then connects to D to move bytes.](assets/owner-listeners.svg)](assets/owner-listeners.svg)
 
-### A. Initialize the engine and create metadata state
+### A. Initialize the engine
 
-After connecting to the master, `Client::Create()` creates a `TransferEngine`
-and calls `Client::InitTransferEngine()`. This enters
+After connecting, `Client::Create()` creates a `TransferEngine` and calls
+`Client::InitTransferEngine()`, which enters
 [`TransferEngineImpl::init()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_engine_impl.cpp).
+It picks port H and creates `TransferMetadata` and `MultiTransport`. In P2P
+mode the engine advertises this handshake port as its endpoint, and
+`TransferMetadata` creates a `SocketHandShakePlugin`. Creating the plugin does
+not start listening yet.
 
-The implementation selects handshake port H and creates `TransferMetadata`
-and `MultiTransport`. In P2P mode, the engine's advertised endpoint uses this
-handshake port. `TransferMetadata` creates a `SocketHandShakePlugin`; it does
-not create an external metadata storage plugin.
-
-Creating the plugin object alone does not start its listener. The next call
-starts it.
-
-### B. SocketHandShakePlugin listens on H
+### B. `SocketHandShakePlugin` listens on H
 
 [`TransferMetadata::addRpcMetaEntry()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_metadata.cpp)
-saves the local handshake address and registers callbacks for peer metadata,
-notifications, and probes. It then calls the plugin's `startDaemon()`.
+saves the local handshake address, registers callbacks for peer metadata,
+notifications and probes, and calls the plugin's `startDaemon()`.
 
 [`SocketHandShakePlugin::startDaemon()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_metadata_plugin.cpp)
-uses the prepared socket, or creates and binds one if needed. It calls
-`listen()` on its `listen_fd_` socket and starts its `listener_` thread.
-That thread waits for peer connections with `accept()`. `TransferMetadata`
-provides the request callbacks; `SocketHandShakePlugin` owns the listening
-socket and accepts the connections.
+uses the prepared socket (or creates and binds one), calls `listen()` on
+`listen_fd_`, and starts its `listener_` thread, which waits in `accept()`.
+`TransferMetadata` supplies the request callbacks; the plugin owns the socket.
 
-The setup thread can now continue installing TCP while the handshake listener
-remains active. A later peer metadata request reaches `receivePeerMetadata()`,
-which returns the owner's local transport description. The description is
-filled in further as TCP is installed and buffers are registered.
+Setup now continues while this listener runs. A later peer request reaches
+`receivePeerMetadata()`, which returns the owner's description. That
+description fills in further as TCP is installed and buffers are registered.
 
-### C. Install TCP and describe its separate data endpoint
+### C. Install TCP and describe the data endpoint
 
-Back in `Client::InitTransferEngine()`, installing the TCP transport reaches
+Back in `Client::InitTransferEngine()`, the TCP transport is installed through
 [`TcpTransport::install()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transport/tcp_transport/tcp_transport.cpp).
-It selects data port D. `allocateLocalSegmentID()` creates or updates the
-local `SegmentDesc` with the TCP data host, port, and protocol version.
+It picks port D, and `allocateLocalSegmentID()` creates or updates the local
+`SegmentDesc` with the TCP data host, port and protocol version.
 
-This method name can be confusing: creating this Transfer Engine description
-is not mounting a Store memory pool. The global pool is allocated and
-registered later in sections 6–7.
+> **Note:** despite its name, this does not mount a Store memory pool. The
+> global pool is allocated and registered later, in sections 6–7.
 
-Installation calls `startHandshakeDaemon()` again. The socket plugin sees
-that its listener is already running and returns success. It does not start
-another listener thread.
+Installation calls `startHandshakeDaemon()` again; the plugin sees its
+listener is already running and returns. `updateLocalSegmentDesc()` then
+updates the description. In P2P mode nothing is uploaded anywhere: peers fetch
+it through listener H.
 
-Next, `updateLocalSegmentDesc()` updates the description through the metadata
-layer. In P2P mode there is no upload to an external metadata server. Peers
-obtain the local description through listener H.
-
-### D. TcpContext::acceptor listens on D
+### D. `TcpContext::acceptor` listens on D
 
 TCP installation constructs
 [`TcpContext`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transport/tcp_transport/tcp_transport_session_impl.h).
-Its constructor creates the acceptor with `acceptor(io_context)`, then opens,
-binds, and listens on data port D. It also stores the callback that validates
-incoming memory ranges.
-
-The acceptor's type is `asio::ip::tcp::acceptor`. This is the object holding
-the data-listening socket. `TcpTransport::context_` points to the `TcpContext`
-that contains it.
-
-`TcpTransport` then starts its worker thread. The worker calls:
+Its constructor builds `acceptor(io_context)` (an `asio::ip::tcp::acceptor`),
+then opens, binds and listens on D. It also stores the range-validation
+callback. `TcpTransport` then starts its worker thread:
 
 ```cpp
 context_->doAccept();         // Register an asynchronous accept.
 context_->io_context.run();   // Run ready callbacks and wait for I/O.
 ```
 
-When a data connection arrives, the accept callback creates a `ServerSession`
-and calls `start()`. The session begins reading a request header. A later
-WRITE request receives bytes into a registered owner range; a READ request
-sends bytes from that range. The same event loop advances these operations.
-It does not create a new worker thread for each session.
+When a data connection arrives, the accept callback creates a
+`ServerSession` and calls `start()`, which begins reading a request header. A
+WRITE request then receives bytes into a registered range; a READ request sends
+bytes from one. Every session runs on this one event loop.
 
-### What is ready when this stage ends?
+### What is ready after this stage
 
-| Port | Class and member that listen | How requests are handled |
+| Port | Who listens | How requests are handled |
 | --- | --- | --- |
-| Handshake H | `SocketHandShakePlugin::listen_fd_`, accepted by its `listener_` thread | Peer metadata/control requests reach callbacks in `TransferMetadata`, such as `receivePeerMetadata()`. |
-| TCP data D | `TcpContext::acceptor`, an `asio::ip::tcp::acceptor` | The `TcpTransport` worker runs the event loop. `ServerSession` handles reads/writes on each accepted connection. |
+| Handshake H | `SocketHandShakePlugin::listen_fd_`, accepted by its `listener_` thread | Callbacks in `TransferMetadata`, such as `receivePeerMetadata()`. |
+| TCP data D | `TcpContext::acceptor` | The `TcpTransport` worker runs the loop; one `ServerSession` per connection. |
 
-For example, a peer first asks the plugin on H for the owner's data endpoint
-and registered ranges. It then connects to the acceptor on D to transfer
-bytes. `ServerSession` uses the accepted socket; it does not listen on
-another port.
-
-Both listeners are active, but setup still has to allocate, register, and
-mount the global storage pool. Listening on a port alone does not make that
-pool available for Store objects.
+A peer first asks H for the owner's data endpoint and registered ranges, then
+connects to D to move bytes. Both listeners are up, but there is still no
+storage: listening on a port does not make memory available to the Store.
 
 ## 5. Create the transfer submitter and local buffer
 
-After engine initialization, `Client::Create()` calls
-`Client::InitTransferSubmitter()`. The submitter belongs to `Client`.
-For transfers to another process, the submitter prepares requests for the
-Transfer Engine.
+After the engine, `Client::Create()` calls `Client::InitTransferSubmitter()`.
+The submitter turns Store transfers into Transfer Engine requests. With a
+TCP-only engine, a local memory-copy shortcut is enabled by default for
+same-endpoint transfers; remote transfers still use TCP.
 
-For a TCP-only engine, local memory-copy optimization is enabled by default.
-This helps transfers within the same endpoint. Remote transfers still use TCP.
-
-Control then returns to `RealClient::setup_internal()`, which creates
-`ClientBufferAllocator`. With `--local_buffer_size=0`, it has no backing buffer,
-and setup skips local buffer registration.
-
-With a positive size, setup would allocate a separate local buffer, register
-it with the Transfer Engine, and record its bounds in `local_buffer_region_`.
-That registration alone does not mount storage capacity with the master.
+Back in `RealClient::setup_internal()`, `ClientBufferAllocator` is created.
+With `--local_buffer_size=0` it has no backing buffer and registration is
+skipped. With a positive size, setup would allocate a separate buffer,
+register it with the engine and record its bounds in `local_buffer_region_`.
+That registration alone does not mount any storage.
 
 See `TransferSubmitter::TransferSubmitter` in
 [transfer_task.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/transfer_task.cpp)
 and the constructors in
 [client_buffer.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/client_buffer.cpp).
 
-## 6. Allocate the global storage pool
+## 6. Allocate the global pool
 
-[![Owner memory and metadata relationships](assets/owner-memory.svg)](assets/owner-memory.svg)
+Setup allocates one 64 MiB CPU pool. `RealClient::segment_ptrs_` keeps it alive,
+and its address and size go to `Client::MountSegment()`. From here on the pool
+exists once, but three different records describe it:
 
-Setup allocates one 64 MiB CPU memory pool for global storage.
-`RealClient::segment_ptrs_` keeps the backing allocation alive. Setup then
-passes its address and size to `Client::MountSegment()`.
+[![One 64 MiB pool and three descriptions: MemoryRegion in TransferEngineImpl, BufferDesc inside SegmentDesc in TransferMetadata, and the Store Segment sent to the master.](assets/owner-memory.svg)](assets/owner-memory.svg)
 
-## 7. Register the address range, then mount it
+## 7. Register the range, then mount it
 
-Mounting connects two facts: **the owner has a real memory allocation**, and
-**the master may now assign parts of that allocation to objects**. It does
-not send the contents of the pool to the master.
+Mounting connects two facts: **the owner has real memory**, and **the master
+may now hand out pieces of it**. The pool's contents are never sent to the
+master.
 
-[![Mounting crosses from owner-side memory registration through MasterClient RPC to master-side segment and allocator registration, then returns success to the owner.](assets/segment-mount-flow.svg)](assets/segment-mount-flow.svg)
+[![Mounting a segment: RealClient calls Client::MountSegment, Client registers the range with the TransferEngine, builds a Segment and sends MountSegment through MasterClient; the master creates an allocator and records, and the owner records the mount on success.](assets/segment-mount-flow.svg)](assets/segment-mount-flow.svg)
 
-### Which client-side classes take part?
+### The classes involved
 
-`RealClient::setup_internal()` allocates the global pool, then calls
+`RealClient::setup_internal()` calls
 `client_->MountSegment(ptr, mount_size, protocol, seg_location)`.
-`Client::MountSegment()` delegates to `MountSegmentAndGetId()`. The latter
-does the registration and RPC work, then returns the segment UUID. The
-`MountSegment()` wrapper returns success or an error instead of that UUID.
+`Client::MountSegment()` delegates to `MountSegmentAndGetId()`, which does the
+work and returns the segment UUID; the wrapper returns only success or an
+error.
 
-| Class | Work during this mount |
+| Class | Job during the mount |
 | --- | --- |
-| `RealClient` | Allocates the global pool and manages the backing memory's lifetime. Passes its address and size to `Client`. |
-| `Client` | Checks the range, registers it with the engine, creates the Store `Segment`, calls the master, and records a successful mount. |
-| `TransferEngine` / `TransferEngineImpl` | Registers the local range and tracks pending/committed registrations. |
-| `MultiTransport` | Holds the installed transports that engine registration visits. It does not send the Store mount RPC. |
-| `TcpTransport` | Adds the registered buffer description through `TransferMetadata`. |
-| `TransferMetadata` | Keeps the updated local description available to peers through the handshake service. |
-| `MasterClient` | Sends the `Segment` and owner client UUID to the Master service. |
+| `RealClient` | Allocates the pool, keeps it alive, passes address and size on. |
+| `Client` | Checks the range, registers it, builds the `Segment`, calls the master, records the mount. |
+| `TransferEngine` / `TransferEngineImpl` | Registers the range; tracks pending and committed registrations. |
+| `MultiTransport` | Holds the transports that registration visits. Does not send the RPC. |
+| `TcpTransport` | Adds a `BufferDesc` through `TransferMetadata`. |
+| `TransferMetadata` | Serves the updated description to peers. |
+| `MasterClient` | Sends the `Segment` and owner client UUID to the master. |
 
-`TransferSubmitter` is not the component that mounts the segment. It is used
-later when Store operations need to move data. No object transfer is required
-to complete this mount.
+`TransferSubmitter` takes no part; it is used later when data moves. No object
+transfer is needed to finish a mount.
 
-### Register the range before announcing storage capacity
+### Register before announcing
 
-`MountSegmentAndGetId()` validates the parameters and locks
-`mounted_segments_mutex_`. It checks for overlap with the owner's existing
-Store mounts. It then calls the engine's `registerLocalMemory()`.
+`MountSegmentAndGetId()` validates the parameters, locks
+`mounted_segments_mutex_`, checks for overlap with existing mounts and calls
+`registerLocalMemory()`. Inside `TransferEngineImpl::registerLocalMemory()`:
 
-Inside `TransferEngineImpl::registerLocalMemory()`, the sequence is:
-
-1. Create a `MemoryRegion` describing the address, size, location, and access flag.
-2. Reserve the range in `registering_memory_regions_` after checking overlap.
+1. Create a `MemoryRegion` with the address, size, location and access flag.
+2. Reserve the range in `registering_memory_regions_` after an overlap check.
 3. Ask each installed transport to register the range.
-4. On success, remove the pending entry and insert it into `local_memory_regions_`.
+4. On success, move the entry into `local_memory_regions_`.
 
-The pending map prevents another registration from claiming an overlapping
-range while registration is still in progress. Both maps belong to
-`TransferEngineImpl`.
+The pending map stops another registration from claiming an overlapping range
+in the meantime. Both maps belong to `TransferEngineImpl`.
 
 TCP registration creates a `BufferDesc` and calls
-`TransferMetadata::addLocalMemoryBuffer()`. That method copies the current
-local `SegmentDesc`, appends the buffer description, and replaces the stored
-description. `TcpTransport` does not insert entries into the engine's pending map.
+`TransferMetadata::addLocalMemoryBuffer()`, which copies the current local
+`SegmentDesc`, appends the buffer and swaps the stored description.
+`TcpTransport` never touches the engine's pending map.
 
-### The data structures: one allocation, several descriptions
+### One allocation, several descriptions
 
-The allocation is a range of actual bytes. The following structures describe
-that range for different parts of Mooncake. Creating a description does not
-copy the payload or allocate a second pool.
+The allocation is the real bytes. Each structure below describes the same
+range for a different part of Mooncake. None of them copies the payload.
 
-| Structure | Important fields | Where it is stored |
+| Structure | Key fields | Where it lives |
 | --- | --- | --- |
-| `MemoryRegion` | `addr`, `length`, `location`, `remote_accessible` | Owner's `TransferEngineImpl`: first `registering_memory_regions_`, then `local_memory_regions_`. Both maps use the numeric base address as the key. |
-| `BufferDesc` | `name`, `addr`, `length` for the TCP path | An entry in `TransferMetadata::SegmentDesc::buffers`. |
-| `SegmentDesc` | Engine name, protocol, registered buffers, and TCP data endpoint | `TransferMetadata::segment_id_to_desc_map_`, in either the owner or a peer that fetched its description. |
-| Store `Segment` | UUID, logical name, base, size, protocol, host ID, and `te_endpoint` | Owner's `Client::mounted_segments_`; also inside the master's `MountedSegment`. |
+| `MemoryRegion` | `addr`, `length`, `location`, `remote_accessible` | Owner's `TransferEngineImpl`: first `registering_memory_regions_`, then `local_memory_regions_`, keyed by base address. |
+| `BufferDesc` | `name`, `addr`, `length` | An entry in `SegmentDesc::buffers`. |
+| `SegmentDesc` | Engine name, protocol, buffers, TCP data endpoint | `TransferMetadata::segment_id_to_desc_map_`, in the owner or in a peer that fetched it. |
+| Store `Segment` | UUID, name, base, size, protocol, host ID, `te_endpoint` | Owner's `Client::mounted_segments_` and the master's `MountedSegment`. |
 | `MountedSegment` | `segment`, `status`, `buf_allocator` | Master's `SegmentManager::mounted_segments_`. |
 
-For the ordinary CPU allocation path used here, `RealClient::segment_ptrs_`
-holds the backing allocation through a smart pointer with a deleter. The
-maps above describe the memory; this holder keeps it alive.
+On this CPU path, `RealClient::segment_ptrs_` keeps the allocation alive
+through a smart pointer with a deleter. The maps describe the memory; this
+holder owns it.
 
-#### Inside SegmentDesc
+#### Inside `SegmentDesc`
 
-This shortened view shows the fields used to understand the TCP path.
+The fields that matter for TCP:
 
 ```cpp
 // Selected fields from TransferMetadata's nested types.
@@ -442,66 +380,57 @@ struct SegmentDesc {
 };
 ```
 
-In this P2P setup, `SegmentDesc::name` is the engine's handshake endpoint.
-`tcp_data_host` and `tcp_data_port` identify the separate data listener.
-TCP installation sets `tcp_proto_version` to 2 in this revision; the default
-value 1 also supports older descriptions.
+- `name` is the engine's handshake endpoint in P2P mode.
+- `tcp_data_host` and `tcp_data_port` point at the separate data listener.
+- `tcp_proto_version` is set to 2 by TCP installation in this revision; the
+  default of 1 keeps older descriptions working.
+- `buffers` lists registered ranges reachable through this engine. A
+  `BufferDesc` covers a whole region, such as the 64 MiB pool, not one object.
+  TCP fills its `name` with the local engine name.
 
-`buffers` describes the registered address ranges reachable through that
-engine. A `BufferDesc` covers a registered region, such as the whole 64 MiB
-pool. It is not an object key or the 4096-byte allocation for one Put.
-TCP fills its `name` with the local engine name.
+One `SegmentDesc` can hold several buffers: several mounted pools, and also a
+registered staging buffer that is *not* Store capacity. So counting `buffers`
+is not the same as counting Store segments.
 
-One `SegmentDesc` can hold several `BufferDesc` entries. If the owner mounts
-several pools, their ranges can appear in the same engine description. A
-registered local staging buffer can also appear there without being mounted
-as Store capacity. Therefore, counting `buffers` is not the same as counting
-Store segments.
+#### How the local description changes
 
-#### How the owner's local description changes
-
-During TCP installation, `allocateLocalSegmentID()` creates the local engine
-description and calls `TransferMetadata::addLocalSegment()`. It records:
+During TCP installation, `allocateLocalSegmentID()` creates the local
+description and calls `TransferMetadata::addLocalSegment()`:
 
 ```text
 segment_id_to_desc_map_[LOCAL_SEGMENT_ID] → shared_ptr<SegmentDesc>
 segment_name_to_id_map_[engine_name]      → LOCAL_SEGMENT_ID
 ```
 
-`LOCAL_SEGMENT_ID` is 0. Later, when this pool is registered,
-`addLocalMemoryBuffer()` makes a new `SegmentDesc`, copies the existing
-description, adds the `BufferDesc`, and replaces the map's shared pointer
-under the metadata lock. This updates the description without modifying an
-older snapshot that another reader may still hold.
+`LOCAL_SEGMENT_ID` is 0. When the pool is registered, `addLocalMemoryBuffer()`
+makes a new `SegmentDesc`, copies the old one, appends the `BufferDesc` and
+swaps the map's pointer under the metadata lock. Readers holding the old
+snapshot are not affected.
 
-The engine commits the `MemoryRegion` into `local_memory_regions_` after
-transport registration succeeds. The `MemoryRegion` map and the
-`SegmentDesc::buffers` vector are separate bookkeeping structures updated
-during the same registration path.
+The engine commits the `MemoryRegion` after transport registration succeeds.
+The `MemoryRegion` map and `SegmentDesc::buffers` are separate records updated
+by the same call path.
 
-Source: the [data structure declarations](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/include/transfer_metadata.h)
+Sources: [data structure declarations](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/include/transfer_metadata.h)
 and [`TransferMetadata::addLocalMemoryBuffer()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_metadata.cpp).
 
-### Build the Store record and send the RPC
+### Build the Store record and call the master
 
-After engine registration succeeds, `Client` builds a `Segment`:
+After registration, `Client` builds a `Segment`:
 
-| Field | Value or meaning in our example |
+| Field | Value in our example |
 | --- | --- |
-| `id` | A new UUID generated by this owner-side `Client`, not by the master. |
+| `id` | A new UUID generated by the owner's `Client`, not by the master. |
 | `name` | Logical client name: `127.0.0.1:12345`. |
-| `base` | Numeric address of the allocated pool in the owner process. |
-| `size` | Mountable pool size, 64 MiB for this ordinary allocation example. |
+| `base` | The pool's address in the owner process. |
+| `size` | 64 MiB. |
 | `protocol` | `tcp`. |
-| `host_id` | Host identity used for placement; separate from the client and segment UUIDs. |
-| `te_endpoint` | The owner's actual P2P handshake endpoint. Peers use it to discover the TCP data endpoint. |
+| `host_id` | Host identity used for placement; separate from client and segment UUIDs. |
+| `te_endpoint` | The owner's P2P handshake endpoint. Peers use it to find the TCP data endpoint. |
 
-`MasterClient::MountSegment(segment)` adds its `client_id_` to the RPC
-arguments. One client can mount several segments, so the **client UUID** and
-**segment UUID** answer different questions: who owns the capacity, and which
-particular pool is being mounted?
-
-The call crosses the process boundary here:
+`MasterClient::MountSegment(segment)` adds its `client_id_` to the request. A
+client can mount several segments, so the two UUIDs answer different
+questions: **who** owns the capacity, and **which** pool is being mounted.
 
 ```text
 Owner process                         Master process
@@ -510,41 +439,36 @@ MasterClient::MountSegment
                                        └─ MasterService::MountSegment
 ```
 
-The reply is success or an error. It does not return a new pool or allocate
-an object value. P2P handshakes are separate from this Store RPC; the mount
-record merely gives the master the endpoint to include in later replica
-descriptions.
+The reply is just success or an error. No pool or object is created on the
+reply path, and P2P handshakes are separate from this RPC: the mount only gives
+the master the endpoint to put into later replica descriptors.
 
 Sources: [`Client::MountSegmentAndGetId`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/client_service.cpp),
 [`MasterClient::MountSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/master_client.cpp),
 [`WrappedMasterService::MountSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/rpc_service.cpp),
 [`Segment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/types.h).
 
-## 8. Store the segment and create its allocator on the master
+## 8. The master records the segment
 
-`WrappedMasterService::MountSegment()` enters the RPC wrapper and calls its
-`MasterService` member. `MasterService::MountSegment()` gets a
-`ScopedSegmentAccess` from `segment_manager_`. This access object holds the
-segment lock while the segment records are changed. It is a temporary lock
-guard and access helper, not a second segment manager.
+`WrappedMasterService::MountSegment()` calls `MasterService::MountSegment()`,
+which gets a `ScopedSegmentAccess` from `segment_manager_`. That object is a
+lock guard plus access helper, not a second manager.
 
-While holding that access, the master places the **client UUID** in
-`client_ping_queue_`. This starts liveness tracking for the owner. It happens
-before the mount completes; if the queue is full, the request fails instead
-of leaving newly mounted capacity without that tracking request.
+While holding it, the master puts the **client UUID** into
+`client_ping_queue_`, which starts liveness tracking. This happens before the
+mount completes: if the queue is full, the mount fails rather than leaving new
+capacity untracked.
 
-Next, `ScopedSegmentAccess::MountSegment()` validates the reported base and
-size and checks the segment UUID. For a fresh mount in this setup, it
-creates the configured allocator, attaches usage tracking, and inserts the
-segment into the manager's records. An already mounted UUID with status
-`OK` is treated as success by the outer service; it does not create a second
-allocator for that existing record.
+`ScopedSegmentAccess::MountSegment()` then validates the base, size and UUID.
+For a new mount it creates the allocator, attaches usage tracking and inserts
+the records. If the UUID is already mounted with status `OK`, the outer
+service treats that as success and does not create a second allocator.
 
-### Which structures keep the segment?
+### Where the segment is recorded
 
-[![The master stores a MountedSegment record and indexes that refer to its allocator, while the owner keeps the real memory pool and a simpler Segment record.](assets/segment-mount-state.svg)](assets/segment-mount-state.svg)
+[![Where a mounted segment is recorded: the master keeps MountedSegment, allocator_manager_ and other indexes pointing at one OffsetBufferAllocator; the owner keeps the real pool and a simple Segment record.](assets/segment-mount-state.svg)](assets/segment-mount-state.svg)
 
-The main master-side record is `SegmentManager::mounted_segments_`:
+The main master-side record:
 
 ```cpp
 // In SegmentManager. UUID is the Store segment ID.
@@ -558,86 +482,74 @@ struct MountedSegment {
 };
 ```
 
-The new `MountedSegment` contains the supplied `Segment`, status
-`SegmentStatus::OK`, and the associated allocator. `OK` means that this
-segment is available for normal allocation. It is a segment status, separate
-from an object's replica status such as `PROCESSING` or `COMPLETE`.
+The new `MountedSegment` holds the `Segment`, status `SegmentStatus::OK` and
+the allocator. `OK` means "available for allocation". It is a segment status,
+not a replica status like `PROCESSING` or `COMPLETE`.
 
-Several indexes support other ways to find the same capacity:
+Other indexes find the same capacity in other ways:
 
-| Member in `SegmentManager` | Lookup | Why it exists |
+| `SegmentManager` member | Lookup | Used for |
 | --- | --- | --- |
-| `mounted_segments_` | Segment UUID → `MountedSegment` | Find the full record, status, and allocator for a specific segment. |
-| `client_segments_` | Client UUID → vector of segment UUIDs | Find an owner's segments for cleanup or liveness handling. |
-| `client_by_name_` | Segment name → client UUID | Find the client associated with a logical segment name. |
-| `segment_id_by_name_` | Segment name → segment UUID | Supports name-based lookup. This is a single-ID map, not the full list of an owner's pools. |
-| `segments_by_host_` | Host ID → segment name → set of segment UUIDs | Find allocatable segments by host for placement. A host entry is added when `host_id` is nonempty. |
-| `allocator_manager_` | Segment name → vector of allocator pointers | Gives allocation strategies access to allocators for segments in `OK` state. |
+| `mounted_segments_` | Segment UUID → `MountedSegment` | The full record, status and allocator. |
+| `client_segments_` | Client UUID → segment UUIDs | An owner's segments, for cleanup and liveness. |
+| `client_by_name_` | Segment name → client UUID | The client behind a logical name. |
+| `segment_id_by_name_` | Segment name → segment UUID | Name lookup. Holds **one** ID, not an owner's full list. |
+| `segments_by_host_` | Host ID → name → segment UUIDs | Allocatable segments per host. Added when `host_id` is set. |
+| `allocator_manager_` | Segment name → allocators | Allocators of `OK` segments, for the allocation strategy. |
 
-Inside `AllocatorManager`, `allocators_` holds those vectors and `names_`
-keeps the available names. A vector is useful because one logical client name
-can have several mounted pools.
-The UUID maps distinguish those pools. The single-value
-`segment_id_by_name_` entry is assigned the ID during each mount; it must not
-be mistaken for that complete collection.
+Inside `AllocatorManager`, `allocators_` holds those vectors and `names_` the
+available names. A vector is needed because one logical name can have several
+pools; the UUID maps tell them apart. `segment_id_by_name_` is overwritten on
+each mount, so do not treat it as the full list.
 
-`MountedSegment::buf_allocator` and the allocator-manager entry point to the
-**same allocator object**. Adding it to both places does not create two
-independent free-space records.
+`MountedSegment::buf_allocator` and the allocator-manager entry are the
+**same object**, not two free-space records.
 
-### Why create an allocator when the owner already allocated memory?
+### Why the master needs an allocator
 
-The owner allocated the **whole pool**. The master still needs to divide that
-pool among future objects without giving two live allocations the same
-bytes.
-
-For this configuration, mounting creates:
+The owner allocated the **whole pool**. The master still has to split it
+between future objects without giving the same bytes to two of them. For this
+configuration, mounting creates:
 
 ```text
 OffsetBufferAllocator(name, base, size, te_endpoint)
   └─ OffsetAllocator: free blocks, size bins, and allocation handles
 ```
 
-`OffsetBufferAllocator` keeps the segment identity, base, capacity, and
-transport endpoint. Its inner `OffsetAllocator` tracks which address ranges
-are free or reserved. The master allocates memory for this bookkeeping, but
-it does not allocate another 64 MiB payload pool or dereference the owner's
-base address.
+`OffsetBufferAllocator` keeps the segment's identity, base, capacity and
+endpoint. Its inner `OffsetAllocator` tracks which ranges are free or reserved.
+This is bookkeeping only: the master allocates no 64 MiB payload and never
+dereferences the owner's address.
 
-Suppose the owner pool starts at the illustrative address `0x70000000`:
+With the pool at the example address `0x70000000`:
 
-| Moment | Owner memory | Master's allocator state |
+| Moment | Owner memory | Master's allocator |
 | --- | --- | --- |
-| Before mount | A 64 MiB allocation exists. | No allocator for this segment yet. |
-| After mount | The same allocation remains. | The pool is available for object allocations. No key was created by mounting. |
-| A later 4096-byte Put | Bytes will be written into a selected range. | Reserve a free range and return its address in a replica descriptor. |
-| That object is safely reclaimed | The large pool still exists. | Release the object's range for reuse; adjacent free blocks can be merged. |
+| Before mount | The 64 MiB allocation exists. | No allocator yet. |
+| After mount | Unchanged. | Pool available. No key created. |
+| A 4096-byte Put | Bytes are written into the chosen range. | Reserves a range, returns its address in a replica descriptor. |
+| Object reclaimed | The pool still exists. | Frees the range; neighbouring free blocks can merge. |
 
-For example, choosing byte offset `0x2000` gives destination address
-`0x70002000`. The master returns that address and the owner's transport
-endpoint to the Put caller. The caller's Transfer Engine sends the bytes to
-the owner. Allocation sizes can be rounded internally; this address example
-does not specify the allocator's exact size-class layout.
+If the allocator chooses offset `0x2000`, the Put caller receives destination
+`0x70002000` plus the owner's endpoint, and its Transfer Engine sends the
+bytes there. (Sizes may be rounded internally; the example does not show the
+allocator's size classes.)
 
-The **allocation strategy chooses a segment**. The **segment's allocator
-chooses a free range inside it**. `AllocatorManager` makes the candidate
-allocators available; it does not itself own another payload pool.
+> **Two levels of choice:** the **allocation strategy picks a segment**; the
+> **segment's allocator picks a range inside it**. `AllocatorManager` only
+> lists the candidate allocators.
 
-This master-side allocator also differs from the owner's
-`ClientBufferAllocator`, which manages local staging memory. Our owner has
-zero local staging capacity, yet the master still creates an allocator for
-its 64 MiB global segment. This setup uses `OffsetBufferAllocator`.
+This allocator is unrelated to the owner's `ClientBufferAllocator`, which
+manages local staging memory. Our owner has zero staging space, yet the master
+still creates an allocator for its 64 MiB global segment. The
+[offset allocator source](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/offset_allocator.cpp)
+contains the free-bin search, block splitting and merging.
 
-The [offset allocator implementation](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/offset_allocator.cpp)
-contains the free-bin search, block splitting, and later coalescing.
+### Both sides finish the mount
 
-### Finish the mount on both sides
-
-After inserting the records, the master updates capacity accounting. The
-outer service also updates the client-to-host information and recomputes
-effective tenant quotas for a newly mounted segment. It returns success.
-
-Only after that reply does the owner's `Client` insert its local record:
+The master updates capacity accounting, the client-to-host information and
+the effective tenant quotas, then returns success. Only then does the owner's
+`Client` record the mount:
 
 ```cpp
 // In Client, not SegmentManager. The value is Segment, not MountedSegment.
@@ -646,34 +558,32 @@ std::unordered_map<UUID, Segment, boost::hash<UUID>> mounted_segments_;
 mounted_segments_[segment.id] = segment;
 ```
 
-This owner-side map helps with overlap checks, unmounting, and remounting.
-It does not contain the master's object-allocation state. In the debugger,
-check the enclosing class before interpreting a member named
-`mounted_segments_`.
+This owner-side map is used for overlap checks, unmounting and remounting. It
+holds no allocation state.
 
-Finally, `EnsureStorageControlPlaneStarted()` starts the storage heartbeat
-and task-poll threads once. Heartbeats tell the master that the owner is
-alive. Task polling obtains assignments such as replica copies or moves.
-Both loops currently use one-second intervals in their normal paths.
-If several pools are mounted, these threads can run while later mounts proceed.
+> **Debugger tip:** both `Client` and `SegmentManager` have a member called
+> `mounted_segments_`, with different value types. Check the enclosing class.
+
+Finally, `EnsureStorageControlPlaneStarted()` starts two threads, once:
+**heartbeats** tell the master the owner is alive, and **task polling** fetches
+work such as replica copies or moves. Both loop every second on the normal
+path, and they can run while later mounts proceed.
 
 ### How the descriptions reach the master and another client
 
-There are three processes to keep separate: the owner, the master, and a
-requesting client. “Remote metadata” can mean either the master's Store
-records or the requesting client's Transfer Engine cache.
+Three processes are involved. "Remote metadata" can mean the master's Store
+records or another client's Transfer Engine cache, and they get there in
+different ways:
 
-[![Memory-description flow across three processes: owner registration builds local records, MountSegment creates master records, and a later requester fetches and caches SegmentDesc through P2P. The pool remains in owner memory.](assets/owner-memory-distribution.svg)](assets/owner-memory-distribution.svg)
+[![Who learns about the owner's memory: 1 MountSegment sends a Segment to the master; 2 the PutStart reply gives a requester one 4096-byte range; 3 the requester fetches the owner's SegmentDesc over P2P; 4 a TCP WRITE moves the bytes.](assets/owner-memory-distribution.svg)](assets/owner-memory-distribution.svg)
 
-**First, mounting sends Store metadata to the master.**
-`MasterClient::MountSegment()` sends a serialized Store `Segment` and the
-owner's client UUID. The master stores a `MountedSegment` and creates its
-allocator, as described above. This RPC does not send `SegmentDesc`, copy the
-owner's registration maps, or broadcast the pool description to all clients.
+**1. Mounting sends Store metadata to the master.** `MasterClient::MountSegment()`
+sends a serialized `Segment` and the owner's client UUID. It does not send
+`SegmentDesc`, copy the registration maps or broadcast anything to other
+clients.
 
-**Later, a Put caller receives an allocation description.** After selecting
-space, the master returns a replica descriptor containing an
-`AllocatedBuffer::Descriptor`. For a memory replica, its fields are:
+**2. A Put caller gets one range.** After choosing space, the master returns a
+replica descriptor with an `AllocatedBuffer::Descriptor`:
 
 ```cpp
 struct Descriptor {
@@ -684,25 +594,18 @@ struct Descriptor {
 };
 ```
 
-For example, the registered pool may cover 64 MiB starting at `0x70000000`,
-while this descriptor identifies only 4096 bytes at `0x70002000`.
-`transport_endpoint_` tells the caller which owner's Transfer Engine to open.
-The addresses here are examples, not fixed settings.
+The pool may cover 64 MiB from `0x70000000`, while this descriptor names only
+4096 bytes at `0x70002000`. `transport_endpoint_` says which owner's engine to
+open.
 
-**The caller then fetches the owner's engine description on demand.**
+**3. The caller fetches the owner's description on demand.**
 `TransferSubmitter::submitTransferEngineOperation()` calls
-`engine_.openSegment(handle.transport_endpoint_)`. On a cache miss, the
-call reaches `TransferMetadata::getSegmentID()`, then
-`getSegmentDescInternal()` and `SocketHandShakePlugin::exchangeMetadata()`.
-
-The owner handles that request through
-`TransferMetadata::receivePeerMetadata()`. It reads its local `SegmentDesc`
-at ID 0 and encodes it into the reply. The caller decodes that reply into a
-**new local `SegmentDesc` object**. The two processes do not share a C++
-`shared_ptr` across the network.
-
-The caller's `getSegmentID()` gives the fetched description a caller-local
-numeric ID and stores it in its own `TransferMetadata`:
+`engine_.openSegment(handle.transport_endpoint_)`. On a cache miss this reaches
+`TransferMetadata::getSegmentID()`, then `getSegmentDescInternal()` and
+`SocketHandShakePlugin::exchangeMetadata()`. The owner answers in
+`TransferMetadata::receivePeerMetadata()` by encoding its local `SegmentDesc`
+(ID 0). The caller decodes the reply into a **new local `SegmentDesc`**: no
+pointer is shared across the network. It stores it under a caller-local ID:
 
 ```text
 Caller process — example remote ID 1:
@@ -710,112 +613,99 @@ segment_name_to_id_map_[owner_endpoint] → 1
 segment_id_to_desc_map_[1]             → owner's decoded SegmentDesc
 ```
 
-ID 1 is only an example. It depends on the caller's lookup history. The
-owner's local ID 0, the caller's remote ID, and the Store segment UUID are
-three different identifiers.
+The ID depends on the caller's history. The owner's local ID 0, the caller's
+remote ID and the Store segment UUID are three different identifiers. The
+caller does not add the remote region to its own `local_memory_regions_` or
+`mounted_segments_`: it caches a description of someone else's memory.
 
-The caller does not add this remote region to its own
-`TransferEngineImpl::local_memory_regions_` or `Client::mounted_segments_`.
-It caches a description of somebody else's memory. Its own local registration
-maps still describe its own buffers.
+> **Note:** the request also carries the caller's own description, but in
+> this revision the owner's `receivePeerMetadata()` does not cache it. One
+> exchange does not fill both peers' caches.
 
-The P2P request also carries the caller's description, but this revision's
-owner-side `receivePeerMetadata()` does not automatically cache that incoming
-description. It replies with the owner's local description. Do not assume
-that one exchange fills both peers' caches symmetrically.
+**4. The bytes move.** With the description cached, TCP knows the data
+endpoint, and the allocation descriptor supplies the exact address and size.
+Registering, mounting and fetching metadata never move object bytes; the
+later WRITE does.
 
-With the remote description cached, TCP obtains the data endpoint and
-registered ranges from it. The allocation descriptor supplies the particular
-object address and size. Together, those two descriptions let the caller
-write the object into the owner pool. Registering, mounting, and fetching
-metadata do not move the object's bytes; the later WRITE does.
-
-| Location after these steps | Class that keeps the record | What it holds |
+| Where | Class | What it holds |
 | --- | --- | --- |
-| Owner allocation | `RealClient` | Actual global memory and its lifetime holder. |
-| Owner registration | `TransferEngineImpl` | Committed `MemoryRegion`, keyed by local base address. |
-| Owner engine metadata | `TransferMetadata` | Local `SegmentDesc` at ID 0, containing the registered `BufferDesc`. |
-| Owner Store state | `Client` | Store `Segment`, keyed by segment UUID after mount success. |
-| Remote master | `SegmentManager` | `MountedSegment`, status, allocator, and lookup indexes. |
-| Requesting peer | Its own `TransferMetadata` | A decoded owner `SegmentDesc` under a peer-local ID. |
+| Owner allocation | `RealClient` | The real memory and its lifetime holder. |
+| Owner registration | `TransferEngineImpl` | Committed `MemoryRegion`, keyed by base address. |
+| Owner engine metadata | `TransferMetadata` | Local `SegmentDesc` (ID 0) with the `BufferDesc`. |
+| Owner Store state | `Client` | Store `Segment`, keyed by UUID after a successful mount. |
+| Master | `SegmentManager` | `MountedSegment`, status, allocator and indexes. |
+| Requesting peer | its own `TransferMetadata` | A decoded owner `SegmentDesc` under a peer-local ID. |
 
-Cached descriptions are snapshots. Registering another owner buffer does not
-push a new copy into every peer's cache. Later lookups and refresh behavior
-determine when a peer fetches a newer description.
+Cached descriptions are snapshots: registering another owner buffer does not
+push updates into every peer's cache.
 
-Follow [`getSegmentID()` and `receivePeerMetadata()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_metadata.cpp)
-for the cache path, and [`AllocatedBuffer::Descriptor`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/allocator.h)
-for the per-object range returned by the master.
-
-Sources: [`MasterService::MountSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/master_service.cpp),
+Sources: [`getSegmentID()` and `receivePeerMetadata()`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-transfer-engine/src/transfer_metadata.cpp),
+[`AllocatedBuffer::Descriptor`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/allocator.h),
+[`MasterService::MountSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/master_service.cpp),
 [`ScopedSegmentAccess::MountSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/segment.cpp),
 [`SegmentManager` and `MountedSegment`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/segment.h),
 [`AllocatorManager`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/allocation_strategy.h),
 [`OffsetBufferAllocator`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/allocator.cpp),
 [`Client::mounted_segments_`](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/include/client_service.h).
 
-## 9. Finish setup and start the owner RPC server
+## 9. Finish setup and start the client RPC server
 
-The standalone program starts its inter-process communication (IPC) service
-for local dummy clients. The TCP data listener and handshake listener are
-already running at this point.
+The standalone program starts its IPC (inter-process communication) service
+for local dummy clients. Both listeners are already running.
 
-Only after setup returns does `main()` start the dummy-client monitor,
-construct the real-client RPC server, register its handlers, and start
-listening on `50052`. Do not move this last RPC-server step before memory
-mounting in a startup diagram. See `main` and `RegisterClientRpcService` in
+Only after setup returns does `main()` start the dummy-client monitor, build
+the real-client RPC server, register its handlers and listen on `50052`. That
+step comes after mounting, not before. See `main` and
+`RegisterClientRpcService` in
 [real_client_main.cpp](https://github.com/kvcache-ai/Mooncake/blob/719735896c86b56fabec6cf3e825fb2ea640597a/mooncake-store/src/real_client_main.cpp).
 
-| Address or port | Purpose in this example |
+| Address or port | Purpose |
 |---|---|
-| `127.0.0.1:50051` | Master service RPC |
-| `127.0.0.1:12345` | Logical client name supplied to setup |
-| Selected P2P handshake port | Peer metadata and handshake requests |
-| Selected TCP data port | Object-byte transfers |
+| `127.0.0.1:50051` | Master RPC |
+| `127.0.0.1:12345` | Logical client name given to setup |
+| Selected handshake port (H) | Peer metadata and handshakes |
+| Selected TCP data port (D) | Object bytes |
 | `127.0.0.1:50052` | Standalone real-client RPC service |
 
-Read the startup logs for the selected handshake and data ports. They are
-chosen automatically in this public revision. The debugging checkout used
-for some screenshots adds `MC_TE_HANDSHAKE_PORT`, `MC_TCP_DATA_PORT`, and
-`mc-*` thread names locally. These are not upstream interfaces or default
-thread names at the linked commit.
+Read H and D from the startup logs; this revision picks them automatically.
+(The author's debug checkout adds `MC_TE_HANDSHAKE_PORT`, `MC_TCP_DATA_PORT`
+and `mc-*` thread names locally. They are not upstream features.)
 
-## 10. Check failures and choose breakpoints
+## 10. Failures and breakpoints
 
-Registration and mounting are separate stages. If a transport registration
-fails, the engine tries to unregister the attempted transports and releases
-the pending range. If the later master mount RPC fails, the method returns
-an error without recording a successful local Store mount. That path does
-not immediately undo the earlier TE registration. Do not assume the whole
-mount operation is one transaction.
+Registration and mounting are separate steps, not one transaction:
 
-Normal cleanup is handled by `RealClient::tearDownAll_internal()` and object
-destructors. Cleanup stops services, unregisters the local buffer, releases
-client resources, and frees owned allocations. `Client` stops its control
-threads and attempts to unmount tracked segments. Cleanup logs and master
-liveness tracking matter when an owner exits unexpectedly; a failed startup
-is not proof that every remote record was removed immediately.
+- If a transport registration fails, the engine unregisters the transports it
+  tried and releases the pending range.
+- If the master mount RPC fails, the method returns an error and records no
+  local mount, but it does **not** undo the earlier engine registration.
 
-Use these function breakpoints to inspect one boundary at a time:
+Normal cleanup runs through `RealClient::tearDownAll_internal()` and
+destructors: services stop, the local buffer is unregistered, resources and
+allocations are freed, and `Client` stops its control threads and tries to
+unmount its segments. When an owner dies unexpectedly, the master's liveness
+tracking cleans up later, so a failed startup does not prove every remote
+record is already gone.
 
-| Breakpoint | Useful state to inspect |
+Inspect one boundary at a time with these breakpoints:
+
+| Breakpoint | What to inspect |
 |---|---|
 | `RealClient::setup_internal` | Host, protocol, global size, local size |
 | `MasterClient::Connect` | Master address and returned version |
-| `TransferEngineImpl::init` | Logical name and selected handshake endpoint |
+| `TransferEngineImpl::init` | Logical name and handshake endpoint |
 | `TcpTransport::install` | Data port and local segment description |
 | `Client::MountSegmentAndGetId` | Pool address, size, Store UUID |
 | `TransferEngineImpl::registerLocalMemory` | Pending and committed memory maps |
 | `TransferMetadata::addLocalMemoryBuffer` | Buffer address and description list |
-| `MasterClient::MountSegment` | Outgoing `Segment`, owner client UUID, and RPC result |
-| `WrappedMasterService::MountSegment` | The same arguments received across the process boundary |
+| `MasterClient::MountSegment` | Outgoing `Segment`, owner UUID, RPC result |
+| `WrappedMasterService::MountSegment` | The same arguments, on the master |
 | `MasterService::MountSegment` | Segment received by the master |
 | `ScopedSegmentAccess::MountSegment` | Allocator and mounted-segment record |
-| `OffsetBufferAllocator::OffsetBufferAllocator` | Owner base address, capacity, and new offset bookkeeping |
+| `OffsetBufferAllocator::OffsetBufferAllocator` | Owner base address, capacity, new bookkeeping |
 | `Client::EnsureStorageControlPlaneStarted` | First start of heartbeat and task polling |
-| `RegisterClientRpcService` | Final handler registration after setup |
+| `RegisterClientRpcService` | Final handler registration |
 
-Keep the owner's backing allocation alive while inspecting master-side
-addresses. A pointer value sent to the master still refers to memory in the
-owner process. The [next chapter](mooncake_put-get_path.html) follows how a Put
-request receives space in that pool and transfers its bytes.
+Keep the owner running while you inspect master-side addresses: a pointer
+value stored on the master still refers to memory in the owner. The next
+article follows a Put into this pool.

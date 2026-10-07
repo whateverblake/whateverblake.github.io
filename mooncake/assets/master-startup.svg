@@ -1,43 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="956" viewBox="0 0 720 956" role="img" aria-labelledby="title desc">
-<title id="title">Start the master</title><desc id="desc">One process • non-HA path • fresh state</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="720" height="956" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Start the master</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">One process • non-HA path • fresh state</text>
-<rect x="64" y="103" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="115" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="136" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">01  Parse and validate configuration</text>
-<text x="84" y="166" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">main() builds the effective MasterConfig.</text>
-<path d="M 360 194 L 360 217" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="221" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="233" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="254" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">02  Construct the RPC server</text>
-<text x="84" y="284" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Address, port, and worker count are configured.</text>
-<path d="M 360 312 L 360 335" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="339" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="351" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="372" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">03  Construct the service objects</text>
-<text x="84" y="402" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">WrappedMasterService owns MasterService.</text>
-<path d="M 360 430 L 360 453" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="457" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="469" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="490" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">04  Initialize state and start workers</text>
-<text x="84" y="520" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Managers exist before any owner mounts memory.</text>
-<path d="M 360 548 L 360 571" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="575" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="587" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="608" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">05  Start the HTTP admin server</text>
-<text x="84" y="638" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Monitoring and management use a separate port.</text>
-<path d="M 360 666 L 360 689" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="693" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="705" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="726" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">06  Register RPC handlers</text>
-<text x="84" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Bind PutStart, MountSegment, Ping, and others.</text>
-<path d="M 360 784 L 360 807" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="811" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="823" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="844" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">07  Run the RPC server</text>
-<text x="84" y="874" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">A serving thread starts; main waits for shutdown.</text>
-<text x="32" y="936" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="t d"><title id="t">How mooncake_master starts</title><desc id="d">main() builds everything, then hands the RPC listener to its own thread.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="560" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">How mooncake_master starts</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">main() builds everything, then hands the RPC listener to its own thread.</text>
+<rect x="32.0" y="86.0" width="470.0" height="440.0" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1"/>
+<text x="46.0" y="108.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#0969da" font-weight="700" text-anchor="start">main()  ·  master.cpp</text>
+<rect x="50.0" y="112.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="112.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="134.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">1  load config</text>
+<text x="66.0" y="156.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">flags + optional --config_path → MasterConfig</text>
+<rect x="50.0" y="180.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="180.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="202.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">2  coro_rpc_server</text>
+<text x="66.0" y="224.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">address, port, worker count — not serving yet</text>
+<path d="M 267.0 166.0 L 267.0 180.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="50.0" y="248.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="248.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="270.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">3  WrappedMasterService</text>
+<text x="66.0" y="292.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">constructs MasterService: state + workers</text>
+<path d="M 267.0 234.0 L 267.0 248.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="50.0" y="316.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="316.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="338.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">4  MasterAdminServer::Start()</text>
+<text x="66.0" y="360.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">HTTP admin routes on :9003</text>
+<path d="M 267.0 302.0 L 267.0 316.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="50.0" y="384.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="384.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="406.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">5  RegisterRpcService()</text>
+<text x="66.0" y="428.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">bind PutStart, MountSegment, Ping, …</text>
+<path d="M 267.0 370.0 L 267.0 384.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="50.0" y="452.0" width="434.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="50.0" y="452.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="66.0" y="474.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">6  start serving thread</text>
+<text x="66.0" y="496.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">main() then waits for a shutdown signal</text>
+<path d="M 267.0 438.0 L 267.0 452.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="560.0" y="112.0" width="368.0" height="172.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="560.0" y="112.0" width="4" height="172.0" rx="2" fill="#59636e"/>
+<text x="576.0" y="134.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#59636e" font-weight="600" text-anchor="start">MasterService workers</text>
+<text x="576.0" y="156.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">EvictionThreadFunc</text>
+<text x="576.0" y="175.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">ClientMonitorFunc</text>
+<text x="576.0" y="194.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">TaskCleanupThreadFunc</text>
+<text x="576.0" y="213.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">JobDispatchThreadFunc</text>
+<text x="576.0" y="232.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">replica_cleanup_worker_</text>
+<text x="576.0" y="251.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.0" fill="#59636e" font-weight="400" text-anchor="start">DynamicReplicationAdmissionThreadFunc</text>
+<path d="M 484.0 275.0 L 522.0 275.0 L 522.0 230.0 L 560.0 230.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<text x="492.0" y="268.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="500" text-anchor="start" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">start</text>
+<rect x="560.0" y="318.0" width="368.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="560.0" y="318.0" width="4" height="54.0" rx="2" fill="#59636e"/>
+<text x="576.0" y="340.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#59636e" font-weight="600" text-anchor="start">HTTP admin  :9003</text>
+<text x="576.0" y="362.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">/health · /metrics/summary · /get_all_segments</text>
+<path d="M 484.0 343.0 L 560.0 343.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<rect x="560.0" y="452.0" width="368.0" height="54.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="560.0" y="452.0" width="4" height="54.0" rx="2" fill="#0969da"/>
+<text x="576.0" y="474.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">server.start()  :50051</text>
+<text x="576.0" y="496.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">RPC listener — the master is now usable</text>
+<path d="M 484.0 479.0 L 560.0 479.0" fill="none" stroke="#0969da" stroke-width="1.6" marker-end="url(#a-0969da)"/>
+<text x="522.0" y="472.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#0969da" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">thread</text></svg>

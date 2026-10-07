@@ -11,16 +11,16 @@ description: "Build Mooncake in Linux on a Mac and connect CLion to a remote deb
 
 # Setting up a Mooncake debugging environment
 
-This guide shows how to build a Linux development environment for Mooncake on
-an Apple Silicon Mac. We will create a Docker image, compile Mooncake, test a
-GDB breakpoint, and connect CLion.
+This guide builds a Linux debugging environment for Mooncake on an Apple
+Silicon Mac. When you finish, you will have:
 
-The image contains the build tools. The container is the running Linux
-system created from that image. Mooncake's source stays on the Mac, and Docker
-makes it available inside Linux.
+- a Docker container with every build tool and dependency,
+- Mooncake compiled with debug symbols,
+- a working GDB breakpoint, and
+- CLion building and debugging inside the container over SSH.
 
-Every required setup file is shown below. We start with public Mooncake source.
-No private helper scripts or custom demo program are needed.
+The source stays on your Mac; Docker shares it with Linux. Every setup file is
+shown in full, and only the public Mooncake source is used.
 
 ## 1. Download the source
 
@@ -45,13 +45,12 @@ chmod 700 debug-lab/.local
 printf '\n/debug-lab/\n' >> .git/info/exclude
 ```
 
-This creates a fresh checkout of `v0.3.13.post1`. The fixed commit lets readers
-use the same source. Submodules are extra source repositories needed by the
-build. The last command keeps the local setup files and credentials out of
-this checkout's Git status.
+This checks out `v0.3.13.post1` at a fixed commit, so you read the same source
+as this series. Submodules are extra repositories the build needs. The last
+line keeps your local setup files and credentials out of `git status`.
 
-Keep this terminal open. Unless stated otherwise, run the remaining commands
-**on the Mac, from this Mooncake source root**, not from the blog repository.
+> **Where to run commands:** unless a step says otherwise, run everything
+> **on the Mac, from this Mooncake source root**.
 
 ## 2. Create the Docker files
 
@@ -152,7 +151,7 @@ ssh-keygen -A
 exec /usr/sbin/sshd -D -e
 ```
 
-This small startup program is shown in full so you can see every step:
+The startup script does five things:
 
 1. Install the public SSH key for `debugger`.
 2. Read the mounted root password file and apply it inside Linux.
@@ -272,11 +271,10 @@ Build the image:
 docker compose -f debug-lab/compose.yaml build lab
 ```
 
-This reads the Dockerfile, downloads Ubuntu, installs packages, and creates
-`mooncake-debug:arm64`. The first build may take several minutes.
+This downloads Ubuntu, installs the packages and creates
+`mooncake-debug:arm64`. The first build takes several minutes.
 
-The equivalent direct Docker command is below. Use either it or the Compose
-build command above; there is no need to run both:
+The same build without Compose is below. Run one or the other, not both:
 
 ```bash
 docker build --platform linux/arm64 \
@@ -386,12 +384,12 @@ docker exec -u debugger mooncake-debug \
   --args /workspace/build/mooncake-store/src/mooncake_master
 ```
 
-GDB sets a breakpoint, starts the program, and stops before the master begins
-normal work. `bt` prints the call stack. `quit` ends that test process. Look for
-a breakpoint hit and a source location in `mooncake-store/src/master.cpp`.
+GDB starts the master and stops at `main`. `bt` prints the call stack and
+`quit` ends the process. You should see a breakpoint hit with a source location
+in `mooncake-store/src/master.cpp`.
 
-This checks program loading and source debugging. It does not test a Put/Get
-operation, which needs running services and a client workload.
+This proves that symbols and source mapping work. It does not test Put or Get;
+those need running services, which the next articles start.
 
 ## 7. Connect CLion
 
@@ -436,9 +434,8 @@ Reload CMake. Select or create a **CMake Application** run configuration for
 Set a breakpoint in `main` in `mooncake-store/src/master.cpp`, then press Debug.
 Stop the session after it reaches the breakpoint.
 
-For daily work, CLion controls configuration, compilation, and debugging. The
-terminal commands are an alternative and show what happens behind the IDE.
-You do not need to run a terminal build before each CLion session.
+From now on CLion configures, builds and debugs. The terminal commands above
+are only an alternative that shows what the IDE does for you.
 
 ## 8. Rebuild and stop the environment
 

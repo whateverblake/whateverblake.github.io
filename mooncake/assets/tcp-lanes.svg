@@ -1,66 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1200" viewBox="0 0 960 1200" role="img" aria-labelledby="title desc">
-<title id="title">One peer group, several TCP connections</title><desc id="desc">Caller objects → TCP connections → owner sessions · two lanes shown</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="960" height="1200" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">One peer group, several TCP connections</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Caller objects → TCP connections → owner sessions · two lanes shown</text>
-<rect x="32" y="110" width="896" height="715" rx="14" fill="#eaf3ff" stroke="#2563b0" stroke-width="2"/>
-<text x="54" y="145" font-size="25" fill="#2563b0" font-weight="700" text-anchor="start">CALLER: PeerConnectionGroup</text>
-<text x="56" y="178" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">key = owner host + data port D     |     lanes = vector of lane pointers</text>
-<rect x="192" y="210" width="576" height="88" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="192" y="222" width="5" height="64" rx="2" fill="#2563b0"/>
-<text x="212" y="243" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">queue: waiting TcpWorkItem objects</text>
-<text x="212" y="273" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Work C waits while A and B are active below.</text>
-<path d="M 480 303 L 480 329" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="480" y="357" font-size="22" fill="#2563b0" font-weight="700" text-anchor="middle">runGroupPump() assigns work to available lanes</text>
-<path d="M 365 373 L 269 408" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<path d="M 595 373 L 691 408" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="415" width="410" height="379" rx="14" fill="#e7f4f0" stroke="#087f78" stroke-width="2"/>
-<text x="86" y="450" font-size="25" fill="#087f78" font-weight="700" text-anchor="start">ConnectionLane 0</text>
-<text x="86" y="481" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">current = work A     state = BUSY</text>
-<rect x="84" y="504" width="370" height="88" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="84" y="516" width="5" height="64" rx="2" fill="#087f78"/>
-<text x="104" y="537" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">session → ClientSession</text>
-<text x="104" y="567" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Runs this work item’s transfer.</text>
-<path d="M 269 597 L 269 654" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="285" y="631" font-size="18" fill="#087f78" font-weight="400" text-anchor="start">socket_</text>
-<rect x="84" y="661" width="370" height="108" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="84" y="673" width="5" height="84" rx="2" fill="#b35a13"/>
-<text x="104" y="694" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">socket → TCP socket 0</text>
-<text x="104" y="724" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Same object as session.socket_</text>
-<text x="104" y="751" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">One reusable caller-side socket</text>
-<path d="M 269 774 L 269 928" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="285" y="869" font-size="19" fill="#b35a13" font-weight="700" text-anchor="start">Connection 0</text>
-<text x="285" y="896" font-size="18" fill="#b35a13" font-weight="400" text-anchor="start">to owner port D</text>
-<rect x="486" y="415" width="410" height="379" rx="14" fill="#e7f4f0" stroke="#087f78" stroke-width="2"/>
-<text x="508" y="450" font-size="25" fill="#087f78" font-weight="700" text-anchor="start">ConnectionLane 1</text>
-<text x="508" y="481" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">current = work B     state = BUSY</text>
-<rect x="506" y="504" width="370" height="88" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="506" y="516" width="5" height="64" rx="2" fill="#087f78"/>
-<text x="526" y="537" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">session → ClientSession</text>
-<text x="526" y="567" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Runs this work item’s transfer.</text>
-<path d="M 691 597 L 691 654" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="707" y="631" font-size="18" fill="#087f78" font-weight="400" text-anchor="start">socket_</text>
-<rect x="506" y="661" width="370" height="108" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="506" y="673" width="5" height="84" rx="2" fill="#b35a13"/>
-<text x="526" y="694" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">socket → TCP socket 1</text>
-<text x="526" y="724" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Same object as session.socket_</text>
-<text x="526" y="751" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">One reusable caller-side socket</text>
-<path d="M 691 774 L 691 928" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="707" y="869" font-size="19" fill="#b35a13" font-weight="700" text-anchor="start">Connection 1</text>
-<text x="707" y="896" font-size="18" fill="#b35a13" font-weight="400" text-anchor="start">to owner port D</text>
-<rect x="32" y="938" width="896" height="158" rx="14" fill="#f1ebf8" stroke="#7651ac" stroke-width="2"/>
-<text x="54" y="973" font-size="25" fill="#7651ac" font-weight="700" text-anchor="start">OWNER: TcpContext::acceptor listens on data port D</text>
-<rect x="84" y="982" width="370" height="90" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="84" y="994" width="5" height="66" rx="2" fill="#7651ac"/>
-<text x="104" y="1015" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">ServerSession 0</text>
-<text x="104" y="1045" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Uses its own accepted socket.</text>
-<rect x="506" y="982" width="370" height="90" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="506" y="994" width="5" height="66" rx="2" fill="#7651ac"/>
-<text x="526" y="1015" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">ServerSession 1</text>
-<text x="526" y="1045" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Uses its own accepted socket.</text>
-<text x="480" y="1136" font-size="23" fill="#15283f" font-weight="700" text-anchor="middle">All caller lanes share one io_context and TCP worker.</text>
-<text x="480" y="1166" font-size="20" fill="#536579" font-weight="400" text-anchor="middle">Each lane is a connection slot; it does not create a thread.</text>
-<text x="32" y="1180" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="t d"><title id="t">One peer group, several connections</title><desc id="d">Caller side: work queue and lanes.  Owner side: one listening port, one session per connection.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="600" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">One peer group, several connections</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">Caller side: work queue and lanes.  Owner side: one listening port, one session per connection.</text>
+<rect x="32.0" y="86.0" width="896.0" height="300.0" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1"/>
+<text x="46.0" y="108.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#1a7f37" font-weight="700" text-anchor="start">caller · PeerConnectionGroup  (key: owner host + data port D)</text>
+<rect x="56.0" y="122.0" width="260.0" height="92.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="56.0" y="122.0" width="4" height="92.0" rx="2" fill="#1a7f37"/>
+<text x="72.0" y="144.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">queue</text>
+<text x="72.0" y="166.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">work C waits</text>
+<text x="72.0" y="185.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">lanes 0 and 1 are busy</text>
+<rect x="56.0" y="240.0" width="260.0" height="72.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="56.0" y="240.0" width="4" height="72.0" rx="2" fill="#1a7f37"/>
+<text x="72.0" y="262.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">runGroupPump()</text>
+<text x="72.0" y="284.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">assigns work to free lanes</text>
+<path d="M 186.0 214.0 L 186.0 240.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<rect x="360.0" y="116.0" width="260.0" height="250.0" rx="6" fill="#ffffff" stroke="#1a7f37" stroke-width="1"/>
+<text x="374.0" y="138.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#1a7f37" font-weight="700" text-anchor="start">ConnectionLane 0</text>
+<text x="374.0" y="158.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">current = work A · BUSY</text>
+<rect x="374.0" y="172.0" width="232.0" height="72.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="374.0" y="172.0" width="4" height="72.0" rx="2" fill="#1a7f37"/>
+<text x="390.0" y="194.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">session</text>
+<text x="390.0" y="216.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">ClientSession</text>
+<text x="390.0" y="235.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">WRITE 4096 → 0x70002000</text>
+<rect x="374.0" y="262.0" width="232.0" height="62.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="374.0" y="262.0" width="4" height="62.0" rx="2" fill="#bc4c00"/>
+<text x="390.0" y="284.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#bc4c00" font-weight="600" text-anchor="start">socket  (TCP 0)</text>
+<text x="390.0" y="306.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">same object as session.socket_</text>
+<path d="M 490.0 244.0 L 490.0 262.0" fill="none" stroke="#1a7f37" stroke-width="1.3" marker-end="url(#a-1a7f37)"/>
+<path d="M 490.0 386.0 L 490.0 444.0" fill="none" stroke="#bc4c00" stroke-width="2.2" marker-end="url(#a-bc4c00)"/>
+<text x="490.0" y="421.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#bc4c00" font-weight="500" text-anchor="start" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">connection 0</text>
+<rect x="650.0" y="116.0" width="260.0" height="250.0" rx="6" fill="#ffffff" stroke="#1a7f37" stroke-width="1"/>
+<text x="664.0" y="138.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#1a7f37" font-weight="700" text-anchor="start">ConnectionLane 1</text>
+<text x="664.0" y="158.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">current = work B · BUSY</text>
+<rect x="664.0" y="172.0" width="232.0" height="72.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="664.0" y="172.0" width="4" height="72.0" rx="2" fill="#1a7f37"/>
+<text x="680.0" y="194.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">session</text>
+<text x="680.0" y="216.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">ClientSession</text>
+<text x="680.0" y="235.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">READ 4096 ← 0x70008000</text>
+<rect x="664.0" y="262.0" width="232.0" height="62.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="664.0" y="262.0" width="4" height="62.0" rx="2" fill="#bc4c00"/>
+<text x="680.0" y="284.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#bc4c00" font-weight="600" text-anchor="start">socket  (TCP 1)</text>
+<text x="680.0" y="306.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">same object as session.socket_</text>
+<path d="M 780.0 244.0 L 780.0 262.0" fill="none" stroke="#1a7f37" stroke-width="1.3" marker-end="url(#a-1a7f37)"/>
+<path d="M 780.0 386.0 L 780.0 444.0" fill="none" stroke="#bc4c00" stroke-width="2.2" marker-end="url(#a-bc4c00)"/>
+<text x="780.0" y="421.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#bc4c00" font-weight="500" text-anchor="start" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">connection 1</text>
+<path d="M 316.0 276.0 L 360.0 276.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<text x="338.0" y="269.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1a7f37" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">assign</text>
+<rect x="32.0" y="444.0" width="896.0" height="112.0" rx="8" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="46.0" y="466.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#8250df" font-weight="700" text-anchor="start">owner · TcpContext::acceptor on data port D</text>
+<rect x="374.0" y="478.0" width="232.0" height="58.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="374.0" y="478.0" width="4" height="58.0" rx="2" fill="#8250df"/>
+<text x="390.0" y="500.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#8250df" font-weight="600" text-anchor="start">ServerSession 0</text>
+<text x="390.0" y="522.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">its own accepted socket</text>
+<rect x="664.0" y="478.0" width="232.0" height="58.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="664.0" y="478.0" width="4" height="58.0" rx="2" fill="#8250df"/>
+<text x="680.0" y="500.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#8250df" font-weight="600" text-anchor="start">ServerSession 1</text>
+<text x="680.0" y="522.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2328" font-weight="400" text-anchor="start">its own accepted socket</text>
+<text x="56.0" y="512.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">lanes_per_peer = 4 by default</text>
+<text x="56.0" y="530.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">a lane is a connection slot, not a thread</text>
+<text x="480.0" y="584.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="middle">All lanes share the caller&#x27;s single TCP worker thread and io_context.</text></svg>

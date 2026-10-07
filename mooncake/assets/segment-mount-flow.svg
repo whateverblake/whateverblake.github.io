@@ -1,61 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1180" viewBox="0 0 720 1180" role="img" aria-labelledby="title desc">
-<title id="title">Mount a segment: owner → master</title><desc id="desc">Register the range locally, then announce storage capacity.</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="720" height="1180" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Mount a segment: owner → master</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Register the range locally, then announce storage capacity.</text>
-<text x="32" y="123" font-size="20" fill="#7651ac" font-weight="700" text-anchor="start">OWNER PROCESS</text>
-<text x="382" y="123" font-size="20" fill="#2563b0" font-weight="700" text-anchor="start">MASTER PROCESS</text>
-<path d="M 360 143 L 360 1119" stroke="#bdcbdc" stroke-width="2" stroke-dasharray="5 7"/>
-<rect x="32" y="153" width="304" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="165" width="5" height="65" rx="2" fill="#7651ac"/>
-<text x="52" y="186" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">1  RealClient</text>
-<text x="52" y="216" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Allocate the global pool.</text>
-<path d="M 184 247 L 184 277" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="284" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="296" width="5" height="87" rx="2" fill="#087f78"/>
-<text x="52" y="317" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">2  Client</text>
-<text x="52" y="347" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountSegmentAndGetId()</text>
-<text x="52" y="374" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Validate / check overlap.</text>
-<path d="M 184 400 L 184 430" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="437" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="449" width="5" height="87" rx="2" fill="#087f78"/>
-<text x="52" y="470" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">3  Transfer Engine</text>
-<text x="52" y="500" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Register the address range.</text>
-<text x="52" y="527" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">TCP updates BufferDesc.</text>
-<path d="M 184 553 L 184 587" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="594" width="304" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="606" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="52" y="627" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">4  MasterClient</text>
-<text x="52" y="657" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Send Segment + client UUID.</text>
-<text x="384" y="241" font-size="21" fill="#2563b0" font-weight="700" text-anchor="start">The RPC carries metadata.</text>
-<text x="384" y="273" font-size="20" fill="#536579" font-weight="400" text-anchor="start">The pool stays in the owner.</text>
-<text x="384" y="329" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Segment UUID: which pool?</text>
-<text x="384" y="361" font-size="20" fill="#536579" font-weight="400" text-anchor="start">Client UUID: whose pool?</text>
-<path d="M 339 639 L 379 639" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="382" y="594" width="306" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="382" y="606" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="402" y="627" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">WrappedMasterService</text>
-<text x="402" y="657" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">RPC entry → service method</text>
-<path d="M 536 688 L 536 723" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="382" y="730" width="306" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="382" y="742" width="5" height="87" rx="2" fill="#2563b0"/>
-<text x="402" y="763" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">MasterService</text>
-<text x="402" y="793" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Acquire segment access.</text>
-<text x="402" y="820" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Queue owner liveness ID.</text>
-<path d="M 536 846 L 536 877" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="382" y="884" width="306" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="382" y="896" width="5" height="87" rx="2" fill="#2563b0"/>
-<text x="402" y="917" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">ScopedSegmentAccess</text>
-<text x="402" y="947" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Create the allocator.</text>
-<text x="402" y="974" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Insert record and indexes.</text>
-<rect x="32" y="1020" width="304" height="111" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="1032" width="5" height="87" rx="2" fill="#7651ac"/>
-<text x="52" y="1053" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">5  Client: finish mount</text>
-<text x="52" y="1083" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Save Segment in local map.</text>
-<text x="52" y="1110" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Start heartbeat / task poll.</text>
-<path d="M 536 1000 L 536 1065 L 341 1065" fill="none" stroke="#2563b0" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
-<text x="554" y="1045" font-size="20" fill="#2563b0" font-weight="400" text-anchor="start">Success</text>
-<text x="32" y="1160" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="690" viewBox="0 0 960 690" role="img" aria-labelledby="t d"><title id="t">Mounting a segment</title><desc id="d">Register the range locally first, then announce it to the master.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="690" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">Mounting a segment</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">Register the range locally first, then announce it to the master.</text>
+<rect x="50.0" y="86.0" width="120.0" height="32.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="110.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="600" text-anchor="middle">RealClient</text>
+<path d="M 110.0 118.0 L 110.0 660.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="230.0" y="86.0" width="120.0" height="32.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="290.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="600" text-anchor="middle">Client</text>
+<path d="M 290.0 118.0 L 290.0 660.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="398.4" y="86.0" width="143.3" height="32.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="470.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="600" text-anchor="middle">TransferEngine</text>
+<path d="M 470.0 118.0 L 470.0 660.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="586.6" y="86.0" width="126.8" height="32.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="650.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="600" text-anchor="middle">MasterClient</text>
+<path d="M 650.0 118.0 L 650.0 660.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="782.5" y="86.0" width="135.1" height="32.0" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1"/>
+<text x="850.0" y="107.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#0969da" font-weight="600" text-anchor="middle">MasterService</text>
+<path d="M 850.0 118.0 L 850.0 660.0" fill="none" stroke="#d1d9e0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<path d="M 110.0 150.0 L 290.0 150.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<text x="200.0" y="142.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">MountSegment(ptr, 64 MiB)</text>
+<text x="298.0" y="190.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">check overlap with mounted_segments_</text>
+<path d="M 290.0 230.0 L 470.0 230.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<text x="380.0" y="222.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">registerLocalMemory()</text>
+<text x="478.0" y="260.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">MemoryRegion: pending → committed</text>
+<text x="478.0" y="278.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">TCP adds BufferDesc to SegmentDesc</text>
+<path d="M 470.0 308.0 L 290.0 308.0" fill="none" stroke="#8250df" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a-8250df)"/>
+<text x="380.0" y="300.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">ok</text>
+<text x="298.0" y="348.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">build Segment{uuid, name, base, size, te_endpoint}</text>
+<path d="M 290.0 388.0 L 650.0 388.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<text x="470.0" y="380.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">MountSegment(segment)</text>
+<path d="M 650.0 434.0 L 850.0 434.0" fill="none" stroke="#0969da" stroke-width="1.6" marker-end="url(#a-0969da)"/>
+<text x="750.0" y="426.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#0969da" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">RPC: Segment + client UUID</text>
+<text x="660.0" y="464.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">client UUID → client_ping_queue_</text>
+<text x="660.0" y="482.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">ScopedSegmentAccess::MountSegment()</text>
+<text x="660.0" y="500.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">  new OffsetBufferAllocator</text>
+<text x="660.0" y="518.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">  insert MountedSegment + indexes</text>
+<path d="M 850.0 550.0 L 290.0 550.0" fill="none" stroke="#0969da" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a-0969da)"/>
+<text x="570.0" y="542.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#0969da" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">OK</text>
+<text x="298.0" y="588.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">mounted_segments_[uuid] = segment</text>
+<text x="298.0" y="612.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">start heartbeat + task polling (once)</text></svg>

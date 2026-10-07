@@ -1,46 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1010" viewBox="0 0 960 1010" role="img" aria-labelledby="title desc">
-<title id="title">Same client stack, two roles</title><desc id="desc">CPU memory · TCP + P2PHANDSHAKE · different memory settings</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="960" height="1010" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Same client stack, two roles</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">CPU memory · TCP + P2PHANDSHAKE · different memory settings</text>
-<rect x="144" y="110" width="672" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="144" y="122" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="164" y="143" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">RealClient::create()</text>
-<text x="164" y="173" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Create the same high-level client object in both processes.</text>
-<path d="M 480 204 L 480 224" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="144" y="230" width="672" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="144" y="242" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="164" y="263" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">RealClient::setup_internal()</text>
-<text x="164" y="293" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Owner calls directly; caller enters through setup_real().</text>
-<path d="M 480 324 L 480 344" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="144" y="350" width="672" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="144" y="362" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="164" y="383" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">Client::Create()</text>
-<text x="164" y="413" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Construct Client and connect to the Master service.</text>
-<path d="M 480 444 L 480 464" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="144" y="470" width="672" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="144" y="482" width="5" height="65" rx="2" fill="#087f78"/>
-<text x="164" y="503" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">Initialize transfers</text>
-<text x="164" y="533" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Create Transfer Engine, TCP listeners, and TransferSubmitter.</text>
-<path d="M 360 564 L 248 632" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
-<path d="M 600 564 L 712 632" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="639" width="432" height="222" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="651" width="5" height="198" rx="2" fill="#7651ac"/>
-<text x="52" y="672" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">OWNER: contributes memory</text>
-<text x="52" y="702" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">global: 64 MiB · local: 0</text>
-<text x="52" y="729" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Register the global pool.</text>
-<text x="52" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">MountSegment → Master service.</text>
-<text x="52" y="783" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Start heartbeat and task polling.</text>
-<rect x="496" y="639" width="432" height="222" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="496" y="651" width="5" height="198" rx="2" fill="#087f78"/>
-<text x="516" y="672" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">CALLER: Put / Get</text>
-<text x="516" y="702" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">global: 0 · local: 16 MiB</text>
-<text x="516" y="729" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Register local staging memory.</text>
-<text x="516" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">No global pool to mount.</text>
-<text x="516" y="783" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Call put() and get_buffer().</text>
-<text x="480" y="909" font-size="24" fill="#15283f" font-weight="700" text-anchor="middle">Both roles have a Transfer Engine and TCP listeners.</text>
-<text x="480" y="947" font-size="21" fill="#536579" font-weight="400" text-anchor="middle">The owner executable adds its client RPC server after setup.</text>
-<text x="32" y="990" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" role="img" aria-labelledby="t d"><title id="t">Same client stack, two roles</title><desc id="d">Owner and caller run the same setup; only the memory sizes differ.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="440" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">Same client stack, two roles</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">Owner and caller run the same setup; only the memory sizes differ.</text>
+<rect x="250.0" y="86.0" width="460.0" height="128.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="86.0" width="4" height="128.0" rx="2" fill="#59636e"/>
+<text x="266.0" y="108.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#59636e" font-weight="600" text-anchor="start">shared setup · RealClient::setup_internal()</text>
+<text x="266.0" y="130.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">Client::Create() — connect to the master</text>
+<text x="266.0" y="149.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">TransferEngineImpl::init() — handshake listener</text>
+<text x="266.0" y="168.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">TcpTransport::install() — data listener + worker</text>
+<text x="266.0" y="187.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">TransferSubmitter + ClientBufferAllocator</text>
+<rect x="60.0" y="280.0" width="380.0" height="130.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="60.0" y="280.0" width="4" height="130.0" rx="2" fill="#8250df"/>
+<text x="76.0" y="302.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#8250df" font-weight="600" text-anchor="start">owner</text>
+<text x="76.0" y="324.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">global 64 MiB · local 0</text>
+<text x="76.0" y="343.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">register + mount the global pool</text>
+<text x="76.0" y="362.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">heartbeat + task polling</text>
+<text x="76.0" y="381.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">then: client RPC server :50052</text>
+<rect x="520.0" y="280.0" width="380.0" height="130.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="520.0" y="280.0" width="4" height="130.0" rx="2" fill="#1a7f37"/>
+<text x="536.0" y="302.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">caller</text>
+<text x="536.0" y="324.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">global 0 · local 16 MiB</text>
+<text x="536.0" y="343.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">register the staging buffer only</text>
+<text x="536.0" y="362.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">no mount, no heartbeat thread</text>
+<text x="536.0" y="381.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">then: put() and get_buffer()</text>
+<path d="M 400.0 214.0 L 250.0 280.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<path d="M 560.0 214.0 L 710.0 280.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/></svg>

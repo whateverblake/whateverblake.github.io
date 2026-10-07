@@ -1,55 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1370" viewBox="0 0 720 1370" role="img" aria-labelledby="title desc">
-<title id="title">Start two different listeners</title><desc id="desc">Startup runs top to bottom; both listeners remain active.</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="720" height="1370" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Start two different listeners</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Startup runs top to bottom; both listeners remain active.</text>
-<rect x="32" y="108" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="120" width="5" height="68" rx="2" fill="#087f78"/>
-<text x="52" y="141" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">1  Client::InitTransferEngine()</text>
-<text x="52" y="171" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Initialize the engine, then install the TCP transport.</text>
-<path d="M 360 205 L 360 224" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="230" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="242" width="5" height="68" rx="2" fill="#087f78"/>
-<text x="52" y="263" font-size="22" fill="#087f78" font-weight="700" text-anchor="start">2  TransferEngineImpl::init()</text>
-<text x="52" y="293" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Choose H; create TransferMetadata + MultiTransport.</text>
-<path d="M 360 327 L 360 346" fill="none" stroke="#087f78" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="352" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="364" width="5" height="68" rx="2" fill="#7651ac"/>
-<text x="52" y="385" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">3  addRpcMetaEntry()</text>
-<text x="52" y="415" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Save handshake address; register peer callbacks.</text>
-<path d="M 360 449 L 360 468" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="474" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="486" width="5" height="68" rx="2" fill="#7651ac"/>
-<text x="52" y="507" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">4  Start the handshake listener</text>
-<text x="52" y="537" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">SocketHandShakePlugin::startDaemon() listens on H.</text>
-<path d="M 360 571 L 360 590" fill="none" stroke="#7651ac" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="596" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="608" width="5" height="68" rx="2" fill="#b35a13"/>
-<text x="52" y="629" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">5  TcpTransport::install()</text>
-<text x="52" y="659" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Choose D; store the TCP endpoint in SegmentDesc.</text>
-<path d="M 360 693 L 360 712" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="718" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="730" width="5" height="68" rx="2" fill="#b35a13"/>
-<text x="52" y="751" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">6  Construct TcpContext</text>
-<text x="52" y="781" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">acceptor(io_context) binds and listens on D.</text>
-<path d="M 360 815 L 360 834" fill="none" stroke="#b35a13" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="32" y="840" width="656" height="92" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="852" width="5" height="68" rx="2" fill="#b35a13"/>
-<text x="52" y="873" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">7  Start the TCP worker</text>
-<text x="52" y="903" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">doAccept() starts acceptance; io_context.run() runs I/O.</text>
-<text x="360" y="985" font-size="19" fill="#536579" font-weight="700" text-anchor="middle">RUNNING AFTER THIS STAGE</text>
-<rect x="32" y="1010" width="656" height="117" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="1022" width="5" height="93" rx="2" fill="#7651ac"/>
-<text x="52" y="1043" font-size="22" fill="#7651ac" font-weight="700" text-anchor="start">SocketHandShakePlugin listens on H</text>
-<text x="52" y="1073" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">listen_fd_: listening socket for metadata / control</text>
-<text x="52" y="1100" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">listener_: thread accepting peer connections</text>
-<rect x="32" y="1150" width="656" height="117" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="32" y="1162" width="5" height="93" rx="2" fill="#b35a13"/>
-<text x="52" y="1183" font-size="22" fill="#b35a13" font-weight="700" text-anchor="start">TcpContext::acceptor listens on D</text>
-<text x="52" y="1213" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">TcpTransport owns the context and runs the worker.</text>
-<text x="52" y="1240" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">ServerSession handles each accepted data connection.</text>
-<text x="360" y="1319" font-size="22" fill="#15283f" font-weight="700" text-anchor="middle">Global memory is registered and mounted later.</text>
-<text x="32" y="1350" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-labelledby="t d"><title id="t">Two listeners, two ports</title><desc id="d">A peer asks port H where the memory is, then sends bytes to port D.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="430" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">Two listeners, two ports</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">A peer asks port H where the memory is, then sends bytes to port D.</text>
+<rect x="32.0" y="86.0" width="580.0" height="300.0" rx="8" fill="#fbefff" stroke="#8250df" stroke-width="1"/>
+<text x="46.0" y="108.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#8250df" font-weight="700" text-anchor="start">owner process</text>
+<rect x="56.0" y="122.0" width="470.0" height="104.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="56.0" y="122.0" width="4" height="104.0" rx="2" fill="#8250df"/>
+<text x="72.0" y="144.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#8250df" font-weight="600" text-anchor="start">SocketHandShakePlugin</text>
+<text x="72.0" y="166.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">socket: listen_fd_  ·  thread: listener_ (accept loop)</text>
+<text x="72.0" y="185.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">answers with TransferMetadata::receivePeerMetadata()</text>
+<text x="72.0" y="204.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">replies: SegmentDesc — data endpoint + buffers</text>
+<rect x="56.0" y="252.0" width="470.0" height="104.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="56.0" y="252.0" width="4" height="104.0" rx="2" fill="#bc4c00"/>
+<text x="72.0" y="274.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#bc4c00" font-weight="600" text-anchor="start">TcpContext  (owned by TcpTransport)</text>
+<text x="72.0" y="296.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">socket: acceptor  ·  thread: TcpTransport::thread_</text>
+<text x="72.0" y="315.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">io_context.run() drives every session</text>
+<text x="72.0" y="334.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">each connection → one ServerSession</text>
+<rect x="592.0" y="156.0" width="40.0" height="36.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1.5"/>
+<text x="612.0" y="179.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#8250df" font-weight="700" text-anchor="middle">H</text>
+<path d="M 526.0 174.0 L 592.0 174.0" fill="none" stroke="#8250df" stroke-width="1.4"/>
+<rect x="592.0" y="286.0" width="40.0" height="36.0" rx="6" fill="#fff1e5" stroke="#bc4c00" stroke-width="1.5"/>
+<text x="612.0" y="309.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#bc4c00" font-weight="700" text-anchor="middle">D</text>
+<path d="M 526.0 304.0 L 592.0 304.0" fill="none" stroke="#bc4c00" stroke-width="1.4"/>
+<rect x="790.0" y="150.0" width="140.0" height="180.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="790.0" y="150.0" width="4" height="180.0" rx="2" fill="#1a7f37"/>
+<text x="806.0" y="172.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">peer client</text>
+<text x="806.0" y="194.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">Transfer Engine</text>
+<text x="806.0" y="213.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">+ TCP</text>
+<path d="M 790.0 174.0 L 632.0 174.0" fill="none" stroke="#8250df" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#a-8250df)"/>
+<text x="711.0" y="166.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">1  get SegmentDesc</text>
+<path d="M 790.0 304.0 L 632.0 304.0" fill="none" stroke="#bc4c00" stroke-width="2.2" marker-end="url(#a-bc4c00)"/>
+<text x="711.0" y="296.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#bc4c00" font-weight="500" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="5" stroke-linejoin="round">2  WRITE / READ</text>
+<text x="32.0" y="412.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">H and D are chosen automatically at startup; read them from the logs.</text></svg>

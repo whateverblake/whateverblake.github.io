@@ -1,43 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="956" viewBox="0 0 720 956" role="img" aria-labelledby="title desc">
-<title id="title">Get follows the key to its replica</title><desc id="desc">Example after a successful Put: one readable 4096-byte replica</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
-<rect width="720" height="956" rx="20" fill="#f4f7fb"/>
-<g font-family="Arial, Helvetica, sans-serif">
-<text x="32" y="43" font-size="27" fill="#15283f" font-weight="700" text-anchor="start">Get follows the key to its replica</text>
-<text x="32" y="75" font-size="18" fill="#536579" font-weight="400" text-anchor="start">Example after a successful Put: one readable 4096-byte replica</text>
-<rect x="64" y="103" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="115" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="136" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">01  GetReplicaList(&quot;blog/example&quot;)</text>
-<text x="84" y="166" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Resolve the request to tenant &quot;default&quot; + the full key.</text>
-<path d="M 360 194 L 360 217" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="221" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="233" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="254" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">02  MetadataAccessorRO selects shard s</text>
-<text x="84" y="284" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">For this key: s = hash(&quot;blog/example&quot;) % 1024.</text>
-<path d="M 360 312 L 360 335" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="339" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="351" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="372" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">03  shard.tenants.find(tenant_id)</text>
-<text x="84" y="402" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Find this tenant’s state inside the selected shard.</text>
-<path d="M 360 430 L 360 453" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="457" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="469" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="490" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">04  tenant.metadata.find(&quot;blog/example&quot;)</text>
-<text x="84" y="520" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">Find the ObjectMetadata created by PutStart.</text>
-<path d="M 360 548 L 360 571" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="575" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="587" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="608" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">05  Visit ObjectMetadata::replicas_</text>
-<text x="84" y="638" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">PutEnd made replica 101 COMPLETE; check readability.</text>
-<path d="M 360 666 L 360 689" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="693" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="705" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="726" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">06  Build Replica::Descriptor</text>
-<text x="84" y="756" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">127.0.0.1:16001 · address 0x70002000 · 4096 bytes</text>
-<path d="M 360 784 L 360 807" fill="none" stroke="#2563b0" stroke-width="2.5" marker-end="url(#arrow)"/>
-<rect x="64" y="811" width="592" height="89" rx="12" fill="white" stroke="#dce4ee" stroke-width="1.5"/>
-<rect x="64" y="823" width="5" height="65" rx="2" fill="#2563b0"/>
-<text x="84" y="844" font-size="22" fill="#2563b0" font-weight="700" text-anchor="start">07  Caller reads from the owner</text>
-<text x="84" y="874" font-size="20" fill="#15283f" font-weight="400" text-anchor="start">P2P resolves the data endpoint; TCP returns the bytes.</text>
-<text x="32" y="936" font-size="12" fill="#536579" font-weight="700" text-anchor="start">MOONCAKE  /  SOURCE WALKTHROUGH</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="t d"><title id="t">Put writes the record, Get follows it</title><desc id="d">Example: key &quot;blog/example&quot;, default tenant, one 4096-byte memory replica.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="560" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">Put writes the record, Get follows it</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">Example: key &quot;blog/example&quot;, default tenant, one 4096-byte memory replica.</text>
+<rect x="250.0" y="92.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="92.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="114.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">&quot;default&quot; + &quot;blog/example&quot;</text>
+<text x="266.0" y="136.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">object identity: tenant + full key</text>
+<rect x="250.0" y="164.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="164.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="186.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">shard s = hash(key) % 1024</text>
+<text x="266.0" y="208.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">the hash picks a shard, not an owner</text>
+<path d="M 480.0 148.0 L 480.0 164.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="250.0" y="236.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="236.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="258.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">tenants[&quot;default&quot;]</text>
+<text x="266.0" y="280.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">TenantState inside shard s</text>
+<path d="M 480.0 220.0 L 480.0 236.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="250.0" y="308.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="308.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="330.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">metadata[&quot;blog/example&quot;]</text>
+<text x="266.0" y="352.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">ObjectMetadata — full key compared</text>
+<path d="M 480.0 292.0 L 480.0 308.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="250.0" y="380.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="380.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="402.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">replicas_[0]  id 101</text>
+<text x="266.0" y="424.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">status PROCESSING → COMPLETE</text>
+<path d="M 480.0 364.0 L 480.0 380.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="250.0" y="452.0" width="460.0" height="56.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="250.0" y="452.0" width="4" height="56.0" rx="2" fill="#0969da"/>
+<text x="266.0" y="474.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0969da" font-weight="600" text-anchor="start">127.0.0.1:16001 · 0x70002000 · 4096</text>
+<text x="266.0" y="496.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">Replica::Descriptor sent to the reader</text>
+<path d="M 480.0 436.0 L 480.0 452.0" fill="none" stroke="#0969da" stroke-width="1.4" marker-end="url(#a-0969da)"/>
+<rect x="32.0" y="92.0" width="186.0" height="200.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="32.0" y="92.0" width="4" height="200.0" rx="2" fill="#1a7f37"/>
+<text x="48.0" y="114.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">PutStart</text>
+<text x="48.0" y="136.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">inserts metadata</text>
+<text x="48.0" y="155.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">reserves 4096 bytes</text>
+<text x="48.0" y="174.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">replica PROCESSING</text>
+<text x="48.0" y="193.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">key in processing_keys</text>
+<rect x="32.0" y="310.0" width="186.0" height="92.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="32.0" y="310.0" width="4" height="92.0" rx="2" fill="#1a7f37"/>
+<text x="48.0" y="332.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1a7f37" font-weight="600" text-anchor="start">PutEnd</text>
+<text x="48.0" y="354.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">replica COMPLETE</text>
+<text x="48.0" y="373.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">key leaves processing</text>
+<rect x="742.0" y="92.0" width="186.0" height="310.0" rx="6" fill="#ffffff" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="742.0" y="92.0" width="4" height="310.0" rx="2" fill="#bc4c00"/>
+<text x="758.0" y="114.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#bc4c00" font-weight="600" text-anchor="start">GetReplicaList</text>
+<text x="758.0" y="136.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">same identity</text>
+<text x="758.0" y="155.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">same shard</text>
+<text x="758.0" y="174.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">same tenant map</text>
+<text x="758.0" y="193.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">same key</text>
+<text x="758.0" y="212.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">readable replicas only</text>
+<text x="758.0" y="231.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">builds descriptors</text>
+<text x="758.0" y="250.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="400" text-anchor="start">grants a read lease</text>
+<path d="M 218.0 120.0 L 250.0 120.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<path d="M 218.0 364.0 L 250.0 364.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<path d="M 742.0 120.0 L 710.0 120.0" fill="none" stroke="#bc4c00" stroke-width="1.6" marker-end="url(#a-bc4c00)"/>
+<path d="M 742.0 484.0 L 710.0 484.0" fill="none" stroke="#bc4c00" stroke-width="1.6" marker-end="url(#a-bc4c00)"/>
+<text x="480.0" y="536.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="middle">Different keys can share a shard; they never share an ObjectMetadata.</text></svg>
