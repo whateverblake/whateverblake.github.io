@@ -28,14 +28,16 @@
   </header>
   <main id="main-content" class="{% if page.layout == 'home' %}home-main{% else %}article-main{% endif %}">
     {% if page.layout == 'home' %}
-      {{ content }}
+      {% capture asset_version %}.svg?v={{ site.time | date: '%s' }}"{% endcapture %}
+      {{ content | replace: '.svg"', asset_version }}
     {% else %}
       {% if page.article and series_page %}
       <p class="breadcrumb"><a href="{{ '/' | relative_url }}">~</a><span>/</span><a href="{{ series_page.url | relative_url }}">{{ page.topic | downcase | escape }}</a><span>/</span>part-{% if page.series_order < 10 %}0{% endif %}{{ page.series_order }}{% if series_page.source %}<span class="tag">{{ series_page.source | escape }}</span>{% endif %}</p>
       {% elsif page.series %}
       <p class="breadcrumb"><a href="{{ '/' | relative_url }}">~</a><span>/</span>{{ page.topic | downcase | escape }}{% if page.source %}<span class="tag">{{ page.source | escape }}</span>{% endif %}</p>
       {% endif %}
-      <article class="prose">{{ content }}</article>
+      {% capture asset_version %}.svg?v={{ site.time | date: '%s' }}"{% endcapture %}
+      <article class="prose">{{ content | replace: '.svg"', asset_version }}</article>
       {% if page.article and series_page %}
         {% assign parts = site.pages | where: 'article', true | where: 'topic', page.topic | sort: 'order' %}
         {% assign i = 0 %}{% for part in parts %}{% if part.url == page.url %}{% assign i = forloop.index0 %}{% endif %}{% endfor %}
