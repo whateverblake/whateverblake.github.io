@@ -33,7 +33,8 @@ for a in manifest['articles']:
  p=Path(a['target_path']);check(p.exists(),'Missing article '+str(p))
  if not p.exists():continue
  s=p.read_text();pieces=s.split('---',2);fm=yaml.safe_load(pieces[1]);orig=Path(a['original_path']).read_text()
- check(fm.get('article') is True and fm.get('lang')=='en','Incorrect article flags '+str(p))
+ flag='series' if a['slug']=='index' else 'article'
+ check(fm.get(flag) is True and fm.get('lang')=='en','Incorrect '+flag+' flags '+str(p))
  check(fm.get('topic')==('ZooKeeper' if a['topic']=='zookeeper' else 'Netty'),'Incorrect topic '+str(p))
  check(fm.get('order')==a['order'],'Incorrect order '+str(p))
  check(not re.search(r'[\u3400-\u9fff]',s),'Visible Chinese remains '+str(p))

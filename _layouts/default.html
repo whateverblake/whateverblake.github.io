@@ -8,13 +8,14 @@
   <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
   <script src="{{ '/assets/js/site.js' | relative_url }}" defer></script>
 </head>
+{% assign all_series = site.pages | where: 'series', true | sort: 'order' %}
+{% assign series_page = all_series | where: 'topic', page.topic | first %}
 <body class="{% if page.layout == 'home' %}home-page{% else %}reading-page{% endif %}">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="{{ '/' | relative_url }}" aria-label="Blake — home"><span class="brand-mark" aria-hidden="true">b.</span><span>Blake<span class="brand-caption">Engineering notes</span></span></a>
-    <nav class="site-nav" aria-label="Main navigation">
-      <a href="{{ '/#articles' | relative_url }}"{% if page.layout == 'home' %} aria-current="page"{% endif %}>Articles</a>
-      <a href="{{ '/mooncake/' | relative_url }}">Mooncake series</a>
+    <a class="brand" href="{{ '/' | relative_url }}" aria-label="Blake — home"><span class="brand-mark" aria-hidden="true">b.</span><span>Blake</span></a>
+    <nav class="site-nav" aria-label="Series">
+      {% for s in all_series %}<a href="{{ s.url | relative_url }}"{% if series_page and s.url == series_page.url %} aria-current="page"{% endif %}>{{ s.topic | escape }}</a>{% endfor %}
       <a href="https://github.com/whateverblake">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
@@ -22,18 +23,24 @@
     {% if page.layout == 'home' %}
       {{ content }}
     {% else %}
-      <div class="reading-toolbar">
-        <a class="back-link" href="{{ '/#articles' | relative_url }}">← All articles</a>
-        {% if page.topic %}<span class="topic-label">{{ page.topic | escape }}{% if page.series_order %} / Part {{ page.series_order }}{% endif %}</span>{% endif %}
-      </div>
+      {% if page.article and series_page %}
+      <p class="breadcrumb"><a href="{{ series_page.url | relative_url }}">{{ page.topic | escape }}</a> · Part {{ page.series_order }}</p>
+      {% endif %}
       <article class="prose">{{ content }}</article>
-      <nav class="article-end" aria-label="Continue reading">
-        <a href="{{ '/#articles' | relative_url }}">← Browse all articles</a>
-        {% if page.topic == 'Mooncake' %}<a href="{{ '/mooncake/' | relative_url }}">Mooncake series →</a>{% elsif page.topic == 'ZooKeeper' %}<a href="{{ '/zookeeper/' | relative_url }}">ZooKeeper series →</a>{% elsif page.topic == 'Netty' %}<a href="{{ '/netty/' | relative_url }}">Netty series →</a>{% endif %}
-        <a href="#main-content">Back to top ↑</a>
-      </nav>
+      {% if page.article and series_page %}
+        {% assign parts = site.pages | where: 'article', true | where: 'topic', page.topic | sort: 'order' %}
+        {% assign i = 0 %}{% for part in parts %}{% if part.url == page.url %}{% assign i = forloop.index0 %}{% endif %}{% endfor %}
+        {% assign prev_i = i | minus: 1 %}{% assign next_i = i | plus: 1 %}
+        <nav class="article-end" aria-label="Series navigation">
+          {% if i > 0 %}{% assign prev = parts[prev_i] %}<a class="prev" href="{{ prev.url | relative_url }}"><span>← Previous</span>{{ prev.nav_title | default: prev.title | escape }}</a>{% else %}<span></span>{% endif %}
+          {% if next_i < parts.size %}{% assign next = parts[next_i] %}<a class="next" href="{{ next.url | relative_url }}"><span>Next →</span>{{ next.nav_title | default: next.title | escape }}</a>{% endif %}
+        </nav>
+      {% elsif page.series %}
+        {% assign first_part = site.pages | where: 'article', true | where: 'topic', page.topic | sort: 'order' | first %}
+        {% if first_part %}<nav class="article-end" aria-label="Series navigation"><span></span><a class="next" href="{{ first_part.url | relative_url }}"><span>Start reading →</span>{{ first_part.nav_title | default: first_part.title | escape }}</a></nav>{% endif %}
+      {% endif %}
     {% endif %}
   </main>
-  <footer class="site-footer"><span>Blake’s engineering notes</span><span>Systems, source code, and things learned along the way.</span></footer>
+  <footer class="site-footer"><span>© Blake</span><a href="https://github.com/whateverblake">github.com/whateverblake</a></footer>
 </body>
 </html>

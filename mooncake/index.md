@@ -1,7 +1,10 @@
 ---
 layout: default
+series: true
 title: Understanding Mooncake from the source
 topic: Mooncake
+order: 0
+description: "How Mooncake's master and clients store objects in each other's memory, traced through the C++ source."
 ---
 
 # Understanding Mooncake from the source
@@ -18,12 +21,7 @@ breakpoints.
 
 ## Read the series
 
-| Article | What you will learn |
-| --- | --- |
-| [0. Set up the debugging environment](environment_setting_up.html) | Build Mooncake in Linux on a Mac and connect CLion. |
-| [1. Understand the Master service](mooncake_service_starting.html) | Follow startup, metadata structures, Put/Get key lookup, and background workers. |
-| [2. Turn a client into a memory owner](mooncake_owner_starting.html) | Connect to the master, start the Transfer Engine, register memory, and mount a segment. |
-| [3. Follow a Put from the API to owner memory](mooncake_put-get_path.html) | Allocate space, exchange peer metadata, send TCP data, complete the write, and read it back. |
+{% include part-list.html topic="Mooncake" descriptions=true %}
 
 The diagrams are SVG images. Click an image to open it at full size. They do
 not need a Mermaid plugin or JavaScript to display.

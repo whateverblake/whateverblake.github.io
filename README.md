@@ -23,13 +23,20 @@ Write the article here.
 ```
 
 - `article: true` adds the page to the homepage automatically.
-- `topic` groups articles. A new topic appears automatically when used.
+- `topic` names the series. Articles whose topic has a series overview are
+  listed under that series; others appear under “Other notes”.
 - `order` controls the reading order; use different numbers for each article.
-  Mooncake uses 10–40. Linux currently uses 100.
-- `description` is the short text shown on the article card.
-- Optional `nav_title` provides a shorter card title.
-- Optional `series_order` labels a numbered chapter. Zero is supported.
+  Mooncake uses 10–40, Linux 100, ZooKeeper 210–310, Netty 410–500.
+- `description` is shown in the series overview's part list.
+- Optional `nav_title` provides a shorter title for lists and links.
+- Optional `series_order` is the part number. Zero is supported.
 - Optional `lang`, such as `zh-CN`, sets the page language.
+
+To start a new series, add `<topic>/index.md` with `series: true`, the same
+`topic`, an `order`, and a one-line `description`. It then appears in the
+header navigation and on the homepage. Put
+`{% include part-list.html topic="<topic>" descriptions=true %}`
+where the overview should list its parts.
 
 Keep a visible `# Article title` in the Markdown body. Use `##` for main
 sections; pages with three or more main sections receive an expandable
@@ -39,13 +46,12 @@ For example, `systems/my-article.md` is published at
 `/systems/my-article.html`. Use relative `.html` links between articles.
 Place diagrams next to articles, for example in `systems/assets/`.
 
-The Mooncake series has an additional curated introduction at
-`mooncake/index.md`. Its reading list is maintained in that file.
-
 ## Layout files
 
-- `_layouts/home.html`: article index, grouped by topic.
-- `_layouts/default.html`: shared header, full-width article area, and footer.
+- `_layouts/home.html`: homepage: a short intro and one block per series.
+- `_layouts/default.html`: header with series navigation, article area,
+  previous/next links within a series, and footer.
+- `_includes/part-list.html`: numbered list of a series' articles.
 - `assets/css/site.css`: responsive styles for desktop and mobile.
 - `assets/js/site.js`: article section navigation and scrollable tables.
 
@@ -57,8 +63,11 @@ need a browser-side database or a manually maintained card list.
 
 The `zookeeper/` and `netty/` folders contain the English Jianshu migration:
 12 ZooKeeper pages and 11 Netty/Java pages, with 69 local English SVG figures.
-The series indexes are `zookeeper/index.md` and `netty/index.md`; both use the
-existing layout and appear in the homepage topic list.
+The series overviews are `zookeeper/index.md`, `netty/index.md` and
+`mooncake/index.md` (front matter `series: true`). The homepage, the header
+navigation, each overview's part list and the previous/next links on articles
+are all generated from front matter (`article: true`, `topic`, `order`,
+`series_order`), so a new article only needs those fields.
 
 The historical baselines are ZooKeeper 3.6.2, Netty 4.1.53.Final, and OpenJDK
 8u272-b10. The pooled-memory walkthrough explicitly uses the legacy Netty
