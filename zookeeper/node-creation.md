@@ -11,7 +11,7 @@ description: "Follow a create request through client framing, server preparation
 
 # Following a ZooKeeper Node Creation Request
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
 
 ## Introduction
 
@@ -153,14 +153,14 @@ Next, examine how the client sends the request to the server.
 
 Once `SendThread` wakes from `selector.select`, it can process write readiness through `doIO`. The create Packet is assigned an xid, serialized to a `ByteBuffer`, and written to the server socket. The synchronous API waits for completion of that Packet; the asynchronous APIs deliver a callback instead.
 
-[![Queue a create request on the client](assets/node-creation-01.svg)](assets/node-creation-01.svg)
+[![Queue a create request on the client](assets/node-creation-01.svg){: .diagram}](assets/node-creation-01.svg)
 
 
 ## Processing on the server
 
 The following figure shows the server-side processing path.
 
-[![Decode the request on the server](assets/node-creation-02.svg)](assets/node-creation-02.svg)
+[![Decode the request on the server](assets/node-creation-02.svg){: .diagram}](assets/node-creation-02.svg)
 
 [Server startup](standalone-server-startup.html) already examined `SelectorThread.handleIO`. We now follow each subsequent stage.
 
@@ -434,7 +434,7 @@ public void processPacket(ServerCnxn cnxn, ByteBuffer incomingBuffer) throws IOE
 
 After `processPacket`, the request enters the processing pipeline. Standalone operation sends requests through this pipeline, whose broad structure was introduced in [server startup](standalone-server-startup.html).
 
-[![Standalone request processor chain](assets/node-creation-03.svg)](assets/node-creation-03.svg)
+[![Standalone request processor chain](assets/node-creation-03.svg){: .diagram}](assets/node-creation-03.svg)
 
 We will examine the processors one by one.
 

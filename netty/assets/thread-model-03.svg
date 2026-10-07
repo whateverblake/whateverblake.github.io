@@ -2,7 +2,7 @@
 <text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">NETTY 4.1.53.FINAL</text>
 <text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Wrap the executor with the current EventExecutor</text>
 <rect x="34" y="133" width="932" height="59" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
-<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">this.executor = ThreadExecutorMap.apply(executor, this);</text>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">this.executor = ThreadExecutorMap.apply(executor, this);</text>
 <text x="34" y="230" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 159; no runtime state is shown.</text>
 <text x="34" y="253" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Actual constructor assignment from source; ThreadExecutorMap installs the executing EventExecutor context.</text>
 <a href="https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/concurrent/SingleThreadEventExecutor.java">

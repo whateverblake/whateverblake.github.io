@@ -2,12 +2,12 @@
 <text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
 <text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Legacy chunk-list category initialization</text>
 <rect x="34" y="133" width="932" height="179" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
-<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">q100 = new PoolChunkList&lt;T&gt;(this, null, 100, Integer.MAX_VALUE, chunkSize);</text>
-<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">q075 = new PoolChunkList&lt;T&gt;(this, q100, 75, 100, chunkSize);</text>
-<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">q050 = new PoolChunkList&lt;T&gt;(this, q075, 50, 100, chunkSize);</text>
-<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">q025 = new PoolChunkList&lt;T&gt;(this, q050, 25, 75, chunkSize);</text>
-<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">q000 = new PoolChunkList&lt;T&gt;(this, q025, 1, 50, chunkSize);</text>
-<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">qInit = new PoolChunkList&lt;T&gt;(this, q000, Integer.MIN_VALUE, 25, chunkSize);</text>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">q100 = new PoolChunkList&lt;T&gt;(this, null, 100, Integer.MAX_VALUE, chunkSize);</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">q075 = new PoolChunkList&lt;T&gt;(this, q100, 75, 100, chunkSize);</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">q050 = new PoolChunkList&lt;T&gt;(this, q075, 50, 100, chunkSize);</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">q025 = new PoolChunkList&lt;T&gt;(this, q050, 25, 75, chunkSize);</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">q000 = new PoolChunkList&lt;T&gt;(this, q025, 1, 50, chunkSize);</text>
+<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">qInit = new PoolChunkList&lt;T&gt;(this, q000, Integer.MIN_VALUE, 25, chunkSize);</text>
 <text x="34" y="350" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 107; no runtime state is shown.</text>
 <text x="34" y="373" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Actual source declarations replace the missing code screenshot. Constructor arguments are minUsage / maxUsage</text>
 <text x="34" y="392" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">percentages.</text>

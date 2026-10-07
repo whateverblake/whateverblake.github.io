@@ -11,7 +11,7 @@ description: "Read the bucketed expiration queue used to manage ZooKeeper connec
 
 # How ExpiryQueue Manages Connection and Session Timeouts
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
 
 ## Background
 
@@ -21,13 +21,13 @@ The ZooKeeper server manages two kinds of objects with timeouts: connections and
 
 Consider connection timeouts. Different connections can have different expiration deadlines.
 
-[![Group expiration times into interval buckets](assets/expiry-queue-01.svg)](assets/expiry-queue-01.svg)
+[![Connections and their timeout points](assets/expiry-queue-01.svg){: .diagram}](assets/expiry-queue-01.svg)
 
 How does ZooKeeper manage these deadlines efficiently?
 `ExpiryQueue` has an `expirationInterval` field. It groups each deadline into an interval bucket using this calculation:
 
 `normalizeTimeout = (timeoutPoint/expirationInterval +1) * expirationInterval`
-In the figure, connections A and B fall into the 3000 ms bucket, while connection C falls into the next bucket at 4000 ms. The original numeric example below separately shows three nearby deadlines that all round into one bucket.
+Connections whose timeout points fall in the same interval are therefore grouped into one bucket. In the example below, three nearby deadlines all round to the same bucket.
 
 ```text
 

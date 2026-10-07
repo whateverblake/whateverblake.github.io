@@ -11,7 +11,7 @@ description: "Trace FastLeaderElection, its queues and worker threads, and the c
 
 # Following ZooKeeper Fast Leader Election
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The English figures reconstruct relationships from this pinned code; they are explanatory diagrams, not recovered debugger screenshots.
+> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The figures are the author's original diagrams, with their labels translated into English.
 
 ## Introduction
 A ZooKeeper ensemble with several servers must elect one server as leader before it can establish the quorum and process replicated transactions. How does its election protocol work? Let us follow the implementation.
@@ -69,7 +69,7 @@ Accepts other peers' election connection requests.
 Uses the received notifications to update its proposal and determine whether a leader has been elected. Once election completes, it leaves the election loop and proceeds to leader/follower discovery and synchronization; otherwise, it keeps electing.
 
 The following diagram shows the interaction among these threads and queues.
-[![Election votes cross thread and queue boundaries](assets/leader-election-01.svg)](assets/leader-election-01.svg)
+[![Election votes cross thread and queue boundaries](assets/leader-election-01.svg){: .diagram}](assets/leader-election-01.svg)
 With those roles in place, we can begin tracing ZooKeeper's election source code.
 
 
@@ -599,7 +599,7 @@ Election takes place in `lookForLeader`. This is a long method of roughly 200 li
 ```
 
 The following diagram describes the decisions in this election loop.
-[![Fast leader election: propose, compare, converge](assets/leader-election-02.svg)](assets/leader-election-02.svg)
+[![Election loop: propose, exchange votes, decide](assets/leader-election-02.svg){: .diagram}](assets/leader-election-02.svg)
 
 That is the election logic executed by the `QuorumPeer` thread.
 Next we will inspect the details that connect this loop to the other threads introduced earlier.
@@ -716,7 +716,7 @@ What does the peer connection manager's `toSend` method do?
 ##### Connection topology
 Before discussing `connectOne`, let us describe the network topology among ZooKeeper's voting peers.
 The following diagram shows the election connections for a three-peer ensemble.
-[![Peer connection topology for election](assets/leader-election-03.svg)](assets/leader-election-03.svg)
+[![Peer connection topology for election](assets/leader-election-03.svg){: .diagram}](assets/leader-election-03.svg)
 Every peer connects to every other peer. ZooKeeper uses `SendWorker` and `RecvWorker` threads for outgoing and incoming vote messages on each retained connection. Because both ends can initially attempt to connect, ZooKeeper resolves duplicate connections with a server-ID rule.
 The retained connection is initiated by the server with the larger sid toward the server with the smaller sid. Consider peers with IDs 1 and 2.
 If peer 1 initiates a socket connection to peer 2, TCP may connect successfully, but ZooKeeper's election handshake detects the smaller initiating ID and closes that connection. The connection initiated from peer 2 to peer 1 is retained. **Clarification:** this is an application-level tie-break after TCP connection, not a rule preventing TCP establishment. See the pinned [`startConnection` and `handleConnection`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java).

@@ -14,9 +14,9 @@
 <rect x="586" y="156" width="380" height="128" rx="10" fill="#eee6f6" stroke="#d5dfeb"/>
 <text x="776.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 31 … 0</text>
 <text x="776.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">memoryMapIdx</text>
-<text x="54" y="344" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">0x4000000000000000L</text>
-<text x="54" y="377" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">| ((long) bitmapIdx &lt;&lt; 32)</text>
-<text x="54" y="410" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">| memoryMapIdx</text>
+<text x="54" y="344" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">0x4000000000000000L</text>
+<text x="54" y="377" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">| ((long) bitmapIdx &lt;&lt; 32)</text>
+<text x="54" y="410" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">| memoryMapIdx</text>
 <text x="34" y="476" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">bitmapIdx identifies an element within one subpage.</text>
 <text x="34" y="507" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">memoryMapIdx identifies the selected page in the legacy buddy tree.</text>
 <text x="34" y="554" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">handle = 0x4000000000000000L | ((long) bitmapIdx &lt;&lt; 32) | memoryMapIdx; marker is bit 62, not 2^64.</text>

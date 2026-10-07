@@ -19,7 +19,7 @@ jemalloc is an established memory allocator; its full design is outside this art
 
 ## Implementation model
 The diagram shows the allocator's logical memory subdivisions.
-[![Legacy pooled-memory hierarchy](assets/pooled-memory-01.svg)](assets/pooled-memory-01.svg)
+[![Arena, chunk, page and memory-unit hierarchy](assets/pooled-memory-01.svg){: .diagram}](assets/pooled-memory-01.svg)
 ### Important objects
 - PooledByteBufAllocator
 Applications obtain buffers through this allocator. Here are its fields.
@@ -96,7 +96,7 @@ Each slot is then assigned an arena. The direct-memory case follows.
 
 - Arena
 An arena is a memory-management unit inspired by jemalloc. Threads allocate and free regions through their assigned arena. There are normally several arenas; each thread is assigned an arena, and several threads can share one. Their relationship is shown below.
-[![Threads share arenas, keep their own caches](assets/pooled-memory-02.svg)](assets/pooled-memory-02.svg)
+[![Threads bound to arenas in the arena pool](assets/pooled-memory-02.svg){: .diagram}](assets/pooled-memory-02.svg)
 
 Here are the fields of `PoolArena`.
 
@@ -179,14 +179,14 @@ private PoolSubpage<T> newSubpagePoolHead(int pageSize) {
 ```
 
 The initialized arrays therefore have the following structure.
-[![Subpage pools are circular doubly linked lists](assets/pooled-memory-03.svg)](assets/pooled-memory-03.svg)
+[![SubpagePools: circular lists of PoolSubpage linked by prev and next](assets/pooled-memory-03.svg){: .diagram}](assets/pooled-memory-03.svg)
 
 Before examining `PoolSubpage`, consider allocation granularity. Netty obtains pooled backing storage in chunks, defaulting to 16 MiB per chunk. Internally, a chunk contains logical pages of 8 KiB, giving 2048 pages at these defaults.
-[![A default legacy chunk contains 2048 pages](assets/pooled-memory-04.svg)](assets/pooled-memory-04.svg)
+[![A chunk divided into pages](assets/pooled-memory-04.svg){: .diagram}](assets/pooled-memory-04.svg)
 Requests are handled in two broad ways:
 1) A normalized capacity no larger than a chunk is pooled. For requests at least one page, the legacy allocator reserves a power-of-two run of pages: a 10 KiB request normalizes to 16 KiB and uses two pages. A subpage request reserves a page as backing storage and divides it into smaller allocation units; the application receives its requested size class rather than the whole page.
 2) A request larger than a chunk uses a separate unpooled allocation. The following figure shows direct-memory allocation.
-[![Pooled versus oversized direct allocation](assets/pooled-memory-05.svg)](assets/pooled-memory-05.svg)
+[![Requests smaller than a chunk use pooled pages; larger requests go straight to off-heap memory](assets/pooled-memory-05.svg){: .diagram}](assets/pooled-memory-05.svg)
 
 
 - PoolSubpage
@@ -195,8 +195,8 @@ There are two legacy subpage categories:
 1) Tiny: positive normalized sizes below 512 bytes.
 2) Small: normalized sizes 512, 1024, 2048, and 4096 bytes with the default page size.
 The following diagram illustrates them.
-[![Legacy tinySubpagePools](assets/pooled-memory-06.svg)](assets/pooled-memory-06.svg)
-[![Legacy smallSubpagePools](assets/pooled-memory-07.svg)](assets/pooled-memory-07.svg)
+[![tinySubpagePools: one SubpagePool list per element size from 16 to 496 bytes](assets/pooled-memory-06.svg){: .diagram}](assets/pooled-memory-06.svg)
+[![smallSubpagePools: one SubpagePool list per element size from 512 to 4096 bytes](assets/pooled-memory-07.svg){: .diagram}](assets/pooled-memory-07.svg)
 
 
 The legacy allocator manages several size classes within each category.
@@ -286,7 +286,7 @@ Here are the fields of `PoolSubpage`:
 
 - PoolChunkList
 An arena manages many chunks of the same configured backing size. As allocation proceeds, their *free capacities* differ; their total sizes do not shrink. The arena groups chunks by utilization band to find suitable space efficiently. `PoolChunkList` manages each group, and the groups themselves are linked.
-[![PoolChunkList: lists of chunks grouped by usage](assets/pooled-memory-08.svg)](assets/pooled-memory-08.svg)
+[![PoolChunkList linked list from qInit to q100, each holding PoolChunks](assets/pooled-memory-08.svg){: .diagram}](assets/pooled-memory-08.svg)
 Here are the fields of `PoolChunkList`:
 
 ```
@@ -323,7 +323,7 @@ freeMaxThreshold = (minUsage == 100) ? 0 : (int) (chunkSize * (100.0 - minUsage 
 ```
 
 `freeMinThreshold` is derived from `maxUsage`, and `freeMaxThreshold` from `minUsage`. For `q025`, the bounds are 25 and 75. The source computes thresholds as `(int) (chunkSize * (100.0 - usage + 0.99999999) / 100L)` (with a zero special case when usage is 100), giving approximately 4.16 MiB and 12.16 MiB for a 16 MiB chunk. After allocation takes free bytes to or below the lower threshold, a chunk moves toward a higher-utilization list. After freeing takes free bytes above the upper threshold, it moves toward a lower-utilization list. The ranges overlap deliberately; these are migration thresholds rather than a partition into mutually exclusive capacities.
-[![Legacy chunk migration thresholds](assets/pooled-memory-10.svg)](assets/pooled-memory-10.svg)
+[![Free-memory range of the chunks in each PoolChunkList](assets/pooled-memory-10.svg){: .diagram}](assets/pooled-memory-10.svg)
 
 ---
 
@@ -401,7 +401,7 @@ The following code requests a direct buffer; we will follow its allocation.
 ```
 
 The call chain is long, so follow it one step at a time.
-[![Legacy pooled direct allocation entry path](assets/pooled-memory-11.svg)](assets/pooled-memory-11.svg)
+[![Allocation call chain from PooledByteBufAllocator.buffer to Arena.allocate](assets/pooled-memory-11.svg){: .diagram}](assets/pooled-memory-11.svg)
 
 - ##### newDirectBuffer()
 Skip the allocator's forwarding methods and start at `newDirectBuffer`.
@@ -677,7 +677,7 @@ If the allocator has no backing chunk yet, or no existing chunk can supply the r
 Constructing a legacy `PoolChunk` initializes `memoryMap` and `depthMap`.
 The legacy allocator reserves normal regions in power-of-two page runs. A three-page request therefore rounds to four pages; a five-page request rounds to eight. At the defaults, a chunk contains 2048 logical pages, managed by a complete binary tree with 12 levels numbered 0 through 11. The 2048 leaves each represent one page, and an internal node represents the combined capacity of its children.
 
-[![Legacy page-run buddy tree](assets/pooled-memory-12.svg)](assets/pooled-memory-12.svg)
+[![Buddy tree over a 16 MiB chunk with 8 KiB pages at layer 11](assets/pooled-memory-12.svg){: .diagram}](assets/pooled-memory-12.svg)
 
 `memoryMap` and `depthMap` encode this tree in arrays. Their default length is 4096, but the tree has 4095 nodes because index zero is unused. `memoryMap` changes as regions are allocated and freed; `depthMap` retains each node's original depth. Here is their initialization.
 
@@ -1077,11 +1077,11 @@ This completes the allocation walkthrough.
 [https://juejin.im/post/5d4f6d74f265da03e83b5e07](https://juejin.im/post/5d4f6d74f265da03e83b5e07)
 
 
-## Source version and reconstructed figures
+## Source version and figures
 
 The allocator excerpts are preserved as a **legacy Netty 4.1.50.Final walkthrough**, an explicit exception to the series baseline. Their `tinySubpagePools`, `memoryMap`, `depthMap`, and tree-index handles do not describe Netty 4.1.53.Final. At 4.1.53, `PoolArena` extends `SizeClasses`, tiny allocations are merged into small size classes, `PoolChunk` manages runs with size-indexed priority queues and a run map, and handles encode run offset, page count, used/subpage flags, and bitmap index. Defaults of `pageSize = 8192` and `maxOrder = 11` still produce a 16 MiB chunk in both versions. Legacy size rounding, cache defaults, and tree formulas above must be read in the historical context. The original explanations of whole-page delivery for tiny requests, changing chunk sizes, cache-trim trigger, handle marker, bitmap mask, and array indexing have been corrected.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

@@ -63,9 +63,13 @@ existing layout and appear in the homepage topic list.
 The historical baselines are ZooKeeper 3.6.2, Netty 4.1.53.Final, and OpenJDK
 8u272-b10. The pooled-memory walkthrough explicitly uses the legacy Netty
 4.1.50.Final allocator and describes the 4.1.53 redesign. Source references
-use immutable commits. Reconstructed figures are labeled and carry source
-links; examples of runtime values are illustrative.
+use immutable commits. 39 figures are the author's original draw.io diagrams
+with English labels; the other 30 replace screenshots that could not be
+recovered, are labeled as reconstructions, and carry source links. Examples
+of runtime values are illustrative.
 
 `_migration/` retains the original-to-English article manifest, figure
 provenance, translation and review notes, and figure-generation scripts.
-Jekyll excludes this internal directory from the published site.
+The translated draw.io sources are in `_migration/drawio/`; rebuild their SVGs
+with `python3 _migration/drawio_tools/build_figures.py` (needs the draw.io
+desktop app). Jekyll excludes this internal directory from the published site.

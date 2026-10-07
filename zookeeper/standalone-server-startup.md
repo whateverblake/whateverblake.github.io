@@ -11,7 +11,7 @@ description: "Trace configuration, request processors, connection acceptance, an
 
 # How a Standalone ZooKeeper Server Starts
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
 
 ## Introduction
 
@@ -613,7 +613,7 @@ Here is its source.
 
 The following diagram summarizes connection acceptance and I/O dispatch.
 
-[![Accept and dispatch NIO work](assets/standalone-server-startup-03.svg)](assets/standalone-server-startup-03.svg)
+[![Accept and dispatch NIO work](assets/standalone-server-startup-03.svg){: .diagram}](assets/standalone-server-startup-03.svg)
 
 ---
 The server also starts threads managing session and connection expiration. Their implementation is covered separately in

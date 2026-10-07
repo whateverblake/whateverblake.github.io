@@ -302,16 +302,16 @@ Here is `record`:
 Its values fall into two ranges:
 - First: multiples of 16 from 16 through 496, for 31 entries.
 - Second: powers of two from 512 through the largest positive `int` power of two, `2^30`, for 22 entries.
-[![Adaptive receive buffer SIZE_TABLE](assets/socket-read-01.svg)](assets/socket-read-01.svg)
+[![Adaptive receive buffer SIZE_TABLE](assets/socket-read-01.svg){: .diagram}](assets/socket-read-01.svg)
 ---
 That concludes this walkthrough. Thank you for reading.
 
 
-## Source version and reconstructed figures
+## Source version and figures
 
 The default adaptive receive allocator uses minimum 64, initial 1024, and maximum 65536 bytes. Its static size table has 53 entries, although an individual allocator only uses its configured index range. A read-loop “message” here means a delivered buffer, not an application-level TCP message. Selector key-set instrumentation can fail or be disabled, in which case Netty uses the plain path.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+The figures are the author's original diagrams, with their labels translated into English.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

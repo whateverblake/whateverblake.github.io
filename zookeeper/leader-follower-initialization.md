@@ -11,7 +11,7 @@ description: "Follow leader discovery, epoch agreement, DIFF/TRUNC/SNAP synchron
 
 # How ZooKeeper Leaders and Followers Form an Ensemble
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The English figures reconstruct relationships from this pinned code; they are explanatory diagrams, not recovered debugger screenshots.
+> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The figures are the author's original diagrams, with their labels translated into English.
 
 ## Before we begin
 [Following ZooKeeper Fast Leader Election](leader-election.html) examined the election process in detail. This article follows what happens next: the initialization of the leader and its followers.
@@ -20,14 +20,14 @@ description: "Follow leader discovery, epoch agreement, DIFF/TRUNC/SNAP synchron
 After a leader is elected, the leader and followers form a quorum and synchronize their data. This includes the following stages.
 ### 1. Establish connections
 The leader starts `LearnerCnxAcceptorHandler` to accept follower connections on the quorum port: the first of the two server ports configured in `zoo.cfg`.
-[![Connect followers to the elected leader](assets/leader-follower-initialization-01.svg)](assets/leader-follower-initialization-01.svg)
+[![Connect followers to the elected leader](assets/leader-follower-initialization-01.svg){: .diagram}](assets/leader-follower-initialization-01.svg)
 ### Agree on a new epoch
 The newly formed ensemble needs a new epoch identifying its new leadership period, so the peers can agree on the generation in which they are working.
-[![Agree on the new epoch](assets/leader-follower-initialization-02.svg)](assets/leader-follower-initialization-02.svg)
+[![Agree on the new epoch](assets/leader-follower-initialization-02.svg){: .diagram}](assets/leader-follower-initialization-02.svg)
 
 ### Synchronize data
 After agreeing on a new epoch, the peers synchronize their data. Once synchronization and the new-leader quorum acknowledgment are complete, the follower and leader request processing engines start and the ensemble can serve clients. **Protocol clarification:** epoch acknowledgment (`ACKEPOCH`) and acknowledgment of the synchronized `NEWLEADER` are separate barriers; `LEADERINFO` alone does not make the server ready to serve. The diagrams reconstruct the handshake from the pinned [`Leader`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java), [`Learner`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Learner.java), and [`LearnerHandler`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java).
-[![Synchronize data, then begin serving](assets/leader-follower-initialization-03.svg)](assets/leader-follower-initialization-03.svg)
+[![Synchronize data, then begin serving](assets/leader-follower-initialization-03.svg){: .diagram}](assets/leader-follower-initialization-03.svg)
 -----
 
 Now let us follow the source code in detail.

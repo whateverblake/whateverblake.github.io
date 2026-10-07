@@ -11,7 +11,7 @@ description: "Follow server selection, client threads, NIO framing, and the ZooK
 
 # How a ZooKeeper Client Starts and Establishes a Session
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
 
 ## Introduction
 
@@ -736,7 +736,7 @@ void doIO(Queue<Packet> pendingQueue, ClientCnxn cnxn) throws InterruptedExcepti
 Having traced `doIO`, let us examine how a message becomes a `ByteBuffer`.
 First, consider the message object.
 
-[![Packet: request and response state](assets/client-startup-04.svg)](assets/client-startup-04.svg)
+[![Packet: request and response state](assets/client-startup-04.svg){: .diagram}](assets/client-startup-04.svg)
 
 For an outgoing message, `Packet` holds a request header, `requestHeader`, and a request body, `request`.
 These are serialized into its `bb` ByteBuffer. Here is that process.
@@ -824,7 +824,7 @@ void readConnectResult() throws IOException {
 
 This completes client startup: first the socket connection, then the session handshake. The diagram summarizes the sequence. Constructing a `ZooKeeper` object starts this work asynchronously; applications should wait for the appropriate connection event before relying on an established session.
 
-[![Establish the socket, then the session](assets/client-startup-05.svg)](assets/client-startup-05.svg)
+[![Establish the socket, then the session](assets/client-startup-05.svg){: .diagram}](assets/client-startup-05.svg)
 
 ## Pinned source references
 

@@ -103,13 +103,17 @@
     "image_index": 3,
     "asset": "zookeeper/assets/standalone-server-startup-03.svg",
     "title": "Accept and dispatch NIO work",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/NIOServerCnxnFactory.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/NIOServerCnxnFactory.java",
-    "source_line": null,
-    "note": "English redraw of the original I/O model. Each connection avoids concurrent I/O tasks.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_io_model.drawio",
+    "region": [
+      100,
+      -20,
+      1460,
+      570
+    ],
+    "drawio": "_migration/drawio/zookeeper/standalone-server-startup-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "client-startup",
@@ -159,13 +163,12 @@
     "image_index": 4,
     "asset": "zookeeper/assets/client-startup-04.svg",
     "title": "Packet: request and response state",
-    "kind": "code",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_line": 263,
-    "note": "Selected original declarations; blank lines omitted. No runtime values are invented.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/zookeeper/client-startup-04.drawio",
+    "note": "Redrawn from the code screenshot embedded in the author's diagram, with the annotations translated to English.",
+    "reconstruction": false
   },
   {
     "article": "client-startup",
@@ -173,27 +176,30 @@
     "image_index": 5,
     "asset": "zookeeper/assets/client-startup-05.svg",
     "title": "Establish the socket, then the session",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_client_connect_server.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/zookeeper/client-startup-05.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "expiry-queue",
     "topic": "zookeeper",
     "image_index": 1,
     "asset": "zookeeper/assets/expiry-queue-01.svg",
-    "title": "Group expiration times into interval buckets",
-    "kind": "fields",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/ExpiryQueue.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ExpiryQueue.java",
-    "source_line": null,
-    "note": "The formula rounds strictly to the next interval, even when the deadline is already aligned.",
-    "reconstruction": true
+    "title": "Connections and their timeout points",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_io_model.drawio",
+    "region": [
+      100,
+      870,
+      760,
+      1160
+    ],
+    "drawio": "_migration/drawio/zookeeper/expiry-queue-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "node-creation",
@@ -201,13 +207,12 @@
     "image_index": 1,
     "asset": "zookeeper/assets/node-creation-01.svg",
     "title": "Queue a create request on the client",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/zookeeper/node-creation-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "node-creation",
@@ -215,13 +220,17 @@
     "image_index": 2,
     "asset": "zookeeper/assets/node-creation-02.svg",
     "title": "Decode the request on the server",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServer.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServer.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": [
+      120,
+      120,
+      1030,
+      640
+    ],
+    "drawio": "_migration/drawio/zookeeper/node-creation-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "node-creation",
@@ -229,27 +238,30 @@
     "image_index": 3,
     "asset": "zookeeper/assets/node-creation-03.svg",
     "title": "Standalone request processor chain",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServer.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServer.java",
-    "source_line": null,
-    "note": "This is the standalone path; quorum mode inserts additional processors.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": [
+      1090,
+      590,
+      1300,
+      920
+    ],
+    "drawio": "_migration/drawio/zookeeper/node-creation-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "watch-processing",
     "topic": "zookeeper",
     "image_index": 1,
     "asset": "zookeeper/assets/watch-processing-01.svg",
-    "title": "Register a persistent watch on the server",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/FinalRequestProcessor.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/FinalRequestProcessor.java",
-    "source_line": null,
-    "note": "The original article uses persistent addWatch. Ordinary read-operation watches also follow the shared request machinery.",
-    "reconstruction": true
+    "title": "Server request path and request processor chain",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/zookeeper/watch-processing-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "data-recovery",
@@ -355,27 +367,35 @@
     "image_index": 1,
     "asset": "zookeeper/assets/leader-election-01.svg",
     "title": "Election votes cross thread and queue boundaries",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java",
-    "source_line": null,
-    "note": "The lower-case sendqueue/recvqueue belong to election; queueSendMap/recvQueue belong to QuorumCnxManager.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      90,
+      -270,
+      640,
+      420
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-election-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "leader-election",
     "topic": "zookeeper",
     "image_index": 2,
     "asset": "zookeeper/assets/leader-election-02.svg",
-    "title": "Fast leader election: propose, compare, converge",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "Election loop: propose, exchange votes, decide",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      -80,
+      580,
+      540,
+      1130
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-election-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "leader-election",
@@ -383,13 +403,17 @@
     "image_index": 3,
     "asset": "zookeeper/assets/leader-election-03.svg",
     "title": "Peer connection topology for election",
-    "kind": "fields",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/ZAB_elect_message_exchange.drawio",
+    "region": [
+      -570,
+      1180,
+      820,
+      1950
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-election-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "leader-follower-initialization",
@@ -397,13 +421,17 @@
     "image_index": 1,
     "asset": "zookeeper/assets/leader-follower-initialization-01.svg",
     "title": "Connect followers to the elected leader",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -100,
+      90,
+      700,
+      440
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "leader-follower-initialization",
@@ -411,13 +439,17 @@
     "image_index": 2,
     "asset": "zookeeper/assets/leader-follower-initialization-02.svg",
     "title": "Agree on the new epoch",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java",
-    "source_line": null,
-    "note": "An epoch orders ensemble incarnations; ACKEPOCH also carries the follower\u2019s prior state summary.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -560,
+      660,
+      560,
+      1580
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "leader-follower-initialization",
@@ -425,13 +457,17 @@
     "image_index": 3,
     "asset": "zookeeper/assets/leader-follower-initialization-03.svg",
     "title": "Synchronize data, then begin serving",
-    "kind": "flow",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/leader_follower_init.drawio",
+    "region": [
+      -1000,
+      1900,
+      900,
+      2730
+    ],
+    "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "thread-model",
@@ -439,13 +475,17 @@
     "image_index": 1,
     "asset": "netty/assets/thread-model-01.svg",
     "title": "Reactor roles in a Netty NIO server",
-    "kind": "flow",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "transport/src/main/java/io/netty/bootstrap/ServerBootstrap.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/ServerBootstrap.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/netty_thread_model.drawio",
+    "region": [
+      170,
+      20,
+      640,
+      680
+    ],
+    "drawio": "_migration/drawio/netty/thread-model-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "thread-model",
@@ -453,13 +493,17 @@
     "image_index": 2,
     "asset": "netty/assets/thread-model-02.svg",
     "title": "Three kinds of NioEventLoop work",
-    "kind": "fields",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "transport/src/main/java/io/netty/channel/nio/NioEventLoop.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/NioEventLoop.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/netty_thread_model.drawio",
+    "region": [
+      170,
+      820,
+      640,
+      945
+    ],
+    "drawio": "_migration/drawio/netty/thread-model-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "thread-model",
@@ -480,14 +524,18 @@
     "topic": "netty",
     "image_index": 1,
     "asset": "netty/assets/pipeline-01.svg",
-    "title": "Inbound and outbound traversal directions",
-    "kind": "fields",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "Inbound and outbound event directions through the pipeline",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/pipeLine_add_handler_prcocess.drawio",
+    "region": [
+      -220,
+      1380,
+      740,
+      1670
+    ],
+    "drawio": "_migration/drawio/netty/pipeline-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pipeline",
@@ -495,13 +543,12 @@
     "image_index": 2,
     "asset": "netty/assets/pipeline-02.svg",
     "title": "Propagate an event across handler contexts",
-    "kind": "flow",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
-    "source_line": null,
-    "note": "XXX stands for an event such as Read or Registered; the source has concrete methods for each event.",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/pipeline\u4e8b\u4ef6\u89e6\u53d1.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/pipeline-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "socket-read",
@@ -509,125 +556,156 @@
     "image_index": 1,
     "asset": "netty/assets/socket-read-01.svg",
     "title": "Adaptive receive buffer SIZE_TABLE",
-    "kind": "fields",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "transport/src/main/java/io/netty/channel/AdaptiveRecvByteBufAllocator.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AdaptiveRecvByteBufAllocator.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/size_table.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/socket-read-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 1,
     "asset": "netty/assets/pooled-memory-01.svg",
-    "title": "Legacy pooled-memory hierarchy",
-    "kind": "flow",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_line": null,
-    "note": "This preserves the original allocator model. Netty 4.1.53 uses SizeClasses and a different run allocator.",
-    "reconstruction": true
+    "title": "Arena, chunk, page and memory-unit hierarchy",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1640,
+      40,
+      -770,
+      470
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 2,
     "asset": "netty/assets/pooled-memory-02.svg",
-    "title": "Threads share arenas, keep their own caches",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PooledByteBufAllocator.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PooledByteBufAllocator.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "Threads bound to arenas in the arena pool",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      1840,
+      5380,
+      2430,
+      5660
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 3,
     "asset": "netty/assets/pooled-memory-03.svg",
-    "title": "Subpage pools are circular doubly linked lists",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolSubpage.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolSubpage.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "SubpagePools: circular lists of PoolSubpage linked by prev and next",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1650,
+      1715,
+      -1040,
+      1835
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 4,
     "asset": "netty/assets/pooled-memory-04.svg",
-    "title": "A default legacy chunk contains 2048 pages",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolChunk.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "A chunk divided into pages",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1625,
+      2120,
+      -1205,
+      2200
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-04.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 5,
     "asset": "netty/assets/pooled-memory-05.svg",
-    "title": "Pooled versus oversized direct allocation",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_line": null,
-    "note": "Pooling and thread-cache reuse are different layers; not every request allocates new backing memory.",
-    "reconstruction": true
+    "title": "Requests smaller than a chunk use pooled pages; larger requests go straight to off-heap memory",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -1625,
+      2120,
+      -1020,
+      2385
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-05.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 6,
     "asset": "netty/assets/pooled-memory-06.svg",
-    "title": "Legacy tinySubpagePools",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "tinySubpagePools: one SubpagePool list per element size from 16 to 496 bytes",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2880,
+      50,
+      3560,
+      480
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-06.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 7,
     "asset": "netty/assets/pooled-memory-07.svg",
-    "title": "Legacy smallSubpagePools",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "smallSubpagePools: one SubpagePool list per element size from 512 to 4096 bytes",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2880,
+      520,
+      3560,
+      980
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-07.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 8,
     "asset": "netty/assets/pooled-memory-08.svg",
-    "title": "PoolChunkList: lists of chunks grouped by usage",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolChunkList.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunkList.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "PoolChunkList linked list from qInit to q100, each holding PoolChunks",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -410,
+      2215,
+      660,
+      2525
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-08.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
@@ -648,42 +726,54 @@
     "topic": "netty",
     "image_index": 10,
     "asset": "netty/assets/pooled-memory-10.svg",
-    "title": "Legacy chunk migration thresholds",
-    "kind": "fields",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolChunkList.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunkList.java",
-    "source_line": null,
-    "note": "The original approximate \u201c4.16M\u201d values depend on interpreting MiB versus decimal MB; percentages are the authoritative inputs.",
-    "reconstruction": true
+    "title": "Free-memory range of the chunks in each PoolChunkList",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      -295,
+      2600,
+      820,
+      2770
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-10.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 11,
     "asset": "netty/assets/pooled-memory-11.svg",
-    "title": "Legacy pooled direct allocation entry path",
-    "kind": "flow",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "title": "Allocation call chain from PooledByteBufAllocator.buffer to Arena.allocate",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      2670,
+      1715,
+      3020,
+      2070
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-11.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
     "topic": "netty",
     "image_index": 12,
     "asset": "netty/assets/pooled-memory-12.svg",
-    "title": "Legacy page-run buddy tree",
-    "kind": "tree",
-    "version": "Legacy: Netty 4.1.50.Final",
-    "source_path": "buffer/src/main/java/io/netty/buffer/PoolChunk.java",
-    "source_url": "https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java",
-    "source_line": null,
-    "note": "A 16 MiB root divides to 2048 leaves of 8 KiB. This is the pre-redesign allocator.",
-    "reconstruction": true
+    "title": "Buddy tree over a 16 MiB chunk with 8 KiB pages at layer 11",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/memory_allocation_jemalloc.drawio",
+    "region": [
+      3460,
+      3270,
+      3975,
+      3720
+    ],
+    "drawio": "_migration/drawio/netty/pooled-memory-12.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "pooled-memory",
@@ -705,13 +795,17 @@
     "image_index": 1,
     "asset": "netty/assets/recycler-01.svg",
     "title": "Recycler ownership and cross-thread queues",
-    "kind": "flow",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "common/src/main/java/io/netty/util/Recycler.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      -620,
+      130,
+      1000,
+      1100
+    ],
+    "drawio": "_migration/drawio/netty/recycler-01.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "recycler",
@@ -761,13 +855,17 @@
     "image_index": 5,
     "asset": "netty/assets/recycler-05.svg",
     "title": "Recycle an object back through its handle",
-    "kind": "flow",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "common/src/main/java/io/netty/util/Recycler.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1280,
+      270,
+      1480,
+      480
+    ],
+    "drawio": "_migration/drawio/netty/recycler-05.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "recycler",
@@ -775,13 +873,17 @@
     "image_index": 6,
     "asset": "netty/assets/recycler-06.svg",
     "title": "Stack.push chooses the return path",
-    "kind": "fields",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "common/src/main/java/io/netty/util/Recycler.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1300,
+      530,
+      1650,
+      820
+    ],
+    "drawio": "_migration/drawio/netty/recycler-06.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "recycler",
@@ -789,27 +891,35 @@
     "image_index": 7,
     "asset": "netty/assets/recycler-07.svg",
     "title": "Get an object from Recycler",
-    "kind": "flow",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "common/src/main/java/io/netty/util/Recycler.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
-    "source_line": null,
-    "note": "",
-    "reconstruction": true
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1260,
+      900,
+      1420,
+      1040
+    ],
+    "drawio": "_migration/drawio/netty/recycler-07.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "recycler",
     "topic": "netty",
     "image_index": 8,
     "asset": "netty/assets/recycler-08.svg",
-    "title": "Scavenging dead cross-thread queues",
-    "kind": "fields",
-    "version": "Netty 4.1.53.Final",
-    "source_path": "common/src/main/java/io/netty/util/Recycler.java",
-    "source_url": "https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java",
-    "source_line": null,
-    "note": "Explanatory state labels replace runtime object addresses. A dead producer is not the same as an immediately collectible queue.",
-    "reconstruction": true
+    "title": "Dead and active WeakOrderQueue nodes during scavenging",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/Recycler.drawio",
+    "region": [
+      1030,
+      1110,
+      1660,
+      1610
+    ],
+    "drawio": "_migration/drawio/netty/recycler-08.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "java-reference-processing",
@@ -877,7 +987,7 @@
     "version": "OpenJDK 8u272-b10",
     "source_path": "jdk/src/share/classes/java/lang/ref/Reference.java",
     "source_url": "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/Reference.java",
-    "source_line": 183,
+    "source_line": 179,
     "note": "Actual source around the Cleaner type check; no debugger values are shown.",
     "reconstruction": true
   },
@@ -914,55 +1024,51 @@
     "topic": "netty",
     "image_index": 1,
     "asset": "netty/assets/java-zero-copy-01.svg",
-    "title": "Ordinary file-to-socket copy path",
-    "kind": "flow",
-    "version": "OpenJDK 8u272-b10",
-    "source_path": "jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_url": "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_line": null,
-    "note": "Conceptual Linux data path for the Java example; the pinned FileChannel implementation supplies the Java entry points.",
-    "reconstruction": true
+    "title": "Traditional copy path: disk, page cache, user buffer, socket buffer, network",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/\u5185\u6838-\u5185\u6838-copy.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/java-zero-copy-01.drawio",
+    "note": "The article's original image was a third-party picture (watermarked); redrawn in the style of the author's sendfile diagram, with the CPU copies routed through the user-space buffer.",
+    "reconstruction": false
   },
   {
     "article": "java-zero-copy",
     "topic": "netty",
     "image_index": 2,
     "asset": "netty/assets/java-zero-copy-02.svg",
-    "title": "sendfile avoids the user-buffer round trip",
-    "kind": "flow",
-    "version": "OpenJDK 8u272-b10",
-    "source_path": "jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_url": "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_line": null,
-    "note": "Conceptual path; \u201czero-copy\u201d does not mean that every platform performs zero CPU copies.",
-    "reconstruction": true
+    "title": "sendfile copies from the page cache to the socket buffer inside the kernel",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/\u5185\u6838-\u5185\u6838-copy.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/java-zero-copy-02.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "java-zero-copy",
     "topic": "netty",
     "image_index": 3,
     "asset": "netty/assets/java-zero-copy-03.svg",
-    "title": "Ordinary reads copy data into a user array",
-    "kind": "flow",
-    "version": "OpenJDK 8u272-b10",
-    "source_path": "jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_url": "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_line": null,
-    "note": "Conceptual buffered-I/O model for the original FileInputStream example.",
-    "reconstruction": true
+    "title": "Ordinary read: DMA into the kernel page cache, then a CPU copy to user memory",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/\u975eMMAP_\u590d\u5236.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/java-zero-copy-03.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "java-zero-copy",
     "topic": "netty",
     "image_index": 4,
     "asset": "netty/assets/java-zero-copy-04.svg",
-    "title": "mmap exposes file-backed pages to the process",
-    "kind": "flow",
-    "version": "OpenJDK 8u272-b10",
-    "source_path": "jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_url": "https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java",
-    "source_line": null,
-    "note": "Conceptual mapping; copying mapped data into byte[] still performs a CPU copy.",
-    "reconstruction": true
+    "title": "mmap: user memory shares the kernel page cache",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/netty/mmap_\u5185\u5b58\u590d\u5236.drawio",
+    "region": null,
+    "drawio": "_migration/drawio/netty/java-zero-copy-04.drawio",
+    "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
+    "reconstruction": false
   }
 ]

@@ -66,6 +66,7 @@ a:focus-visible, summary:focus-visible { outline:3px solid #c67b21; outline-offs
 .prose img { display:block; width:auto; max-width:100%; height:auto; margin:30px auto; border-radius:12px; }
 .prose a:has(>img) { display:block; }
 .prose img[src$=".svg"] { width:100%; max-width:1200px; }
+.prose img.diagram { width:auto; max-width:100%; border-radius:0; }
 .prose>p:has(img) { max-width:none; }
 .prose :not(pre)>code { font-size:.87em; background:#eff3f5; color:#244956; border-radius:4px; padding:3px 5px; }
 .prose code, .prose pre { font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; }

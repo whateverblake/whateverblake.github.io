@@ -32,7 +32,7 @@ I recently finished this Netty source-code walkthrough and hope it provides a us
 
 The networking and Recycler articles use **Netty 4.1.53.Final**, released October 13, 2020. The pooled-memory article preserves the original **Netty 4.1.50.Final legacy allocator** and explains how 4.1.53 differs. The Java reference-processing and zero-copy articles use **OpenJDK 8u272-b10** for their Java implementation references. These are historical source walkthroughs.
 
-All illustrations are local English SVG files. Click a diagram to open it at full size. Missing original debugger screenshots have been replaced with source excerpts or explanatory diagrams; they are labeled as reconstructions.
+All illustrations are local English SVG files. Click a diagram to open it at full size. Diagrams from the original articles are reproduced with English labels. Missing debugger screenshots have been replaced with source excerpts or explanatory diagrams, which are labeled as reconstructions.
 
 - [Netty 4.1.53.Final source tree](https://github.com/netty/netty/tree/d4a0050ef33cab2542a80e11489a4977a63859f8)
 - [Netty 4.1.50.Final legacy allocator source](https://github.com/netty/netty/tree/8c5b72aaf02e7f349a9972dd9179b449b5a6067b)

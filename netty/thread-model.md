@@ -13,7 +13,7 @@ series_order: 1
 
 ## Background
 Netty is a high-performance network communication framework written in Java. A Netty server follows the reactor pattern: an acceptor handles connection requests and creates a `SocketChannel` for each connection. Each accepted channel is assigned an event loop; subsequent events on that channel are handled by the event loop's thread.
-[![Reactor roles in a Netty NIO server](assets/thread-model-01.svg)](assets/thread-model-01.svg)
+[![Reactor roles in a Netty NIO server](assets/thread-model-01.svg){: .diagram}](assets/thread-model-01.svg)
 
 ## Scope
 The following analysis uses the NIO transport.
@@ -67,7 +67,7 @@ Both choosers distribute selections across the group's children. The second impl
 
 ## NioEventLoop
 `NioEventLoop` represents the single-threaded event loop. Each `NioSocketChannel` is registered with one such event loop, which handles that channel's events. The event loop wraps a thread; once started, it processes the task types shown below.
-[![Three kinds of NioEventLoop work](assets/thread-model-02.svg)](assets/thread-model-02.svg)
+[![Three kinds of NioEventLoop work](assets/thread-model-02.svg){: .diagram}](assets/thread-model-02.svg)
 - selector
 Every new `NioSocketChannel` is assigned an event loop, while the group's number of event loops is fixed. When there are more channels than event loops, multiple channels share an event loop and register their interest in I/O events with its selector. The event loop processes these selected events.
 - tasks
@@ -425,11 +425,11 @@ private void doStartThread() {
 
 
 
-## Source version and reconstructed figures
+## Source version and figures
 
 The original `run` excerpt uses the `nextWakeupNanos` and `curDeadlineNanos` selector-wakeup implementation present in Netty 4.1.53.Final. The event loop combines selected I/O processing, ordinary tasks, and scheduled tasks; its execution budget is influenced by `ioRatio`. Channel affinity describes event-loop execution; handlers explicitly configured with a separate executor can run elsewhere.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

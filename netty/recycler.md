@@ -82,7 +82,7 @@ Each thread has its own stack for a recycler. A thread obtains objects from its 
 
 ## Implementation model
 Start with the diagram.
-[![Recycler ownership and cross-thread queues](assets/recycler-01.svg)](assets/recycler-01.svg)
+[![Recycler ownership and cross-thread queues](assets/recycler-01.svg){: .diagram}](assets/recycler-01.svg)
 The main elements are described below.
 - ##### stack
 `Stack` is a thread's local pool implementation. Each owning thread has its own stack.
@@ -120,7 +120,7 @@ A link has a `readIndex` and a published write index. Since `Link` extends `Atom
 ---
 ## Source walkthrough: recycling an object
 Start with returning objects, so the later obtain path has a clear source for the objects it finds.
-[![Recycle an object back through its handle](assets/recycler-05.svg)](assets/recycler-05.svg)
+[![Recycle an object back through its handle](assets/recycler-05.svg){: .diagram}](assets/recycler-05.svg)
 The diagram shows the recycling call chain. What happens in `stack.push`?
 
 ```
@@ -141,7 +141,7 @@ The diagram shows the recycling call chain. What happens in `stack.push`?
 ```
 
 `threadRef` weakly identifies the stack's owning thread. If that same thread returns an object, the stack uses `pushNow`; if another thread returns it, the stack uses `pushLater`.
-[![Stack.push chooses the return path](assets/recycler-06.svg)](assets/recycler-06.svg)
+[![Stack.push chooses the return path](assets/recycler-06.svg){: .diagram}](assets/recycler-06.svg)
 Examine the two cases separately.
 - ##### pushNow
 
@@ -378,7 +378,7 @@ Link newLink() {
 ## Obtaining a reusable object
 
 The obtain call chain is shown below.
-[![Get an object from Recycler](assets/recycler-07.svg)](assets/recycler-07.svg)
+[![Get an object from Recycler](assets/recycler-07.svg){: .diagram}](assets/recycler-07.svg)
 The central method is `Recycler.get`.
 
 ```
@@ -541,8 +541,8 @@ private boolean scavengeSome() {
 ```
 
 `scavengeSome` transfers delayed returns into the local stack. For a queue with a live producer, a successful link transfer ends the search. For a dead producer, it attempts to drain final data as capacity and admission allow. A drained dead-owner queue can be unlinked when a predecessor is available. The code does not replace the stack's head from this path; that choice avoids racing with synchronized producer-side insertion. Consequently, a dead head or a leading run of dead-owner queues may remain linked until later lifecycle cleanup. This observation is about list reachability in this implementation, not proof that every such queue permanently retains all its returned objects.
-[![Scavenging dead cross-thread queues](assets/recycler-08.svg)](assets/recycler-08.svg)
-The figure illustrates dead-owner queues that remain linked when there is no predecessor to unlink through. A dead queue at the end can be unlinked when `prev` is available; the original blanket claim that the final node cannot be reclaimed was incorrect.
+[![Dead and active WeakOrderQueue nodes during scavenging](assets/recycler-08.svg){: .diagram}](assets/recycler-08.svg)
+In the figure, the blue `Dead_WeakOrderQueue` nodes sit at the front of the chain, before any live queue that could serve as `prev`. With no predecessor to unlink through, they cannot be reclaimed. A dead queue later in the chain, including the last node, can be unlinked once a live queue has become `prev`; the original claim that a dead last node can never be reclaimed was incorrect.
 
 ### WeakOrderQueue.transfer(stack)
 `transfer` moves reusable handles from one queue link into the stack. Its source follows.
@@ -654,11 +654,11 @@ Thanks to the authors of the following articles, whose explanations helped me re
 [https://www.cnblogs.com/jackion5/p/11369705.html](https://www.cnblogs.com/jackion5/p/11369705.html)
 
 
-## Source version and reconstructed figures
+## Source version and figures
 
 This is the Stack/WeakOrderQueue implementation present in Netty 4.1.53.Final. The default maximum delayed queues is `availableProcessors() * 2`, not a universal constant 16. The initial local array is bounded by the configured maximum. Queues weakly reference their producer threads, and the delayed-map keys are weak. Some synchronization and atomics remain on cross-thread paths, despite the absence of a global synchronized object pool. With the default interval 8, the actual counter logic admits the first candidate and then drops eight new candidates before admitting another; the source comment describing every eighth try is imprecise. Recycling is an admission decision, not a guarantee of future reuse; applications must stop using an object once returned.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

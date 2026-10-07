@@ -11,7 +11,7 @@ description: "Trace one-shot and persistent watch registration, server notificat
 
 # How ZooKeeper Registers and Delivers Watch Events
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
 
 ## Introduction
 
@@ -47,7 +47,7 @@ A client can register a persistent watch on a path through `ZooKeeper.addWatch`.
 
 ## The server
 
-The server receives the request through the same stages described in [node creation](node-creation.html): [![Register a persistent watch on the server](assets/watch-processing-01.svg)](assets/watch-processing-01.svg)
+The server receives the request through the same stages described in [node creation](node-creation.html): [![Server request path and request processor chain](assets/watch-processing-01.svg){: .diagram}](assets/watch-processing-01.svg)
 The request traverses the same general pipeline as other requests. Operation-specific behavior occurs in the relevant switch branches; for `addWatch`, the important branch is in `FinalRequestProcessor.processRequest`:
 
 ```java

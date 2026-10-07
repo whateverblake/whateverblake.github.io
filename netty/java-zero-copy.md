@@ -120,7 +120,7 @@ From the client's perspective, the traditional path copies data through disk, th
 3. The CPU copies the application bytes into a socket buffer in kernel space.
 4. DMA transfers the socket data to the network device.
 
-[![Ordinary file-to-socket copy path](assets/java-zero-copy-01.svg)](assets/java-zero-copy-01.svg)
+[![Traditional copy path: disk, page cache, user buffer, socket buffer, network](assets/java-zero-copy-01.svg){: .diagram}](assets/java-zero-copy-01.svg)
 If the application does not need to inspect or modify the file contents, the intermediate application-buffer copies can be avoided. Linux provides `sendfile` for this purpose. The following client uses `FileChannel.transferTo`, whose implementation can use the operating system's direct transfer mechanism. A kernel-to-kernel copy may still occur on some paths; scatter/gather support can avoid that additional CPU copy. This is an implementation-dependent optimization rather than a guarantee that every `transferTo` invocation makes zero CPU copies.
 
 ```
@@ -158,7 +158,7 @@ class ClientChannel {
 
 ```
 
-[![sendfile avoids the user-buffer round trip](assets/java-zero-copy-02.svg)](assets/java-zero-copy-02.svg)
+[![sendfile copies from the page cache to the socket buffer inside the kernel](assets/java-zero-copy-02.svg){: .diagram}](assets/java-zero-copy-02.svg)
 
 ## mmap
 For an application that must read file contents and apply business logic, how can we reduce copying between kernel and application buffers?
@@ -195,7 +195,7 @@ public class FileReader {
 ```
 
 The preceding code follows this data-copy path:
-[![Ordinary reads copy data into a user array](assets/java-zero-copy-03.svg)](assets/java-zero-copy-03.svg)
+[![Ordinary read: DMA into the kernel page cache, then a CPU copy to user memory](assets/java-zero-copy-03.svg){: .diagram}](assets/java-zero-copy-03.svg)
 
 1. DMA transfers data into the kernel page cache.
 2. Data is copied from the kernel buffer into the application buffer.
@@ -233,7 +233,7 @@ public class MmapFileReader {
 This code uses a file channel to create a mapping through the operating system's `mmap` mechanism.
 The mapping lets user-space loads and stores address file-backed pages that also belong to the kernel page cache. Writes through a shared read/write mapping dirty those pages; they are written back according to the operating system's policy. Use `MappedByteBuffer.force()` when explicit writeback is required, and account for the filesystem and device's persistence guarantees. The particular example still calls `mappedByteBuffer.get(buffer)`, which copies mapped bytes into a Java array: memory mapping avoids the read-system-call copy, but this extra application copy remains. Processing the mapped buffer directly is necessary to avoid that array copy.
 
-[![mmap exposes file-backed pages to the process](assets/java-zero-copy-04.svg)](assets/java-zero-copy-04.svg)
+[![mmap: user memory shares the kernel page cache](assets/java-zero-copy-04.svg){: .diagram}](assets/java-zero-copy-04.svg)
 
 
 ### References
@@ -241,11 +241,11 @@ The mapping lets user-space loads and stores address file-backed pages that also
 [https://zhuanlan.zhihu.com/p/66595734](https://zhuanlan.zhihu.com/p/66595734)
 
 
-## Source version and reconstructed figures
+## Source version and figures
 
 The original Java socket, `transferTo`, buffered file reader, and mapped file reader examples are retained. `sendfile` targets file-to-socket transfer without application inspection; `mmap` provides file-backed memory for application processing. The original blanket claims about eliminating every CPU copy and immediate disk persistence have been qualified. These are illustrative snippets. The original server writes to a `BufferedOutputStream` without flushing, so a short echoed response can remain buffered; call `flush()` after a response. The clients do not read the echoed response, so sufficiently large transfers can deadlock under backpressure. Give the protocol an explicit end-of-file boundary (for example, a length header or `shutdownOutput()`), read responses concurrently when needed, and close streams/channels. A single `transferTo` can transfer fewer than the requested bytes; loop on its returned count, taking care to handle zero progress. The mapped example casts file length to `int` and is limited to a single mapping and Java-array-sized files; map large files in windows. Do not assume TCP preserves write boundaries.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+The figures are the author's original diagrams with English labels. The first figure originally came from a third-party source; it is redrawn here in the style of the others.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

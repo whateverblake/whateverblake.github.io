@@ -20,7 +20,7 @@ Netty exposes `ChannelInboundHandler` and `ChannelOutboundHandler` as the handle
 - Inbound events propagate from the head toward the tail, visiting the relevant inbound handlers.
 - Outbound operations propagate from the tail toward the head, visiting the relevant outbound handlers. A context-initiated operation begins relative to that context rather than always at the pipeline tail.
 
-[![Inbound and outbound traversal directions](assets/pipeline-01.svg)](assets/pipeline-01.svg)
+[![Inbound and outbound event directions through the pipeline](assets/pipeline-01.svg){: .diagram}](assets/pipeline-01.svg)
 
 ---
 ### Handler
@@ -249,7 +249,7 @@ invokeChannelRegistered(findContextInbound(MASK_CHANNEL_REGISTERED));
 ```
 
 The following diagram summarizes this flow. `XXX` denotes an event such as registered or added, and `YY` denotes its direction: inbound or outbound.
-[![Propagate an event across handler contexts](assets/pipeline-02.svg)](assets/pipeline-02.svg)
+[![Propagate an event across handler contexts](assets/pipeline-02.svg){: .diagram}](assets/pipeline-02.svg)
 
 ---
 
@@ -287,11 +287,11 @@ The following diagram summarizes this flow. `XXX` denotes an event such as regis
 ---
 This completes the pipeline walkthrough.
 
-## Source version and reconstructed figures
+## Source version and figures
 
 Pipeline traversal is callback propagation, not an automatic visit to every handler: a handler must forward an event when it wants propagation to continue. Outbound calls made through a context begin at the preceding outbound context; calls made through the channel or pipeline begin at the tail. Both lifecycle events and I/O operations participate in the pipeline.
 
-The original externally hosted images are replaced in their original positions by English source-derived diagrams or source cards. They are explanatory reconstructions, not recovered debugger screenshots.
+The figures are the author's original diagrams, with their labels translated into English.
 
 Source baseline: Netty 4.1.53.Final (released October 13, 2020).
 

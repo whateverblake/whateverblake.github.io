@@ -2,13 +2,13 @@
 <text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">ZOOKEEPER 3.6.2</text>
 <text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Transaction header fields</text>
 <rect x="34" y="133" width="932" height="203" rx="10" fill="#edf3fa" stroke="#d5dfeb"/>
-<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">class TxnHeader {</text>
-<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    long clientId;</text>
-<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    int cxid;</text>
-<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    long zxid;</text>
-<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    long time;</text>
-<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">    int type;</text>
-<text x="53" y="303" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace">}</text>
+<text x="53" y="159" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">class TxnHeader {</text>
+<text x="53" y="183" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">    long clientId;</text>
+<text x="53" y="207" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">    int cxid;</text>
+<text x="53" y="231" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">    long zxid;</text>
+<text x="53" y="255" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">    long time;</text>
+<text x="53" y="279" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">    int type;</text>
+<text x="53" y="303" font-size="15" fill="#182a42" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">}</text>
 <text x="34" y="374" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">Selected excerpt begins at source line 285; no runtime state is shown.</text>
 <text x="34" y="397" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">The body record depends on the operation type. This replaces the missing parsed-log screenshot.</text>
 <a href="https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-jute/src/main/resources/zookeeper.jute">

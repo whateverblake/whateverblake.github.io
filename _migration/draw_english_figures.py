@@ -306,7 +306,7 @@ flow('netty','recycler',1,'Recycler ownership and cross-thread queues',[
  ('Same-thread recycle','Push a handle directly onto its owning stack.'),
  ('Cross-thread recycle','Publish the handle through a WeakOrderQueue for the owning stack.'),
  ('WeakOrderQueue → Head → Link','Linked batches transfer handles back to Stack.elements.')], 'netty',N+'util/Recycler.java')
-code('netty','recycler',2,'DefaultHandle: object and ownership state','netty',N+'util/Recycler.java',r'    private static final class DefaultHandle',13,'Actual declarations replace the missing IntelliJ class screenshot.')
+code('netty','recycler',2,'DefaultHandle: object and ownership state','netty',N+'util/Recycler.java',r'    private static final class DefaultHandle',27,'Actual declarations replace the missing IntelliJ class screenshot.')
 code('netty','recycler',3,'Head: capacity accounting and the first Link','netty',N+'util/Recycler.java',r'        private static final class Head',8,'The head deliberately does not hold a reference to the Stack or WeakOrderQueue.')
 code('netty','recycler',4,'Link: a batch of recycled handles','netty',N+'util/Recycler.java',r'        static final class Link extends AtomicInteger',6,'AtomicInteger supplies the writer index; readIndex is the consumer’s position.')
 flow('netty','recycler',5,'Recycle an object back through its handle',[
@@ -331,7 +331,7 @@ fields('netty','recycler',8,'Scavenging dead cross-thread queues',[
  ('Unlinking','The original logic cannot unlink a queue without a predecessor.'),
  ('Version caveat','Queue management is implementation-specific; this diagram describes the pinned Recycler source.')], 'netty',N+'util/Recycler.java','Explanatory state labels replace runtime object addresses. A dead producer is not the same as an immediately collectible queue.')
 # OpenJDK reference handling: original images were code/debugger captures.
-code('netty','java-reference-processing',1,'Reference constructors select a queue','jdk',J+'java/lang/ref/Reference.java',r'    Reference\(T referent\) \{',10,'The referent is a specially handled reference field; registration with a queue is optional.')
+code('netty','java-reference-processing',1,'Reference constructors select a queue','jdk',J+'java/lang/ref/Reference.java',r'    Reference\(T referent\) \{',8,'The referent is a specially handled reference field; registration with a queue is optional.')
 fields('netty','java-reference-processing',2,'Registered queue versus no queue',[
  ('new WeakReference(object)','Constructor uses no application ReferenceQueue.'),
  ('new WeakReference(object, queue)','Associate this reference with the supplied queue.'),
@@ -346,8 +346,8 @@ flow('netty','java-reference-processing',4,'Move pending references to their que
  ('Special Cleaner path','Run Cleaner.clean for a Cleaner reference.'),
  ('Ordinary reference path','If its queue is not NULL, enqueue the Reference object.'),
  ('Application queue','Observe the enqueued reference through ReferenceQueue.poll / remove.')], 'jdk',J+'java/lang/ref/Reference.java','This describes OpenJDK 8. It is not a claim that System.gc always performs a collection or immediate enqueueing.')
-code('netty','java-reference-processing',5,'Reference Handler detects Cleaner references','jdk',J+'java/lang/ref/Reference.java',r'                c = r instanceof Cleaner',9,'Actual source around the Cleaner type check; no debugger values are shown.')
-code('netty','java-reference-processing',6,'Ordinary pending references are enqueued','jdk',J+'java/lang/ref/Reference.java',r'        ReferenceQueue<\? super Object> q = r.queue;',6,'Source-level replacement for the original queue-processing screenshot.')
+code('netty','java-reference-processing',5,'Reference Handler detects Cleaner references','jdk',J+'java/lang/ref/Reference.java',r'                if \(pending != null\) \{',17,'Actual source around the Cleaner type check; no debugger values are shown.')
+code('netty','java-reference-processing',6,'Ordinary pending references are enqueued','jdk',J+'java/lang/ref/Reference.java',r'        ReferenceQueue<\? super Object> q = r.queue;',3,'Source-level replacement for the original queue-processing screenshot.')
 fields('netty','java-reference-processing',7,'Use a conditional breakpoint to narrow observations',[
  ('Breakpoint','Reference.tryHandlePending at the pending-list handling path'),
  ('Example condition','pending instanceof WeakReference'),
@@ -385,7 +385,7 @@ class Drawing:
   for i,line in enumerate(textwrap.wrap(title,62)):self.text(34,77+i*32,line,27,INK,True)
  def text(self,x,y,text,size=18,color=INK,bold=False,mono=False,anchor='start'):
   if re.search(r'[\u3400-\u9fff]',text):raise ValueError('Non-English diagram text: '+text)
-  fam=' font-family="Menlo, Consolas, monospace"' if mono else ''
+  fam=' font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre"' if mono else ''
   self.parts.append(f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" font-weight="{700 if bold else 400}" text-anchor="{anchor}"{fam}>{escape(text)}</text>')
  def rect(self,x,y,w,h,fill='white',stroke='#d5dfeb',rx=10):self.parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" stroke="{stroke}"/>')
  def arrow(self,x1,y1,x2,y2):self.parts.append(f'<path d="M {x1} {y1} L {x2} {y2}" stroke="{BLUE}" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>')
@@ -409,13 +409,29 @@ def excerpt(s):
  selected=lines[start:start+s['data']['count']]
  selected=[line for line in selected if line.strip()]
  selected=textwrap.dedent('\n'.join(selected)).splitlines()
+ # Close any blocks the excerpt leaves open so the figure never ends mid-block.
+ opened=[]
+ for t in selected:
+  for ch in t:
+   if ch=='{':opened.append(len(t)-len(t.lstrip()))
+   elif ch=='}' and opened:opened.pop()
+ if opened:
+  selected.append(' '*(opened[-1]+4)+'// ...')
+  selected+=[' '*ind+'}' for ind in reversed(opened)]
  return selected,start+1,url
 
 manifest=json.loads((REPO/'_migration/article-manifest.json').read_text())
+# Figures rebuilt from the author's own draw.io diagrams (see drawio_tools/build_figures.py).
+ORIGINALS=json.loads((REPO/'_migration/original-figures.json').read_text())
 records=[]
 for a in manifest['articles']:
  for im in a['images']:
   key=(a['topic'],a['slug'],im['index'])
+  asset=f"{a['topic']}/{im['asset']}"
+  if asset in ORIGINALS:
+   o=ORIGINALS[asset]
+   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':asset,'title':o['title'],'kind':'original-diagram','source_diagram':o['source_diagram'],'region':o['region'],'drawio':f"_migration/drawio/{a['topic']}/{Path(im['asset']).stem}.drawio",'note':o['note'],'reconstruction':False})
+   continue
   if key not in SPECS:raise ValueError('Unspecified illustration '+str(key))
   s=SPECS[key];path=REPO/a['topic']/im['asset'];path.parent.mkdir(parents=True,exist_ok=True)
   source_path,url=source_info(s);line=None
@@ -466,4 +482,4 @@ for a in manifest['articles']:
   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':str(path.relative_to(REPO)),'title':s['title'],'kind':s['kind'],'version':VERSIONS[s['version']][0],'source_path':s['path'],'source_url':url,'source_line':line,'note':s['note'],'reconstruction':True})
 assert len(records)==69
 (REPO/'_migration/figure-provenance.json').write_text(json.dumps(records,indent=2)+'\n')
-print('Generated',len(records),'English SVG figures and source provenance records.')
+print('Generated',sum(r['reconstruction'] for r in records),'source-derived SVG figures; recorded provenance for',len(records),'figures.')
