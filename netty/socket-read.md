@@ -11,16 +11,17 @@ series_order: 4
 
 # How NioSocketChannel Reads Data
 
-The previous article followed how `NioSocketChannel` writes data. This article follows the corresponding read path. If one side sends `hello world`, how does the other side receive those bytes?
+If the other side sends `hello world`, how do those bytes reach your handler? This article follows the read path of `NioSocketChannel`, from the selector to `channelRead`, and then explains how Netty sizes its receive buffers. The [next article](socket-write.html) follows the write path.
 
-## Triggering a read event
-Client and server-side `NioSocketChannel` instances go through initialization and registration; a client also initiates a connection, while an accepted server-side socket is already connected. With reading enabled on an active channel, Netty registers interest in `OP_READ`. When bytes become available, the channel's event loop selects ready keys and processes them with `processSelectedKeys`. See [Netty's Thread Model](thread-model.html) for the event-loop implementation.
+> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated. The figure is the author's original diagram with English labels.
 
+## 1. A read event fires
 
-### processSelectedKeys
+Client and server channels are both initialized and registered; a client also connects, while an accepted server channel is already connected. Once a channel is active and reading is on, Netty registers interest in `OP_READ`. When bytes arrive, the channel's event loop selects the ready keys and handles them in `processSelectedKeys` (see [the thread model](thread-model.html)).
 
-```
+### `processSelectedKeys`
 
+```java
 // When selector instrumentation succeeds, selectedKeys is a SelectedSelectionKeySet and the optimized path is used.
 private void processSelectedKeys() {
         if (selectedKeys != null) {
@@ -59,14 +60,13 @@ private void processSelectedKeysOptimized() {
             }
         }
     }
-
 ```
 
-`processSelectedKey` performs the actual I/O-event dispatch.
-### processSelectedKey
+The actual dispatch happens in `processSelectedKey`.
 
-```
+### `processSelectedKey`
 
+```java
 private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
         // Obtain the channel's unsafe implementation.
         final AbstractNioChannel.NioUnsafe unsafe = ch.unsafe();
@@ -126,14 +126,13 @@ private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
             unsafe.close(unsafe.voidPromise());
         }
     }
-
 ```
 
-Now examine `unsafe.read`:
-### unsafe.read()
+## 2. Read the bytes
 
-```
+### `unsafe.read()`
 
+```java
 @Override
         public final void read() {
             final ChannelConfig config = config();
@@ -204,14 +203,13 @@ Now examine `unsafe.read`:
             }
         }
     }
-
 ```
 
-Examine `doReadBytes` and its internal call chain:
-### doReadBytes
+### `doReadBytes`
 
-```
+And its call chain:
 
+```java
   protected int doReadBytes(ByteBuf byteBuf) throws Exception {
         final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
          // Record the number of bytes this attempt can read.
@@ -242,35 +240,30 @@ Examine `doReadBytes` and its internal call chain:
             return -1;
         }
     }
-
 ```
 
-After reading bytes into a `ByteBuf`, Netty fires `channelRead`. A custom inbound handler receives the buffer and can apply the application's processing logic. TCP supplies a byte stream, so a single buffer need not correspond to a complete application message.
+After reading into a `ByteBuf`, Netty fires `channelRead`, and your inbound handler gets the buffer.
 
----
+> **Note:** TCP is a byte stream. One buffer is not one application message: a message can be split across buffers, or several can arrive in one. The [framing article](message-framing.html) deals with that.
 
-This completes the network-to-buffer read path.
+That is the path from the network to a buffer.
 
----
-Next, examine how Netty adapts the capacity of each receive buffer.
-The logic is called through `allocHandle.readComplete()`. Here is that method:
-### readComplete
+## 3. Size the next buffer
 
-```
+How big should the next receive buffer be? Netty adapts it to recent reads. The logic runs from `allocHandle.readComplete()`:
 
+### `readComplete`
+
+```java
    public void readComplete() {
             // totalBytesRead is the total read during this readiness-processing loop.
             record(totalBytesRead());
     }
-
 ```
 
+### `record`
 
-Here is `record`:
-### record
-
-```
-
+```java
  private void record(int actualReadBytes) {
             // SIZE_TABLE lists candidate receive-buffer capacities in ascending order.
            // Its values are described below.
@@ -295,25 +288,26 @@ Here is `record`:
                 decreaseNow = false;
             }
         }
-
 ```
 
-`SIZE_TABLE` is an `int` array containing 53 entries.
-Its values fall into two ranges:
-- First: multiples of 16 from 16 through 496, for 31 entries.
-- Second: powers of two from 512 through the largest positive `int` power of two, `2^30`, for 22 entries.
+`SIZE_TABLE` is an `int[]` with **53** candidate sizes in two ranges:
+
+| Range | Values | Entries |
+| --- | --- | --- |
+| Small | multiples of 16, from 16 to 496 | 31 |
+| Large | powers of two, from 512 to 2^30 | 22 |
+
 [![Adaptive receive buffer SIZE_TABLE](assets/socket-read-01.svg){: .diagram}](assets/socket-read-01.svg)
----
-That concludes this walkthrough. Thank you for reading.
 
+`record` moves through this table: it grows the buffer quickly after a full read and shrinks it slowly after small ones.
 
-## Source version and figures
+## Notes on the source
 
-The default adaptive receive allocator uses minimum 64, initial 1024, and maximum 65536 bytes. Its static size table has 53 entries, although an individual allocator only uses its configured index range. A read-loop “message” here means a delivered buffer, not an application-level TCP message. Selector key-set instrumentation can fail or be disabled, in which case Netty uses the plain path.
+- The default adaptive allocator uses a minimum of **64**, an initial size of **1024** and a maximum of **65536** bytes. Each allocator only uses the part of the 53-entry table inside its own range.
+- A "message" in the read loop means one delivered buffer, not an application message.
+- If Netty cannot instrument the selector's key set (or it is disabled), it uses the plain, non-optimized path.
 
-The figures are the author's original diagrams, with their labels translated into English.
-
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [AbstractNioByteChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java)
 - [NioSocketChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java)

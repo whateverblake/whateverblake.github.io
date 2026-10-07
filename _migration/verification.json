@@ -4,7 +4,7 @@
     "zookeeper": 12,
     "netty": 11
   },
-  "figures": 69,
+  "figures": 72,
   "local_build": "Jekyll3.10.0",
   "errors": [],
   "article_coverage": [
@@ -32,7 +32,7 @@
     {
       "article": "zookeeper/standalone-server-startup.md",
       "original_code_blocks": 19,
-      "english_code_blocks": 19,
+      "english_code_blocks": 15,
       "illustrations": 3,
       "built": "/tmp/jianshu-english-site/zookeeper/standalone-server-startup.html"
     },
@@ -46,7 +46,7 @@
     {
       "article": "zookeeper/expiry-queue.md",
       "original_code_blocks": 4,
-      "english_code_blocks": 4,
+      "english_code_blocks": 6,
       "illustrations": 1,
       "built": "/tmp/jianshu-english-site/zookeeper/expiry-queue.html"
     },
@@ -67,14 +67,14 @@
     {
       "article": "zookeeper/data-recovery.md",
       "original_code_blocks": 13,
-      "english_code_blocks": 13,
+      "english_code_blocks": 11,
       "illustrations": 7,
       "built": "/tmp/jianshu-english-site/zookeeper/data-recovery.html"
     },
     {
       "article": "zookeeper/leader-election.md",
       "original_code_blocks": 21,
-      "english_code_blocks": 21,
+      "english_code_blocks": 19,
       "illustrations": 3,
       "built": "/tmp/jianshu-english-site/zookeeper/leader-election.html"
     },
@@ -102,14 +102,14 @@
     {
       "article": "netty/thread-model.md",
       "original_code_blocks": 9,
-      "english_code_blocks": 9,
+      "english_code_blocks": 10,
       "illustrations": 3,
       "built": "/tmp/jianshu-english-site/netty/thread-model.html"
     },
     {
       "article": "netty/server-startup.md",
       "original_code_blocks": 19,
-      "english_code_blocks": 19,
+      "english_code_blocks": 22,
       "illustrations": 0,
       "built": "/tmp/jianshu-english-site/netty/server-startup.html"
     },
@@ -130,7 +130,7 @@
     {
       "article": "netty/socket-write.md",
       "original_code_blocks": 14,
-      "english_code_blocks": 14,
+      "english_code_blocks": 15,
       "illustrations": 0,
       "built": "/tmp/jianshu-english-site/netty/socket-write.html"
     },
@@ -144,21 +144,21 @@
     {
       "article": "netty/pooled-memory.md",
       "original_code_blocks": 32,
-      "english_code_blocks": 32,
+      "english_code_blocks": 34,
       "illustrations": 13,
       "built": "/tmp/jianshu-english-site/netty/pooled-memory.html"
     },
     {
       "article": "netty/recycler.md",
       "original_code_blocks": 16,
-      "english_code_blocks": 16,
+      "english_code_blocks": 18,
       "illustrations": 8,
       "built": "/tmp/jianshu-english-site/netty/recycler.html"
     },
     {
       "article": "netty/java-reference-processing.md",
       "original_code_blocks": 6,
-      "english_code_blocks": 6,
+      "english_code_blocks": 10,
       "illustrations": 7,
       "built": "/tmp/jianshu-english-site/netty/java-reference-processing.html"
     },

@@ -11,17 +11,15 @@ series_order: 5
 
 # How NioSocketChannel Writes and Flushes Data
 
+This article follows how a Netty channel sends bytes: `writeAndFlush` travels through the pipeline, `write` queues the message in a `ChannelOutboundBuffer`, and `flush` turns the queue into NIO buffers and writes them to the socket, with backpressure along the way.
 
-## Introduction
-This article follows how one endpoint in a Netty connection writes bytes to the network.
-## Scope
-The analysis uses the NIO transport.
+> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated.
 
-## Writing bytes to the network
-Assume a custom handler writes `hello world` to its peer from `channelActive`, using its context:
+## 1. Start a write
 
-```
+Say a handler sends `hello world` from `channelActive` through its context:
 
+```java
 public class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -29,15 +27,17 @@ public class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         ctx.writeAndFlush(Unpooled.copiedBuffer("hello world".getBytes()));
     }
 }
-
 ```
 
-Follow the `ctx.writeAndFlush` call chain.
-writeAndFlush(msg) --> writeAndFlush(msg,promise) --> write(msg,flush,promise)
-The methods in this chain belong to `ChannelHandlerContext`; here is the internal `write` method:
+Follow `ctx.writeAndFlush`:
 
+```text
+writeAndFlush(msg) → writeAndFlush(msg, promise) → write(msg, flush, promise)
 ```
 
+All three are `ChannelHandlerContext` methods. The internal `write`:
+
+```java
 // In this example, flush is true.
 private void write(Object msg, boolean flush, ChannelPromise promise) {
         ObjectUtil.checkNotNull(msg, "msg");
@@ -78,15 +78,11 @@ private void write(Object msg, boolean flush, ChannelPromise promise) {
             }
         }
     }
-
 ```
 
-For pipeline propagation, see [Netty's Event Pipeline](pipeline.html).
-For executor and thread affinity, see [Netty's Thread Model](thread-model.html).
-Here is `AbstractChannelHandlerContext.invokeWriteAndFlush`:
+Pipeline traversal is covered in [the pipeline article](pipeline.html); executor and thread affinity in [the thread model](thread-model.html). `AbstractChannelHandlerContext.invokeWriteAndFlush`:
 
-```
-
+```java
 void invokeWriteAndFlush(Object msg, ChannelPromise promise) {
         if (invokeHandler()) {
            // Invoke the context's associated handler.write callback.
@@ -97,13 +93,11 @@ void invokeWriteAndFlush(Object msg, ChannelPromise promise) {
             writeAndFlush(msg, promise);
         }
     }
-
 ```
 
-`HeadContext` also implements the handler interfaces and reaches the underlying transport. Examine its `write` and `flush` callbacks.
+The write travels toward the head. `HeadContext` is where the pipeline meets the transport. Its `write` and `flush`:
 
-```
-
+```java
  @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
             unsafe.write(msg, promise);
@@ -113,14 +107,15 @@ void invokeWriteAndFlush(Object msg, ChannelPromise promise) {
         public void flush(ChannelHandlerContext ctx) {
             unsafe.flush();
         }
-
 ```
 
-These delegate to `unsafe`. Start with `unsafe.write`:
-### unsafe.write
+Both delegate to `unsafe`.
 
-```
+## 2. `write`: queue the message
 
+### `unsafe.write`
+
+```java
  @Override
         public final void write(Object msg, ChannelPromise promise) {
             assertEventLoop();
@@ -158,13 +153,15 @@ These delegate to `unsafe`. Start with `unsafe.write`:
             // Append the message to outboundBuffer.
             outboundBuffer.addMessage(msg, size, promise);
         }
-
 ```
 
-`ChannelOutboundBuffer` queues messages before transport writes. Before examining `addMessage`, look at its important fields.
+Messages wait in a `ChannelOutboundBuffer` until they are flushed. It is a linked list of `Entry` nodes with three pointers:
 
-```
+[![ChannelOutboundBuffer: a linked list of entries. flushedEntry points to the first entry ready to write, unflushedEntry to the first entry written but not yet flushed, tailEntry to the last. write() appends at the tail; flush() moves the unflushed entries into the flushed range; the socket write consumes from flushedEntry.](assets/socket-write-01.svg)](assets/socket-write-01.svg)
 
+Its fields:
+
+```java
 public final class ChannelOutboundBuffer {
     // Assuming a 64-bit JVM:
     //  - 16 bytes object header
@@ -215,14 +212,11 @@ CHANNEL_OUTBOUND_BUFFER_ENTRY_OVERHEAD =
     // Bit mask recording unwritable conditions.
     @SuppressWarnings("UnusedDeclaration")
     private volatile int unwritable;
-
 ```
 
-Now examine `ChannelOutboundBuffer.addMessage`:
-### addMessage
+### `addMessage`
 
-```
-
+```java
 public void addMessage(Object msg, int size, ChannelPromise promise) {
        // Wrap the message in a recyclable Entry node.
        // See the Recycler article for Netty's object reuse mechanism.
@@ -248,16 +242,17 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
       // Update total pending outbound bytes.
         incrementPendingOutboundBytes(entry.pendingSize, false);
     }
-
 ```
 
-`unsafe.write` appends application messages to this linked outbound queue. Netty configures high and low watermarks. When pending bytes exceed the high watermark, the buffer becomes unwritable and fires `channelWritabilityChanged`. `incrementPendingOutboundBytes` implements that transition. These watermarks signal backpressure; they do not prevent application code from appending more messages.
+`unsafe.write` appends each message to this list.
 
-Next, follow how queued data is flushed to the transport.
-### unsafe.flush
+> **Backpressure:** Netty tracks the queued bytes against a high and a low watermark. Above the high watermark the channel becomes **unwritable** and fires `channelWritabilityChanged` (see `incrementPendingOutboundBytes`). This is only a signal: your code can still append more, so check `isWritable()`.
 
-```
+## 3. `flush`: send the queue
 
+### `unsafe.flush`
+
+```java
  @Override
         public final void flush() {
             assertEventLoop();
@@ -271,14 +266,13 @@ Next, follow how queued data is flushed to the transport.
             // Write eligible queued data to the transport.
             flush0();
         }
-
 ```
 
-First examine `outboundBuffer.addFlush`:
-### outboundBuffer.addFlush()
+### `outboundBuffer.addFlush()`
 
-```
+First `addFlush` marks every unflushed entry as flushed:
 
+```java
  public void addFlush() {
         // There is no need to process all entries if there was already a flush before and no new messages
         // where added in the meantime.
@@ -306,15 +300,13 @@ First examine `outboundBuffer.addFlush`:
             unflushedEntry = null;
         }
     }
-
 ```
 
+### `flush0`
 
-### flush0
-`flush0` enters the transport-write path:
+Then `flush0` enters the transport write path:
 
-```
-
+```java
 protected void flush0() {
          // Avoid reentrant flushing while inFlush0 is already true.
             if (inFlush0) {
@@ -372,14 +364,11 @@ protected void flush0() {
                 inFlush0 = false;
             }
         }
-
 ```
 
-Here is `doWrite`:
-### doWrite
+### `doWrite`
 
-```
-
+```java
 protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         // Obtain the underlying Java SocketChannel.
         SocketChannel ch = javaChannel();
@@ -467,14 +456,13 @@ protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         // A negative spin budget denotes no-progress handling; an exhausted budget with progress schedules another flush task.
         incompleteWrite(writeSpinCount < 0);
     }
-
 ```
 
-`ChannelOutboundBuffer.nioBuffers` exposes eligible queued messages as NIO buffers so `SocketChannel` can write them directly.
-### nioBuffers
+### `nioBuffers`
 
-```
+`ChannelOutboundBuffer.nioBuffers` exposes the flushed messages as an array of NIO `ByteBuffer`s, so one gathering write can send several messages:
 
+```java
   // maxCount bounds the number of ByteBuffers included in this batch.
   // maxBytes bounds the batch's target byte size, while permitting at least one buffer to make progress.
  public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
@@ -558,17 +546,17 @@ protected void doWrite(ChannelOutboundBuffer in) throws Exception {
 
         return nioBuffers;
     }
-
 ```
 
-`SocketChannel` writes the resulting `ByteBuffer[]` to the transport.
+`SocketChannel` then writes that `ByteBuffer[]`.
 
-What happens to an entry after its bytes are written?
-### removeBytes
-An entry may be consumed completely or only partially. `removeBytes` maintains the queue accordingly.
+## 4. After the socket write
 
-```
+### `removeBytes`
 
+The write may consume entries fully or only partly. `removeBytes` updates the queue:
+
+```java
  public void removeBytes(long writtenBytes) {
         for (;;) {
              // Obtain the current entry's message.
@@ -607,17 +595,15 @@ An entry may be consumed completely or only partially. `removeBytes` maintains t
        // Clear the selected NIO-buffer array after processing.
         clearNioBuffers();
     }
-
 ```
 
-Removing an entry reduces `totalPendingSize` by its pending-byte estimate and overhead. If the total falls below the low watermark, Netty clears the corresponding unwritable bit. When this makes the channel writable again, it fires `channelWritabilityChanged`.
+Removing an entry lowers `totalPendingSize` by its size and overhead. If the total drops below the **low** watermark, the channel becomes writable again and fires `channelWritabilityChanged`.
 
-Finally examine `incompleteWrite`:
+### `incompleteWrite`
 
-### incompleteWrite
+If not everything was written:
 
-```
-
+```java
   protected final void incompleteWrite(boolean setOpWrite) {
 
         // Did not write completely.
@@ -639,19 +625,17 @@ Finally examine `incompleteWrite`:
             eventLoop().execute(flushTask);
         }
     }
-
 ```
 
+That is the whole write path.
 
----
-This completes the write-path walkthrough.
+## Notes on the source
 
+- A successful socket write means the **local** transport accepted the bytes, not that the peer application read them.
+- Writes can be partial. `incompleteWrite(true)` waits for the selector to report write readiness (no progress was made). `incompleteWrite(false)` schedules another flush because the spin budget ran out. The original article described the `false` branch as "all data flushed"; that was wrong.
+- A composite buffer can turn into several NIO buffers, and the NIO buffer array can grow.
 
-## Source version and reconstructed figures
-
-A successful socket write means bytes were accepted by the local transport, not that the peer application consumed them. Writes can be partial. `incompleteWrite(true)` waits for selector write readiness after no progress; `incompleteWrite(false)` schedules another flush after the spin budget is exhausted. The original description of the false branch as “all data flushed” was incorrect. Composite buffers can produce multiple NIO views, and array expansion is not universally impossible.
-
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [AbstractChannelHandlerContext.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java)
 - [AbstractChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannel.java)

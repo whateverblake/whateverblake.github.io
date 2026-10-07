@@ -11,39 +11,35 @@ description: "Configure and debug three ZooKeeper peers on one computer using se
 
 # Setting Up a Three-Node ZooKeeper Ensemble
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods.
+The earlier articles read a standalone server. The next ones follow a ZooKeeper **ensemble**: leader election and replication. This article sets up three peers on one computer so you can debug all of them.
 
-## Introduction
-The earlier [ZooKeeper source reading articles](index.html) examined the standalone server. Next, a series of articles follows ZooKeeper's ensemble source code. This opening article explains how to create a distributed debugging environment on one computer.
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`.
 
-## Set up an ensemble debugging environment
-We will run three ZooKeeper peers. The setup is straightforward.
+## 1. Prepare three peers
 
-1. Make two copies of the source project used earlier, giving their root directories distinct names, such as `zookeeper_2` and `zookeeper_3`. Alternatively, use three IDE run configurations against the same compiled source tree; each process still needs its own configuration and data directory.
+1. **Give each peer its own process.** Either copy the source project twice (for example `zookeeper_2` and `zookeeper_3`), or keep one compiled tree and create three IDE run configurations. Each process still needs its own config file and data directory.
 
-2. In each peer's `dataDir`, create a file named `myid`, containing that peer's server ID. Use `1`, `2`, and `3` respectively.
+2. **Give each peer an ID.** In each peer's `dataDir`, create a file named `myid` that contains the server ID: `1`, `2` or `3`.
 
-3. Edit each project's `zoo.cfg`. Three parts need attention:
-### Change clientPort
-Since all three instances run on the same computer, give them distinct client ports, for example `2181`, `2182`, and `2183`.
-### Change dataDir
-Set the location where each peer stores data. Since the peers share a computer, use distinct directories, for example `/tmp/zk-debug/peer1`, `/tmp/zk-debug/peer2`, and `/tmp/zk-debug/peer3`.
-### Add server.n = ip:quorum_port:election_port
-Add the same ensemble membership list to all three configurations. The first port is the quorum communication port, on which a peer accepts learner connections when acting as leader. The second is the election port used to exchange votes. Here is the original local test environment's membership list:
+3. **Edit each `zoo.cfg`.** Three settings matter:
+
+| Setting | Why it changes | Example |
+| --- | --- | --- |
+| `clientPort` | All peers run on one machine, so each needs its own client port. | `2181`, `2182`, `2183` |
+| `dataDir` | Each peer needs its own data directory. | `/tmp/zk-debug/peer1`, `peer2`, `peer3` |
+| `server.n=ip:quorum_port:election_port` | The membership list. Identical in all three files. | see below |
+
+In `server.n`, the **first port** is the quorum port: a leader accepts follower connections on it. The **second port** is the election port, used to exchange votes. The original test cluster used:
 
 ```properties
-
 server.1=127.0.0.1:2888:3888
 server.2=127.0.0.1:2777:3777
 server.3=127.0.0.1:2666:3666
-
 ```
 
-
-The three files can share these membership lines while each sets its own `clientPort` and `dataDir`. For example, the first peer's complete minimal debugging configuration is:
+The three files share these membership lines and differ only in `clientPort` and `dataDir`. A complete minimal config for peer 1:
 
 ```properties
-
 tickTime=2000
 initLimit=10
 syncLimit=5
@@ -53,27 +49,27 @@ server.1=127.0.0.1:2888:3888
 server.2=127.0.0.1:2777:3777
 server.3=127.0.0.1:2666:3666
 admin.enableServer=false
-
 ```
 
+For peer 2 use `clientPort=2182` and `dataDir=/tmp/zk-debug/peer2`; for peer 3 use `2183` and `/tmp/zk-debug/peer3`.
 
-For peer 2, set `clientPort=2182` and `dataDir=/tmp/zk-debug/peer2`; for peer 3, use `2183` and `/tmp/zk-debug/peer3`. Keep the three `server.n` lines identical. `initLimit` allows ten ticks for initial learner synchronization, while `syncLimit` defines the tick allowance for synchronization during normal operation. Disable the optional AdminServer in this local example so all three processes do not compete for its default HTTP port; alternatively, give each process a distinct `admin.serverPort`.
+- `initLimit` gives followers ten ticks for their first synchronization with the leader.
+- `syncLimit` is the tick allowance for synchronization during normal operation.
+- The optional AdminServer is turned off so the three processes do not fight over its default HTTP port. Alternatively, give each one a different `admin.serverPort`.
 
-Create the directories and identity files before starting the processes:
+Create the directories and `myid` files before starting anything:
 
 ```bash
-
 mkdir -p /tmp/zk-debug/peer1 /tmp/zk-debug/peer2 /tmp/zk-debug/peer3
 printf '1\n' > /tmp/zk-debug/peer1/myid
 printf '2\n' > /tmp/zk-debug/peer2/myid
 printf '3\n' > /tmp/zk-debug/peer3/myid
-
 ```
 
+Running all three peers on one computer makes their interaction easy to watch in a debugger. The `myid` and membership parsing is in [`QuorumPeerConfig`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeerConfig.java).
 
-The local three-process setup is useful for source debugging; the original article uses one computer to make the interaction easy to inspect. The `myid` and membership parsing behavior comes from the pinned [`QuorumPeerConfig`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeerConfig.java).
+## 2. Start the peers
 
-## Start the peers
-Find `org.apache.zookeeper.server.quorum.QuorumPeerMain`, set its program argument to that process's `zoo.cfg` path, and run its `main` method. Repeat for each peer, then begin debugging the ensemble source code. The separate configuration paths prevent all three processes from reading the same `myid` or binding the same client port.
+Run `org.apache.zookeeper.server.quorum.QuorumPeerMain` with that peer's `zoo.cfg` path as the program argument. Repeat for each peer. Because each process has its own config path, they never read the same `myid` or bind the same client port.
 
-With two of the three voting peers running, the standard majority configuration can elect a leader. Use the [leader election article](leader-election.html) to place breakpoints in `FastLeaderElection.lookForLeader`, then follow [leader/follower initialization](leader-follower-initialization.html). Startup is implemented by the pinned [`QuorumPeerMain`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeerMain.java).
+Two running peers out of three are a majority, which is enough to elect a leader. To follow that, put breakpoints in `FastLeaderElection.lookForLeader` using the [leader election article](leader-election.html), then continue with [leader and follower initialization](leader-follower-initialization.html). Startup code: [`QuorumPeerMain`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeerMain.java).

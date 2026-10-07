@@ -1,0 +1,20 @@
+{
+  "netty/assets/server-startup-01.svg": {
+    "article": "server-startup",
+    "topic": "netty",
+    "title": "How a Netty server starts",
+    "note": "New overview diagram drawn by netty/assets/draw_diagrams.py; the original article had no figure here."
+  },
+  "netty/assets/socket-write-01.svg": {
+    "article": "socket-write",
+    "topic": "netty",
+    "title": "ChannelOutboundBuffer: write queues, flush sends",
+    "note": "New diagram drawn by netty/assets/draw_diagrams.py; the original article had no figure here."
+  },
+  "netty/assets/message-framing-01.svg": {
+    "article": "message-framing",
+    "topic": "netty",
+    "title": "TCP keeps bytes, not boundaries",
+    "note": "New diagram drawn by netty/assets/draw_diagrams.py; the original article had no figure here."
+  }
+}

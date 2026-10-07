@@ -423,6 +423,8 @@ def excerpt(s):
 manifest=json.loads((REPO/'_migration/article-manifest.json').read_text())
 # Figures rebuilt from the author's own draw.io diagrams (see drawio_tools/build_figures.py).
 ORIGINALS=json.loads((REPO/'_migration/original-figures.json').read_text())
+# Card figures replaced by inline tables, code blocks or steps, or redrawn elsewhere.
+CONVERTED=json.loads((REPO/'_migration/converted-figures.json').read_text())
 records=[]
 for a in manifest['articles']:
  for im in a['images']:
@@ -431,6 +433,10 @@ for a in manifest['articles']:
   if asset in ORIGINALS:
    o=ORIGINALS[asset]
    records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':asset,'title':o['title'],'kind':'original-diagram','source_diagram':o['source_diagram'],'region':o['region'],'drawio':f"_migration/drawio/{a['topic']}/{Path(im['asset']).stem}.drawio",'note':o['note'],'reconstruction':False})
+   continue
+  if asset in CONVERTED:
+   c=CONVERTED[asset]
+   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':asset if c['replacement']=='diagram' else None,'title':SPECS[key]['title'],'kind':'inline-'+c['replacement'] if c['replacement']!='diagram' else 'diagram','note':c['note'],'reconstruction':c['replacement']=='diagram'})
    continue
   if key not in SPECS:raise ValueError('Unspecified illustration '+str(key))
   s=SPECS[key];path=REPO/a['topic']/im['asset'];path.parent.mkdir(parents=True,exist_ok=True)
@@ -480,6 +486,9 @@ for a in manifest['articles']:
   else:raise ValueError(s['kind'])
   d.save(path,url)
   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':str(path.relative_to(REPO)),'title':s['title'],'kind':s['kind'],'version':VERSIONS[s['version']][0],'source_path':s['path'],'source_url':url,'source_line':line,'note':s['note'],'reconstruction':True})
-assert len(records)==69
+# Figures added in the English edition where the original article had none.
+for asset,info in json.loads((REPO/'_migration/added-figures.json').read_text()).items():
+ records.append({'article':info['article'],'topic':info['topic'],'image_index':None,'asset':asset,'title':info['title'],'kind':'diagram-added','note':info['note'],'reconstruction':False})
+assert len(records)==69+3
 (REPO/'_migration/figure-provenance.json').write_text(json.dumps(records,indent=2)+'\n')
-print('Generated',sum(r['reconstruction'] for r in records),'source-derived SVG figures; recorded provenance for',len(records),'figures.')
+print('Generated',sum(r['kind'] in ('flow','fields','code','tree','bits') for r in records),'source-derived SVG figures; recorded provenance for',len(records),'figures.')

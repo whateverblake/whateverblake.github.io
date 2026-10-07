@@ -11,16 +11,13 @@ series_order: 2
 
 # Following Netty Server Startup
 
-## Introduction
-We will use `EchoServer` from Netty's examples module to follow the startup of a server built on Netty.
+This article follows a Netty server from `bind(port)` to the moment it accepts connections, using `EchoServer` from Netty's examples module.
 
-## Scope
-All of the following analysis uses the NIO transport.
+> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated.
 
-## A typical server startup example
+## 1. A typical server
 
-```
-
+```java
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         final EchoServerHandler serverHandler = new EchoServerHandler();
@@ -49,35 +46,38 @@ All of the following analysis uses the NIO transport.
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
-
 ```
 
-A Netty server normally contains configuration similar to this example. Here are its important pieces.
-- bossGroup
-In the classic NIO model, an acceptor handles connection requests. In Netty, `bossGroup` supplies the event loop for this work. A simple server commonly creates the boss group with one thread.
-- workerGroup
-Each accepted connection becomes a socket channel assigned to an event loop. That event loop handles its subsequent I/O events. `workerGroup` supplies these child-channel event loops. See [Netty's Thread Model](thread-model.html) for a detailed explanation.
+Almost every Netty server looks like this. The pieces:
 
-- ServerBootstrap
-`ServerBootstrap` is the server bootstrap class. Its configuration methods include:
-1. `group` sets the acceptor and worker groups.
-2. `channel` sets the server channel type. `NioServerSocketChannel` wraps Java NIO's `ServerSocketChannel`.
-3. `option` sets options on the listening server channel.
-4. `childOption` sets options on accepted socket channels.
-5. `handler` installs a handler on the listening channel's pipeline.
-6. `childHandler` installs the initializer or handler for accepted channels' pipelines.
+| Piece | Job |
+| --- | --- |
+| `bossGroup` | Event loops that accept connections (the classic NIO **acceptor**). One thread is usually enough. |
+| `workerGroup` | Event loops for accepted channels. Each accepted channel is bound to one of them for its whole life. See [the thread model](thread-model.html). |
 
-## The server startup sequence
-The entry point is `serverBootstrap.bind(port)`. Binding contains two main parts:
-- initAndRegister
-Create, initialize, and register the server channel; we will examine those steps below.
+`ServerBootstrap` is the server's builder:
 
-- doBind
-Bind the listening channel to the specified address and port.
-### initAndRegister
+| Method | Sets |
+| --- | --- |
+| `group` | The boss and worker groups. |
+| `channel` | The server channel type. `NioServerSocketChannel` wraps Java NIO's `ServerSocketChannel`. |
+| `option` | Options on the listening channel. |
+| `childOption` | Options on accepted channels. |
+| `handler` | A handler on the listening channel's pipeline. |
+| `childHandler` | The initializer or handler for accepted channels' pipelines. |
 
-```
+## 2. The startup sequence
 
+Everything starts with `serverBootstrap.bind(port)`, which has two parts:
+
+1. **`initAndRegister`**: create, initialize and register the server channel.
+2. **`doBind`**: bind that channel to the address and port.
+
+[![Netty server startup: bind() runs initAndRegister on the main thread (create the NioServerSocketChannel, init its pipeline), registers it on the boss event loop, then doBind0 runs bind through the pipeline to HeadContext and unsafe.bind; channelActive triggers doBeginRead, which adds OP_ACCEPT.](assets/server-startup-01.svg)](assets/server-startup-01.svg)
+
+### `initAndRegister`
+
+```java
 // The future return value allows registration to complete asynchronously.
 final ChannelFuture initAndRegister() {
         Channel channel = null;
@@ -119,31 +119,28 @@ final ChannelFuture initAndRegister() {
 
         return regFuture;
     }
-
 ```
 
-For a server, `initAndRegister` performs three central steps:
+For a server it does three things:
+
 1. Create the `NioServerSocketChannel`.
 2. Initialize it.
-3. Register it.
+3. Register it with an event loop.
 
-Examine these steps individually.
-- #### Creating NioServerSocketChannel
-The channel factory uses reflection to call the channel class's no-argument constructor.
+## 3. Create the channel
 
-```
+The channel factory calls the channel class's no-argument constructor by reflection:
 
+```java
   public NioServerSocketChannel() {
         // DEFAULT_SELECTOR_PROVIDER is the static SelectorProvider used by this channel.
         this(newSocket(DEFAULT_SELECTOR_PROVIDER));
     }
-
 ```
 
-`newSocket` creates the underlying Java `ServerSocketChannel`, illustrating how Netty's channel wraps Java NIO.
+`newSocket` opens the underlying Java `ServerSocketChannel`. This is where Netty's channel wraps Java NIO:
 
-```
-
+```java
 private static ServerSocketChannel newSocket(SelectorProvider provider) {
         try {
             /**
@@ -161,13 +158,11 @@ private static ServerSocketChannel newSocket(SelectorProvider provider) {
                     "Failed to open a server socket.", e);
         }
     }
-
 ```
 
-Next, initialize the important fields on the channel and its superclasses.
+Then the constructor fills in the fields of the channel and its superclasses:
 
-```
-
+```java
 public NioServerSocketChannel(ServerSocketChannel channel) {
        // Initialize the superclass.
         super(null, channel, SelectionKey.OP_ACCEPT);
@@ -175,18 +170,13 @@ public NioServerSocketChannel(ServerSocketChannel channel) {
        // It includes receive-loop settings and the receive-buffer allocation policy.
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }
-
 ```
 
-Here is the initialization performed by the superclass layers.
+Each superclass layer adds its part:
 
-> **AbstractNioChannel**
-> - Store the underlying server channel in `ch`.
-> - Set `readInterestOp` to `OP_ACCEPT`, whose bit value is 16.
-> - Configure the underlying channel as nonblocking.
+**`AbstractNioChannel`** stores the Java channel in `ch`, sets `readInterestOp` to `OP_ACCEPT` (bit value 16) and makes the channel non-blocking:
 
-```
-
+```java
 protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
         super(parent);
         this.ch = ch;
@@ -204,34 +194,26 @@ protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInter
             throw new ChannelException("Failed to enter non-blocking mode.", e);
         }
     }
-
 ```
 
+**`AbstractChannel`** creates the `NioMessageUnsafe` that performs the low-level operations, and the channel's `DefaultChannelPipeline`:
 
-> __AbstractChannel__
-> - Create `NioMessageUnsafe`, the implementation that drives the low-level channel operations.
-> - Create the channel's `DefaultChannelPipeline`.
-
-```
-
+```java
  protected AbstractChannel(Channel parent) {
         this.parent = parent;
         id = newId();
         unsafe = newUnsafe();
         pipeline = newChannelPipeline();
     }
-
 ```
 
-The server channel is now constructed. See [Netty's Event Pipeline](pipeline.html) for the pipeline implementation.
+The server channel now exists. See [the pipeline article](pipeline.html) for how its pipeline works.
 
+## 4. Initialize it: `init`
 
----
-## Initializing NioServerSocketChannel: init
-Here is `ServerBootstrap.init`:
+`ServerBootstrap.init`:
 
-```
-
+```java
 void init(Channel channel) {
         setChannelOptions(channel, newOptionsArray(), logger);
         setAttributes(channel, attrs0().entrySet().toArray(EMPTY_ATTRIBUTE_ARRAY));
@@ -265,16 +247,15 @@ void init(Channel channel) {
             }
         });
     }
-
 ```
 
-The main purpose is to use a `ChannelInitializer` to install two handlers on the server pipeline:
-1. The server handler configured by the application.
+Its main job is to install, through a `ChannelInitializer`, two handlers on the server pipeline:
 
-2. Netty's built-in `ServerBootstrapAcceptor`. This inbound handler configures accepted `NioSocketChannel` instances with the child options and attributes, installs `childHandler`, and registers them with `childGroup`.
+1. the server handler your application configured, and
 
-```
+2. Netty's own **`ServerBootstrapAcceptor`**. This inbound handler takes every accepted `NioSocketChannel`, applies the child options and attributes, adds `childHandler`, and registers the channel with the worker group:
 
+```java
 public void channelRead(ChannelHandlerContext ctx, Object msg) {
             // For this server, msg is an accepted NioSocketChannel.
 
@@ -299,17 +280,15 @@ public void channelRead(ChannelHandlerContext ctx, Object msg) {
                 forceClose(child, t);
             }
         }
-
 ```
 
+The two are added at different times. `ServerBootstrapAcceptor` is added by a task submitted to the listening channel's event loop. During `init` the channel is not registered yet, so the handler-added callbacks wait as pending callbacks. Registration runs them later, and only then is the acceptor added.
 
-The two handlers are installed differently. `ServerBootstrapAcceptor` is added by a runnable submitted to the listening channel's event loop. During `init`, the channel has not registered yet, so handler-added callbacks are retained as pending callbacks. Registration later invokes those callbacks, and initialization schedules the acceptor insertion.
+## 5. Register it
 
-## Registering NioServerSocketChannel
-Registration selects an event loop from `bossGroup` and associates the server channel with it. A simple boss group normally has one event loop. The final operation is `unsafe.register`; its source follows.
+Registration picks an event loop from `bossGroup` (usually the only one) and binds the server channel to it. It ends in `unsafe.register`:
 
-```
-
+```java
  public final void register(EventLoop eventLoop, final ChannelPromise promise) {
             ObjectUtil.checkNotNull(eventLoop, "eventLoop");
             if (isRegistered()) {
@@ -345,16 +324,15 @@ Registration selects an event loop from `bossGroup` and associates the server ch
                 }
             }
         }
-
 ```
 
-Submitting this registration task starts the event-loop thread if needed. [Netty's Thread Model](thread-model.html) explains thread startup.
-- register0
-`register0` executes on the listening channel's event-loop thread.
-Here is its source:
+Submitting the registration task starts the event loop's thread if it is not running yet ([thread model](thread-model.html) explains how).
 
-```
+### `register0`
 
+`register0` runs on the listening channel's event loop:
+
+```java
  private void register0(ChannelPromise promise) {
             try {
                 // check if the channel is still open as it could be closed in the mean time when the register
@@ -422,19 +400,15 @@ protected void doRegister() throws Exception {
             }
         }
     }
-
 ```
 
+The channel is now created, initialized and registered.
 
-The channel is now initialized and registered.
+## 6. Bind the address: `doBind0`
 
----
-Next, examine how it binds to the local address.
-## doBind0
-`doBind0` submits a task to the channel's event loop that binds the channel to the specified address and port.
+`doBind0` submits a task to the channel's event loop that binds it to the address and port:
 
-```
-
+```java
  private static void doBind0(
             final ChannelFuture regFuture, final Channel channel,
             final SocketAddress localAddress, final ChannelPromise promise) {
@@ -452,15 +426,17 @@ Next, examine how it binds to the local address.
             }
         });
     }
-
 ```
 
-Follow the call chain.
-channel.bind --> pipeline.bind --> tail.bind
-Here is `tail.bind`:
+The call chain:
 
+```text
+channel.bind → pipeline.bind → tail.bind
 ```
 
+`tail.bind`:
+
+```java
  public ChannelFuture bind(final SocketAddress localAddress, final ChannelPromise promise) {
         ObjectUtil.checkNotNull(localAddress, "localAddress");
         if (isNotValidPromise(promise, false)) {
@@ -482,25 +458,21 @@ Here is `tail.bind`:
         }
         return promise;
     }
-
 ```
 
-The bind operation starts at the tail and travels toward the head through outbound handlers. The final transport handler is `HeadContext`; here is its `bind` method:
+`bind` is an **outbound** operation, so it travels from the tail toward the head through outbound handlers. It ends at `HeadContext`:
 
-```
-
+```java
         @Override
         public void bind(
                 ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) {
             unsafe.bind(localAddress, promise);
         }
-
 ```
 
-This delegates to the familiar `unsafe`. Here is `unsafe.bind`:
+That delegates to `unsafe.bind`:
 
-```
-
+```java
  public final void bind(final SocketAddress localAddress, final ChannelPromise promise) {
             assertEventLoop();
 
@@ -544,14 +516,13 @@ This delegates to the familiar `unsafe`. Here is `unsafe.bind`:
 
             safeSetSuccess(promise);
         }
-
 ```
 
-### doBind
-Here is the actual `NioServerSocketChannel.doBind` implementation:
+### `doBind`
 
-```
+The real bind, in `NioServerSocketChannel.doBind`:
 
+```java
    protected void doBind(SocketAddress localAddress) throws Exception {
       // Use the appropriate ServerSocketChannel bind API for this Java version.
        if (PlatformDependent.javaVersion() >= 7) {
@@ -560,30 +531,30 @@ Here is the actual `NioServerSocketChannel.doBind` implementation:
             javaChannel().socket().bind(localAddress, config.getBacklog());
         }
     }
-
 ```
 
-### The head handler's channelActive callback
-The head first propagates `channelActive` through the inbound pipeline, then calls `readIfIsAutoRead`. With automatic reading enabled, this initiates a read operation and adds `OP_ACCEPT` to the listening channel's selector interests.
+## 7. Start accepting
 
-```
+After binding, `HeadContext.channelActive` first passes `channelActive` down the inbound pipeline, then calls `readIfIsAutoRead`. With auto-read on (the default), that starts a read, which adds `OP_ACCEPT` to the channel's selector interests:
 
+```java
  @Override
         public void channelActive(ChannelHandlerContext ctx) {
             ctx.fireChannelActive();
 
             readIfIsAutoRead();
         }
-
 ```
 
-Follow the `readIfIsAutoRead` call chain.
-readIfIsAutoRead --> channel.read() --> pipeline.read() --> tail.read();
-It has the same outbound traversal structure as the earlier bind operation.
-Here is `tail.read`:
+The call chain is another outbound trip, like `bind`:
 
+```text
+readIfIsAutoRead → channel.read() → pipeline.read() → tail.read()
 ```
 
+`tail.read`:
+
+```java
     public ChannelHandlerContext read() {
       // Find outbound contexts matching MASK_READ; eventually reach HeadContext.
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_READ);
@@ -600,15 +571,17 @@ Here is `tail.read`:
 
         return this;
     }
-
 ```
 
-Continue through the head context's read invocation.
-headContext.invokeRead() --> headHandler.read()  -->unsafe.beginRead() -->channel.doBeginRead()
-Here is `channel.doBeginRead`:
+It reaches the head and continues:
 
+```text
+headContext.invokeRead() → headHandler.read() → unsafe.beginRead() → channel.doBeginRead()
 ```
 
+`channel.doBeginRead`:
+
+```java
 protected void doBeginRead() throws Exception {
         // Channel.read() or ChannelHandlerContext.read() was called
         final SelectionKey selectionKey = this.selectionKey;
@@ -624,17 +597,17 @@ protected void doBeginRead() throws Exception {
             selectionKey.interestOps(interestOps | readInterestOp);
         }
     }
-
 ```
 
-This completes the server startup walkthrough.
+From here the boss event loop's selector reports new connections, and `ServerBootstrapAcceptor` hands each one to the worker group. Startup is complete.
 
+## Notes on the source
 
-## Source version and reconstructed figures
+- `initAndRegister` returns a future because registration may finish later on the chosen event loop. Creating the channel and calling `init` happen on the calling thread.
+- The listening channel registers for `OP_ACCEPT`; accepted channels register for `OP_READ`.
+- Interest registration happens automatically only with `autoRead`, which the example leaves on.
 
-`initAndRegister` returns a future because registration can execute asynchronously on the selected event loop; the initial construction and `init` call execute in the calling thread. The listening channel uses `OP_ACCEPT`, while accepted socket channels use `OP_READ`. Automatic registration of accept/read interest depends on `autoRead`; the default example enables it.
-
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [EchoServer.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/example/src/main/java/io/netty/example/echo/EchoServer.java)
 - [AbstractBootstrap.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/AbstractBootstrap.java)

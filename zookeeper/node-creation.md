@@ -11,21 +11,17 @@ description: "Follow a create request through client framing, server preparation
 
 # Following a ZooKeeper Node Creation Request
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
+This article follows one `create` call from the client API to the server's in-memory data tree: the client request, the server's I/O path, the three request processors, the transaction log and the final update.
 
-## Introduction
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
 
-The preceding articles examined the source behind server and client startup:
-[Client startup](client-startup.html)
-[Standalone server startup](standalone-server-startup.html)
-Now let us trace creation of a znode from the public API to the in-memory data tree.
+It builds on [client startup](client-startup.html) and [standalone server startup](standalone-server-startup.html).
 
-## Building the client request
+## 1. The client builds the request
 
-The client constructs a create request inside `ZooKeeper.create`.
+`ZooKeeper.create` builds the create request:
 
 ```java
-
 public void create(
         final String path,
         byte[] data,
@@ -53,16 +49,15 @@ public void create(
        // Submit the request through the client connection.
         cnxn.queuePacket(h, r, record, response, cb, clientPath, serverPath, ctx, null);
     }
-
 ```
 
+### `makeCreateRecord`
 
-##### makeCreateRecord
+This builds the request body.
 
-Here is how the create request body is built. **Excerpt correction:** a missing semicolon after `request.setAcl(acl)` and a stray quotation mark after `incomingBuffer.slice()` later in the original were copying errors; they are corrected here without changing logic.
+> **Note:** the original excerpt had a missing semicolon after `request.setAcl(acl)` and a stray quote after `incomingBuffer.slice()`. Both were copying errors and are fixed here; the logic is unchanged.
 
 ```java
-
 private Record makeCreateRecord(CreateMode createMode, String serverPath, byte[] data, List<ACL> acl, long ttl) {
         Record record;
         if (createMode.isTTL()) {
@@ -89,18 +84,15 @@ private Record makeCreateRecord(CreateMode createMode, String serverPath, byte[]
         }
         return record;
     }
-
 ```
 
+> **Note:** the original annotation called the large-request limit "100k". In 3.6.2 the default `largeRequestMaxBytes` is 100 MiB, and large requests are only classified once `largeRequestThreshold` is configured.
 
-**Limit correction:** the original annotation called the aggregate large-request limit “100k.” In 3.6.2, the default `largeRequestMaxBytes` is 100 MiB, and large-request classification is disabled until `largeRequestThreshold` is configured.
+Next, the client hands the request to its connection.
 
-Next, examine how the client sends the request to the server.
-
-##### cnxn.queuePacket
+### `cnxn.queuePacket`
 
 ```java
-
  public Packet queuePacket(
         RequestHeader h,
         ReplyHeader r,
@@ -146,31 +138,25 @@ Next, examine how the client sends the request to the server.
         sendThread.getClientCnxnSocket().packetAdded();
         return packet;
     }
-
 ```
 
-
-
-Once `SendThread` wakes from `selector.select`, it can process write readiness through `doIO`. The create Packet is assigned an xid, serialized to a `ByteBuffer`, and written to the server socket. The synchronous API waits for completion of that Packet; the asynchronous APIs deliver a callback instead.
+When `SendThread` wakes from `selector.select`, it handles write readiness in `doIO`: the Packet gets an xid, is serialized into a `ByteBuffer` and written to the socket. The synchronous API then waits for that Packet to complete; the asynchronous API calls a callback instead.
 
 [![Queue a create request on the client](assets/node-creation-01.svg){: .diagram}](assets/node-creation-01.svg)
 
+## 2. The server reads the request
 
-## Processing on the server
-
-The following figure shows the server-side processing path.
+On the server, the request goes from the selector to a worker thread and is decoded:
 
 [![Decode the request on the server](assets/node-creation-02.svg){: .diagram}](assets/node-creation-02.svg)
 
-[Server startup](standalone-server-startup.html) already examined `SelectorThread.handleIO`. We now follow each subsequent stage.
+[Server startup](standalone-server-startup.html) already covered `SelectorThread.handleIO`. Continue from there.
 
+### `IOWorkRequest.doWork`
 
-##### IOWorkRequest.doWork
-
-When a client request arrives, `SelectorThread` observes readiness on its `SelectionKey`. It wraps that key in an `IOWorkRequest` and submits it to the worker pool. A worker executes `IOWorkRequest.doWork`; here is that method.
+When a request arrives, `SelectorThread` sees the readiness on its `SelectionKey`, wraps the key in an `IOWorkRequest` and submits it to the worker pool. A worker runs `doWork`:
 
 ```java
-
  public void doWork() throws InterruptedException {
             if (!key.isValid()) {
              // Cancel an invalid SelectionKey.
@@ -206,14 +192,11 @@ cnxn.close(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
                 cnxn.close(ServerCnxn.DisconnectReason.CONNECTION_MODE_CHANGED);
             }
         }
-
 ```
 
-
-##### NIOServerCnxn.doIO
+### `NIOServerCnxn.doIO`
 
 ```java
-
 void doIO(SelectionKey k) throws InterruptedException {
         try {
             if (!isSocketOpen()) {
@@ -280,17 +263,13 @@ void doIO(SelectionKey k) throws InterruptedException {
             close(DisconnectReason.IO_EXCEPTION);
         }
     }
-
 ```
 
-
-
-##### NIOServerCnxn.readPayload
+### `NIOServerCnxn.readPayload`
 
 Read the request bytes from the socket:
 
 ```java
-
 private void readPayload() throws IOException, InterruptedException, ClientCnxnLimitException {
         if (incomingBuffer.remaining() != 0) { // have we read length bytes?
            // Continue reading if incomingBuffer is not full.
@@ -315,19 +294,15 @@ private void readPayload() throws IOException, InterruptedException, ClientCnxnL
             incomingBuffer = lenBuffer;
         }
     }
-
 ```
 
+Now the real processing starts: `NIOServerCnxn.readRequest` calls `ZooKeeperServer.processPacket`.
 
-Now the server begins processing the request itself.
-`NIOServerCnxn.readRequest` calls `ZooKeeperServer.processPacket`.
+### `ZooKeeperServer.processPacket`
 
-##### ZooKeeperServer.processPacket
-
-This converts the message stream into a server-side request.
+It turns the bytes into a server-side `Request`:
 
 ```java
-
 public void processPacket(ServerCnxn cnxn, ByteBuffer incomingBuffer) throws IOException {
         // We have the request, now process and setup for next
         // Create an input stream over incomingBuffer.
@@ -428,22 +403,23 @@ public void processPacket(ServerCnxn cnxn, ByteBuffer incomingBuffer) throws IOE
             }
         }
     }
-
 ```
 
+## 3. The request processor chain
 
-After `processPacket`, the request enters the processing pipeline. Standalone operation sends requests through this pipeline, whose broad structure was introduced in [server startup](standalone-server-startup.html).
+After `processPacket`, the request enters the processor pipeline introduced in [server startup](standalone-server-startup.html):
 
 [![Standalone request processor chain](assets/node-creation-03.svg){: .diagram}](assets/node-creation-03.svg)
 
-We will examine the processors one by one.
+Take the processors one at a time.
 
-##### RequestThrottler
+### `RequestThrottler`
 
-`RequestThrottler` limits the number of requests admitted to processing, helping prevent overload. It runs in a separate thread, so its `run` method is the place to start. **Configuration note:** throttling limits are configurable, and a zero maximum disables that particular limit; they are not universal fixed limits imposed on every installation.
+`RequestThrottler` limits how many requests are being processed at once, to protect the server from overload. It runs on its own thread, so start with `run`.
+
+> **Note:** the throttling limits are configurable, and a maximum of zero turns that limit off.
 
 ```java
-
 public void run() {
         try {
             while (true) {
@@ -498,18 +474,13 @@ public void run() {
         int dropped = drainQueue();
         LOG.info("RequestThrottler shutdown. Dropped {} requests", dropped);
     }
-
 ```
 
+### `PrepRequestProcessor`
 
-
-##### PrepRequestProcessor
-
-`PrepRequestProcessor` is the first processor doing operation-specific preparation. What happens inside it?
-It also runs in its own thread; here is `run`.
+`PrepRequestProcessor` is the first processor that does operation-specific work. It also has its own thread; here is `run`:
 
 ```java
-
  public void run() {
         LOG.info(String.format("PrepRequestProcessor (sid:%d) started, reconfigEnabled=%s", zks.getServerId(), zks.reconfigEnabled));
         try {
@@ -539,16 +510,13 @@ It also runs in its own thread; here is `run`.
         }
         LOG.info("PrepRequestProcessor exited loop!");
     }
-
 ```
 
+### `pRequest`
 
-##### pRequest
-
-`pRequest` is long because it converts many operation types into their corresponding records and transactions. We will focus on create requests while retaining the complete analyzed excerpt.
+`pRequest` is long because it handles every operation type. Focus on the create path; the full excerpt is kept for reference.
 
 ```java
-
 protected void pRequest(Request request) throws RequestProcessorException {
         // LOG.info("Prep>>> cxid = " + request.cxid + " type = " +
         // request.type + " id = 0x" + Long.toHexString(request.sessionId));
@@ -737,18 +705,15 @@ protected void pRequest(Request request) throws RequestProcessorException {
        // Pass the request to SyncRequestProcessor.
         nextProcessor.processRequest(request);
     }
-
 ```
 
+Two fields matter: `Request.record` holds the deserialized protocol request, and `Request.txn` holds the prepared transaction that will be logged and applied.
 
-How is a create request transformed? The deserialized protocol request is stored in `Request.record`, while `Request.txn` holds the prepared transaction that can be logged and applied.
+### `pRequest2Txn` → `pRequest2TxnCreate`
 
-##### pRequest2Txn → pRequest2TxnCreate
-
-`pRequest2Txn` dispatches by operation type. Rather than analyze all of its branches, we will examine `pRequest2TxnCreate`, which prepares creation of a new node.
+`pRequest2Txn` dispatches on the operation type. For a create it calls `pRequest2TxnCreate`:
 
 ```java
-
 private void pRequest2TxnCreate(int type, Request request, Record record, boolean deserialize) throws IOException, KeeperException {
         if (deserialize) {
           // Deserialize the ByteBuffer into the request record.
@@ -856,19 +821,22 @@ private void pRequest2TxnCreate(int type, Request request, Record record, boolea
        // Append the new node's ChangeRecord to outstandingChanges.
         addChangeRecord(nodeRecord);
     }
-
 ```
 
+In short, for a create `PrepRequestProcessor`:
 
-To summarize what preparation does for a create request:
-`PrepRequestProcessor` deserializes the request, resolves and checks the parent, prepares a transaction, and records prospective parent and child state in `outstandingChanges`. Parent state includes the child count, cversion, and pzxid. These records let later queued requests see pending changes. They do not yet publish the new node in the live `DataTree`. The request then passes to `SyncRequestProcessor`.
+1. deserializes the request,
+2. resolves and checks the parent node,
+3. prepares the transaction, and
+4. records the pending parent and child state (child count, `cversion`, `pzxid`) in `outstandingChanges`.
 
-##### SyncRequestProcessor
+`outstandingChanges` lets later requests in the queue see changes that are not applied yet. The new node is **not** in the live `DataTree` yet. The request moves on to `SyncRequestProcessor`.
 
-`SyncRequestProcessor` runs on another thread. Here is its `run` method.
+### `SyncRequestProcessor`
+
+`SyncRequestProcessor` runs on another thread. Its `run` method:
 
 ```java
-
  public void run() {
         try {
             // we do this in an attempt to ensure that not all of the servers
@@ -951,44 +919,37 @@ To summarize what preparation does for a create request:
         }
         LOG.info("SyncRequestProcessor exited!");
     }
-
 ```
 
+### `zkDatabase.append(si)`
 
-##### zkDatabase.append(si)
-
-What happens in `zkDatabase.append(si)`?
+What does `append` do?
 
 ```java
-
   public boolean append(Request si) throws IOException {
         // Increment the transaction count and delegate transaction append.
         txnCount.incrementAndGet();
         return this.snapLog.append(si);
     }
-
 ```
 
+### `snapLog.append()`
 
-##### snapLog.append()
-
-`FileTxnSnapLog.append` delegates logging to `FileTxnLog`.
+`FileTxnSnapLog.append` delegates to `FileTxnLog`.
 
 ```java
-
 public boolean append(Request si) throws IOException {
         return txnLog.append(si.getHdr(), si.getTxn(), si.getTxnDigest());
     }
-
 ```
 
+### `FileTxnLog.append`
 
-##### FileTxnLog.append
+This serializes the transaction into the log stream.
 
-We have reached the implementation that serializes a transaction into the log stream. **Checksum terminology:** although the source names the field `txnEntryCRC` and the variable `crc`, `makeChecksumAlgorithm()` uses Adler32 in this release.
+> **Note:** the field is named `txnEntryCRC` and the variable `crc`, but `makeChecksumAlgorithm()` uses **Adler32** in this release.
 
 ```java
-
  public synchronized boolean append(TxnHeader hdr, Record txn, TxnDigest digest) throws IOException {
         if (hdr == null) {
             return false;
@@ -1037,16 +998,13 @@ We have reached the implementation that serializes a transaction into the log st
         Util.writeTxnBytes(oa, buf);
         return true;
     }
-
 ```
 
+The transaction is now in the buffered output stream. It is not durable until the flush and commit step:
 
-The transaction has now been appended to the buffered output stream, but durability requires the later flush/commit step. Let us examine `flush`.
-
-##### SyncRequestProcessor.flush
+### `SyncRequestProcessor.flush`
 
 ```java
-
  private void flush() throws IOException, RequestProcessorException {
         if (this.toFlush.isEmpty()) {
             return;
@@ -1076,16 +1034,13 @@ The transaction has now been appended to the buffered output stream, but durabil
             lastFlushTime = Time.currentElapsedTime();
         }
     }
-
 ```
 
+### `FileTxnLog.commit`
 
-##### FileTxnLog.commit
-
-`ZKDatabase.commit()` eventually calls `FileTxnLog.commit`, which flushes the transaction log and, under the normal force-sync configuration, forces it to storage.
+`ZKDatabase.commit()` ends up in `FileTxnLog.commit`, which flushes the log and, with the default force-sync setting, forces it to disk.
 
 ```java
-
 /**
      * commit the logs. make sure that everything hits the
      * disk
@@ -1137,16 +1092,13 @@ The transaction has now been appended to the buffered output stream, but durabil
             }
         }
     }
-
 ```
 
+### `ZooKeeperServer.takeSnapshot`
 
-##### ZooKeeperServer.takeSnapshot
-
-After the log path, consider snapshot generation. `takeSnapshot` calls `FileTxnSnapLog.save`.
+Snapshots are the other persistence path. `takeSnapshot` calls `FileTxnSnapLog.save`:
 
 ```java
-
 public void save(
         DataTree dataTree,
         ConcurrentHashMap<Long, Integer> sessionsWithTimeouts,
@@ -1179,16 +1131,15 @@ public void save(
             throw e;
         }
     }
-
 ```
 
+### `FinalRequestProcessor`
 
-##### FinalRequestProcessor
+`SyncRequestProcessor` logs, flushes and triggers snapshots when needed, then calls `FinalRequestProcessor`. That processor has **no** thread of its own. Its long method dispatches on the request type, applies the prepared transaction and builds the response.
 
-`SyncRequestProcessor` supplies the logging and flush stage, and triggers snapshots as needed. It then calls `FinalRequestProcessor`, which is not a separate thread. This long method dispatches among many request types, applies prepared transactions, and prepares responses. Durability depends on settings such as `forceSync`; snapshot creation is not required for each individual acknowledged transaction.
+> **Note:** durability depends on settings such as `forceSync`. A snapshot is not needed for each acknowledged transaction.
 
 ```java
-
  public void processRequest(Request request) {
         LOG.debug("Processing request:: {}", request);
 
@@ -1703,16 +1654,15 @@ public void save(
             LOG.error("FIXMSG", e);
         }
     }
-
 ```
 
+## 4. Apply the transaction
 
-Let us follow the call chain that applies a create transaction to ZooKeeper's in-memory database.
+Follow the calls that apply the create to the in-memory database.
 
-##### ZooKeeperServer.processTxn
+### `ZooKeeperServer.processTxn`
 
 ```java
-
 public ProcessTxnResult processTxn(Request request) {
         TxnHeader hdr = request.getHdr();
         processTxnForSessionEvents(request, hdr, request.getTxn());
@@ -1756,17 +1706,13 @@ public ProcessTxnResult processTxn(Request request) {
             return rc;
         }
     }
-
 ```
 
+### `DataTree.processTxn`
 
-##### DataTree.processTxn
-
-Applying a transaction ultimately calls `DataTree.processTxn`. The original excerpt below elides the remaining operation branches with `...........`; it is a reading excerpt, not a complete compilable method. See the pinned source for those branches and the omitted exception handling.
-
+Applying a transaction ends in `DataTree.processTxn`. The excerpt elides the other operation types with `...........`, so it is not a complete method; see the pinned source for the omitted branches and exception handling.
 
 ```java
-
 public ProcessTxnResult processTxn(TxnHeader header, Record txn, boolean isSubTxn) {
         ProcessTxnResult rc = new ProcessTxnResult();
 
@@ -1855,15 +1801,11 @@ public ProcessTxnResult processTxn(TxnHeader header, Record txn, boolean isSubTx
 
         return rc;
     }
-
 ```
 
-
-
-##### createNode
+### `createNode`
 
 ```java
-
   public void createNode(final String path, byte[] data, List<ACL> acl, long ephemeralOwner, int parentCVersion, long zxid, long time, Stat outputStat) throws KeeperException.NoNodeException, KeeperException.NodeExistsException {
         int lastSlash = path.lastIndexOf('/');
        // Extract the parent path.
@@ -1969,14 +1911,11 @@ public ProcessTxnResult processTxn(TxnHeader header, Record txn, boolean isSubTx
         // Trigger NodeChildrenChanged watches for the parent.
         childWatches.triggerWatch(parentName.equals("") ? "/" : parentName, Event.EventType.NodeChildrenChanged);
     }
-
 ```
 
+That is the full path of a create, client to server. Thanks for reading this long trace. The [next article](watch-processing.html) picks up from the last two calls to explain how watches fire.
 
-That completes the client and server path for node creation.
-Thank you for reading through this long trace. The [next article](watch-processing.html) continues from the final two calls to explain watch delivery.
-
-## Pinned source references
+## Source references
 
 - [ZooKeeper.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ZooKeeper.java)
 - [ClientCnxn.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxn.java)

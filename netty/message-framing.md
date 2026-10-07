@@ -11,32 +11,36 @@ series_order: 6
 
 # Handling Fragmented and Coalesced Messages in Netty
 
-TCP applications often encounter fragmented or coalesced reads, sometimes called “half packets” and “sticky packets.” TCP is a byte stream: it does not preserve the boundaries between application writes. Segmentation, buffering, and the receiver's read sizes can make one message arrive across several reads or several messages arrive in one read. This is independent of whether an application message happens to exceed a particular IP packet size. Two common observations follow.
+TCP is a **byte stream**. It keeps the bytes in order but forgets where one application write ended and the next began. So the receiver sees two effects, often called "half packets" and "sticky packets":
 
-1) Fragmentation: a read contains only part of an application message. Large messages commonly span several network segments, but even a small message may require multiple application reads.
+- **Fragmentation:** one read holds only part of a message. Large messages usually span several segments, but even a small message can need several reads.
+- **Coalescing:** one read holds bytes from several messages.
 
-2) Coalescing: a read contains bytes from multiple application messages. The receiver must use the application protocol to identify their boundaries; TCP cannot supply those boundaries.
+This has nothing to do with whether a message is larger than an IP packet. The receiver has to find message boundaries itself, using the application protocol.
 
-Common framing strategies are:
-1) A delimiter marks the end of each message.
-2) A header carries the message length.
-3) Every message has a fixed length.
+[![TCP keeps bytes, not boundaries: three application writes arrive as reads that split and merge them; a length-field frame has a length field at lengthFieldOffset, and the decoder uses it to cut complete frames.](assets/message-framing-01.svg)](assets/message-framing-01.svg)
 
-These strategies usually require a byte accumulator at the receiver. Incoming bytes accumulate until the decoder can identify a complete message. The decoder consumes that message's bytes and continues with the next message, retaining an incomplete remainder for future reads.
-Netty calls the transformation from a byte stream into messages decoding, and the implementing component a decoder. It supplies decoders for all three strategies. We will examine length-field framing.
+> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated.
 
-## LengthFieldBasedFrameDecoder
-Some protocols reserve a fixed number of bytes for a field carrying the message length. Netty provides `LengthFieldBasedFrameDecoder` for them.
+## 1. Three ways to frame messages
 
-## ByteToMessageDecoder
-`ByteToMessageDecoder` is the base class for decoding bytes into messages and the parent of `LengthFieldBasedFrameDecoder`. It extends `ChannelInboundHandlerAdapter`.
-Network reads reach `ByteToMessageDecoder.channelRead` through the pipeline.
+| Strategy | How the receiver finds the end | Netty decoder |
+| --- | --- | --- |
+| Delimiter | a marker byte sequence ends each message | `DelimiterBasedFrameDecoder` |
+| Length field | a header holds the message length | `LengthFieldBasedFrameDecoder` |
+| Fixed length | every message has the same size | `FixedLengthFrameDecoder` |
 
-### ByteToMessageDecoder.channelRead
-Here is `channelRead`:
+All three need an **accumulator** on the receiving side: bytes pile up until the decoder can see a complete message, the decoder takes that message's bytes, and any incomplete rest waits for the next read. Netty calls turning bytes into messages **decoding**. This article follows the length-field decoder.
 
-```
+## 2. `LengthFieldBasedFrameDecoder`
 
+Many protocols reserve a few bytes at a fixed position for the message length. `LengthFieldBasedFrameDecoder` handles exactly that.
+
+Its base class, `ByteToMessageDecoder`, does the accumulating. It is a `ChannelInboundHandlerAdapter`, so network reads reach it through the pipeline in `channelRead`.
+
+### `ByteToMessageDecoder.channelRead`
+
+```java
    // msg is the data delivered by network I/O.
 public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // This decoder consumes ByteBuf messages.
@@ -83,13 +87,11 @@ public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception 
             ctx.fireChannelRead(msg);
         }
     }
-
 ```
 
-How are bytes from a new buffer added to `cumulation`?
+How does a new buffer get appended to `cumulation`?
 
-```
-
+```java
         // alloc supplies storage for the accumulating ByteBuf.
         // in is the newly received buffer to append.
         public ByteBuf cumulate(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in) {
@@ -126,16 +128,13 @@ How are bytes from a new buffer added to `cumulation`?
             }
         }
     }
-
 ```
 
+### `callDecode`
 
-Now that bytes are accumulated, how are messages decoded from them?
-`callDecode` is the decoding entry point.
-### callDecode
+With the bytes accumulated, `callDecode` cuts messages out of them:
 
-```
-
+```java
 // in is the byte accumulator; out stores decoded messages.
 protected void callDecode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         try {
@@ -199,13 +198,11 @@ protected void callDecode(ChannelHandlerContext ctx, ByteBuf in, List<Object> ou
             throw new DecoderException(cause);
         }
     }
-
 ```
 
-Continue into `decodeRemovalReentryProtection`:
+It goes through `decodeRemovalReentryProtection`:
 
-```
-
+```java
  final void decodeRemovalReentryProtection(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
             throws Exception {
        // Mark decodeState as STATE_CALLING_CHILD_DECODE.
@@ -226,14 +223,13 @@ Continue into `decodeRemovalReentryProtection`:
             }
         }
     }
-
 ```
 
-Now examine the concrete `LengthFieldBasedFrameDecoder.decode`:
-###
+### `LengthFieldBasedFrameDecoder.decode`
 
-```
+The length-field decoder itself:
 
+```java
 protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
        // Decode at most one frame through the two-argument decode method.
         Object decoded = decode(ctx, in);
@@ -304,17 +300,15 @@ protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception 
         in.readerIndex(readerIndex + actualFrameLength);
         return frame;
     }
-
 ```
 
+## 3. Frames that are too long
 
-This completes normal frame decoding.
-If a frame exceeds the configured maximum, the decoder discards it. Here are the details.
-### exceededFrameLength
+If a frame is longer than the configured maximum, the decoder discards it instead of buffering it.
 
-```
+### `exceededFrameLength`
 
-
+```java
  private void exceededFrameLength(ByteBuf in, long frameLength) {
         // Calculate how many frame bytes remain beyond the bytes already accumulated.
         long discard = frameLength - in.readableBytes();
@@ -339,14 +333,13 @@ If a frame exceeds the configured maximum, the decoder discards it. Here are the
         }
         failIfNecessary(true);
     }
-
 ```
 
-At the start of `decode`, `discardingTooLongFrame` determines whether bytes from a previously detected oversized frame still need discarding.
-### discardingTooLongFrame
+### `discardingTooLongFrame`
 
-```
+At the start of `decode`, this checks whether bytes of an earlier oversized frame still need to be skipped:
 
+```java
  private void discardingTooLongFrame(ByteBuf in) {
         long bytesToDiscard = this.bytesToDiscard;
         // Bound this invocation's discard by the available readable bytes.
@@ -358,13 +351,11 @@ At the start of `decode`, `discardingTooLongFrame` determines whether bytes from
         this.bytesToDiscard = bytesToDiscard;
         failIfNecessary(false);
     }
-
 ```
 
-Continue into `failIfNecessary`:
+### `failIfNecessary`
 
-```
-
+```java
 private void failIfNecessary(boolean firstDetectionOfTooLongFrame) {
 
         if (bytesToDiscard == 0) {
@@ -386,16 +377,15 @@ private void failIfNecessary(boolean firstDetectionOfTooLongFrame) {
             }
         }
     }
-
 ```
 
+## Notes on the source
 
+- The original text tied fragmentation to packet size. In fact TCP segmentation and application read boundaries are separate things, and TCP never keeps message boundaries.
+- In this version the default merge cumulator either reuses the buffer or copies into a larger one.
+- The decoder computes the full frame size from the length value, the end offset of the length field and `lengthAdjustment`. `initialBytesToStrip` only changes what is delivered, not the size used to check the frame.
 
-## Source version and reconstructed figures
-
-The original packet-size explanation has been corrected: TCP segmentation and application read boundaries are distinct, and TCP never guarantees application message boundaries. In this baseline the default merge cumulator can reuse a buffer or copy into expanded storage. The length decoder computes total frame size from the field value, field-end offset, and adjustment; `initialBytesToStrip` affects delivery rather than the size used to validate the frame.
-
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [ByteToMessageDecoder.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/ByteToMessageDecoder.java)
 - [LengthFieldBasedFrameDecoder.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/LengthFieldBasedFrameDecoder.java)

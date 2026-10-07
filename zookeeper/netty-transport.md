@@ -11,33 +11,31 @@ description: "Trace ZooKeeper client and server Netty channels, session negotiat
 
 # How ZooKeeper Uses Netty for Client-Server Communication
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. ZooKeeper 3.6.2 uses Netty **4.1.50.Final**, as declared in its [pinned POM](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/pom.xml); the independent [Netty series](../netty/index.html) uses 4.1.53.Final.
+So far the series used ZooKeeper's Java NIO network layer. ZooKeeper can also use **Netty**. This article follows the Netty transport on both sides: how the client sends requests and reads replies, and how the server reads requests and writes responses.
 
-## Introduction
-The [ZooKeeper source reading series](index.html) has so far examined the network layer implemented with Java NIO. ZooKeeper also supports Netty. To use Netty as the client/server network transport, configure the client and server separately.
-- Set this JVM startup property on the client:
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, which uses Netty **4.1.50.Final** (see its [POM](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/pom.xml)). The separate [Netty series](../netty/index.html) uses 4.1.53.Final. Code excerpts keep the original selection; `...` marks omitted code.
+
+## 1. Turn Netty on
+
+Client and server are configured separately, with JVM system properties.
+
+- On the client:
 
 ```text
-
 -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty
-
 ```
 
-
-- Set this JVM startup property on the server:
+- On the server:
 
 ```text
-
 -Dzookeeper.serverCnxnFactory=org.apache.zookeeper.server.NettyServerCnxnFactory
-
 ```
 
+## 2. The client side
 
-## Netty in the ZooKeeper client
-If you have read the earlier articles, this method may look familiar. It is called when the client creates its connection transport.
+The client picks its transport when it creates the connection. This method may look familiar from [client startup](client-startup.html):
 
 ```java
-
  private ClientCnxnSocket getClientCnxnSocket() throws IOException {
         // Read the configured client transport implementation; here we select org.apache.zookeeper.ClientCnxnSocketNetty.
         String clientCnxnSocketName = getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET);
@@ -54,16 +52,13 @@ If you have read the earlier articles, this method may look familiar. It is call
             throw new IOException("Couldn't instantiate " + clientCnxnSocketName, e);
         }
     }
-
 ```
 
+### `ClientCnxnSocketNetty`
 
-##### ClientCnxnSocketNetty
-`ClientCnxnSocketNetty` is ZooKeeper's Netty-based client connection transport, carrying the session protocol over a Netty channel.
-Let us inspect its construction.
+The Netty-based client transport. It carries the session protocol over a Netty channel. Its constructor:
 
 ```java
-
  ClientCnxnSocketNetty(ZKClientConfig clientConfig) throws IOException {
         this.clientConfig = clientConfig;
         // Client only has 1 outgoing socket, so the event loop group only needs
@@ -73,14 +68,13 @@ Let us inspect its construction.
 
         initProperties();
     }
-
 ```
 
-`ClientCnxn.SendThread.run` calls `startConnect` to establish the client's server socket connection. The transport-specific operation is `ClientCnxnSocket.connect`. In `ClientCnxnSocketNIO`, this creates a `SocketChannel` and connects it to the configured address, as the earlier article described. Now let us examine `ClientCnxnSocketNetty.connect`.
-##### ClientCnxnSocketNetty.connect
+### `ClientCnxnSocketNetty.connect`
+
+`ClientCnxn.SendThread.run` calls `startConnect`, which calls the transport's `connect`. With NIO this opens a `SocketChannel` (see [client startup](client-startup.html)). The Netty version:
 
 ```java
-
 void connect(InetSocketAddress addr) throws IOException {
 
         firstConnect = new CountDownLatch(1);
@@ -164,14 +158,13 @@ void connect(InetSocketAddress addr) throws IOException {
             connectLock.unlock();
         }
     }
-
 ```
 
-`connect` configures Netty's client `Bootstrap`, initiates the TCP connection, and prepares the ZooKeeper session request when that connection succeeds. Since the operation is asynchronous, `SendThread.run` continues to `ClientCnxnSocketNetty.doTransport`. We previously inspected `ClientCnxnSocketNIO.doTransport`; now let us follow the Netty implementation.
-##### ClientCnxnSocketNetty.doTransport
+It configures Netty's client `Bootstrap`, starts the TCP connection and, once it succeeds, prepares the session request. Because `connect` is asynchronous, `SendThread.run` carries on to `doTransport`.
+
+### `ClientCnxnSocketNetty.doTransport`
 
 ```java
-
 void doTransport(
         int waitTimeOut,
         Queue<Packet> pendingQueue,
@@ -211,15 +204,13 @@ void doTransport(
             updateNow();
         }
     }
-
 ```
 
+Unlike the NIO version, this method only handles **outgoing** requests. Incoming data is handled asynchronously by Netty's channel handler.
 
-Unlike `ClientCnxnSocketNIO.doTransport`, this method directly handles the outgoing request path. Incoming data is handled asynchronously by Netty's channel handler.
-##### ClientCnxnSocketNetty.doWrite
+### `ClientCnxnSocketNetty.doWrite`
 
 ```java
-
  private void doWrite(Queue<Packet> pendingQueue, Packet p, ClientCnxn cnxn) {
         updateNow();
         boolean anyPacketsSent = false;
@@ -254,14 +245,13 @@ Unlike `ClientCnxnSocketNIO.doTransport`, this method directly handles the outgo
             channel.flush();
         }
     }
-
 ```
 
-`sendPktOnly` enters the Netty packet-write path and ultimately calls `ClientCnxnSocketNetty.sendPkt`.
-##### ClientCnxnSocketNetty.sendPkt
+`sendPktOnly` enters the Netty write path and ends in `sendPkt`.
+
+### `ClientCnxnSocketNetty.sendPkt`
 
 ```java
-
 private ChannelFuture sendPkt(Packet p, boolean doFlush) {
         // Assuming the packet will be sent out successfully. Because if it fails,
         // the channel will close and clean up queues.
@@ -274,14 +264,13 @@ private ChannelFuture sendPkt(Packet p, boolean doFlush) {
         result.addListener(onSendPktDoneListener);
         return result;
     }
-
 ```
 
-We now know how the client sends requests through Netty. Next, how does it read the server's responses? Begin with `ZKClientPipelineFactory.initChannel`.
-##### ZKClientPipelineFactory.initChannel
+That is how requests go out. Replies come in through the channel pipeline, set up in `ZKClientPipelineFactory.initChannel`.
+
+### `ZKClientPipelineFactory.initChannel`
 
 ```java
-
  protected void initChannel(SocketChannel ch) throws Exception {
             ChannelPipeline pipeline = ch.pipeline();
             if (clientConfig.getBoolean(ZKClientConfig.SECURE_CLIENT)) {
@@ -292,14 +281,13 @@ We now know how the client sends requests through Netty. Next, how does it read 
 
             pipeline.addLast("handler", new ZKClientHandler());
         }
-
 ```
 
-Here is the definition of `ZKClientHandler`.
-##### ZKClientHandler
+The handler it installs:
+
+### `ZKClientHandler`
 
 ```java
-
 private class ZKClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         AtomicBoolean channelClosed = new AtomicBoolean(false);
@@ -375,24 +363,19 @@ private class ZKClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
 
     }
-
 ```
 
+It assembles each length-prefixed frame, then dispatches it either as the session handshake reply or as a normal response.
 
-This handler shows how ZooKeeper reads server responses through Netty: assemble the length-prefixed frame, then dispatch the session handshake response or a normal request response.
+That completes the client. Now the server.
 
-----
+## 3. The server side
 
-That completes the client side of ZooKeeper's Netty communication. Now let us examine Netty on the server.
+At startup the server creates a `ServerCnxnFactory`. The default is `NIOServerCnxnFactory`; here we follow `NettyServerCnxnFactory`.
 
-
-## Netty in the ZooKeeper server
-At startup, the server creates a `ServerCnxnFactory`. Its default implementation is `NIOServerCnxnFactory`; here we examine `NettyServerCnxnFactory` instead.
-
-### Initialize NettyServerCnxnFactory
+### Initialize `NettyServerCnxnFactory`
 
 ```java
-
  NettyServerCnxnFactory() {
         x509Util = new ClientX509Util();
 
@@ -441,14 +424,13 @@ At startup, the server creates a `ServerCnxnFactory`. Its default implementation
         this.bootstrap = configureBootstrapAllocator(bootstrap);
         this.bootstrap.validate();
     }
-
 ```
 
-For the plaintext application path, this `ServerBootstrap` installs one ZooKeeper business handler, `CnxnChannelHandler`, which extends `ChannelDuplexHandler`. The complete initializer can also install transport/security handlers, including SSL. Let us analyze its implementation.
-### CnxnChannelHandler
+On the plaintext path, the `ServerBootstrap` installs one ZooKeeper handler, `CnxnChannelHandler` (a `ChannelDuplexHandler`). With SSL enabled the initializer adds security handlers too.
+
+### `CnxnChannelHandler`
 
 ```java
-
 class CnxnChannelHandler extends ChannelDuplexHandler {
 
         // channelActive runs after the server accepts and activates a client's socket channel.
@@ -627,15 +609,13 @@ class CnxnChannelHandler extends ChannelDuplexHandler {
         }
 
     }
-
 ```
 
+Incoming bytes go to `NettyServerCnxn.processMessage`.
 
-Now let us inspect how `NettyServerCnxn.processMessage` handles the incoming bytes.
-##### NettyServerCnxn.processMessage
+### `NettyServerCnxn.processMessage`
 
 ```java
-
 void processMessage(ByteBuf buf) {
         checkIsInEventLoop("processMessage");
         LOG.debug("0x{} queuedBuffer: {}", Long.toHexString(sessionId), queuedBuffer);
@@ -682,14 +662,13 @@ void processMessage(ByteBuf buf) {
             }
         }
     }
-
 ```
 
-##### NettyServerCnxn.receiveMessage
-`NettyServerCnxn.receiveMessage` is the core of the server's client-request read path.
+### `NettyServerCnxn.receiveMessage`
+
+The core of the server's read path: it turns Netty's byte stream into complete client requests.
 
 ```java
-
  private void receiveMessage(ByteBuf message) {
         checkIsInEventLoop("receiveMessage");
         try {
@@ -794,17 +773,15 @@ void processMessage(ByteBuf buf) {
             close(DisconnectReason.CLIENT_RATE_LIMIT);
         }
     }
-
 ```
 
-`receiveMessage` shows how ZooKeeper reads Netty's byte stream into complete client request messages.
-After a request passes through ZooKeeper's server processor chain, how is its result returned to the client?
-`FinalRequestProcessor` constructs the response, then `NettyServerCnxn.sendResponse` sends it.
-##### NettyServerCnxn.sendBuffer
-`sendResponse` calls `sendBuffer`, which calls `channel.writeAndFlush` to send the serialized response to the client.
+### Sending the response
+
+After the request passes through the processor chain, `FinalRequestProcessor` builds the response and `NettyServerCnxn.sendResponse` sends it. `sendResponse` calls `sendBuffer`, which writes the serialized response with `channel.writeAndFlush`.
+
+### `NettyServerCnxn.sendBuffer`
 
 ```java
-
 public void sendBuffer(ByteBuffer... buffers) {
         if (buffers.length == 1 && buffers[0] == ServerCnxnFactory.closeConn) {
             close(DisconnectReason.CLIENT_CLOSED_CONNECTION);
@@ -812,14 +789,13 @@ public void sendBuffer(ByteBuffer... buffers) {
         }
         channel.writeAndFlush(Unpooled.wrappedBuffer(buffers)).addListener(onSendBufferDoneListener);
     }
-
 ```
 
-This completes the server-side Netty I/O path: accept a channel, create its ZooKeeper connection, assemble request frames, dispatch requests, and write the serialized responses.
+That completes the server's Netty I/O path: accept a channel, create its ZooKeeper connection, assemble request frames, dispatch requests and write responses.
 
-**Excerpt correction:** the original `sendPkt` excerpt omitted the semicolon after `Unpooled.wrappedBuffer(p.bb)`; it is restored from the pinned 3.6.2 source. All other executable excerpt lines are retained. These excerpts illustrate the application pipeline; the complete source also configures security handlers where SSL is enabled.
+> **Note:** the original `sendPkt` excerpt was missing the semicolon after `Unpooled.wrappedBuffer(p.bb)`; it is restored from the 3.6.2 source. The excerpts show the application pipeline; the full source also adds security handlers when SSL is on.
 
-## Pinned source references
+## Source references
 
 - [`ZooKeeper`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ZooKeeper.java): selection and reflective construction of the configured `ClientCnxnSocket`.
 - [`ClientCnxnSocketNetty`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ClientCnxnSocketNetty.java): asynchronous connection, packet writes, pipeline initialization, and response framing.

@@ -11,21 +11,23 @@ series_order: 7
 
 # How Netty Allocates and Reuses Pooled Memory
 
-## Background
-Life can resemble a walled city: those outside want to enter, and those inside want to leave. Java programmers usually do not implement memory allocation algorithms or manually decide when an object such as `Object obj = new Object()` is reclaimed; the garbage collector manages that. A C programmer allocating with `malloc` must arrange a corresponding `free` after use. Java programmers may be curious about direct memory manipulation, while C programmers may envy Java's automatic management. To allocate and reuse buffers efficiently, Netty implements a pooled allocator inspired by jemalloc.
+Netty allocates a huge number of short-lived buffers. Asking the JVM or the OS for each one would be slow, so Netty keeps its own **pooled allocator**, modelled on jemalloc. This article walks through that allocator: how memory is split into arenas, chunks, pages and subpages, how a thread-local cache sits in front of it, and how one `buffer(18)` call finds its 32 bytes.
 
-## Before the implementation
-jemalloc is an established memory allocator; its full design is outside this article's scope. This walkthrough concentrates on Netty's pooled direct-memory implementation. Heap buffers use substantially the same pool-management structure. **Version note:** the complete walkthrough below preserves the original legacy tiny/small and buddy-tree allocator, verified against Netty 4.1.50.Final. Netty 4.1.53.Final already contains a redesigned allocator, described explicitly at the end; this historical exception must not be mistaken for the series baseline.
+There is a saying that life is like a walled city: those outside want in, those inside want out. Java programmers never call `free` and may wonder what manual memory management is like; C programmers who pair every `malloc` with a `free` may envy the garbage collector. Netty's allocator is where a Java library does the C programmer's job.
 
-## Implementation model
-The diagram shows the allocator's logical memory subdivisions.
+> **Source: this article is the exception in the series.** It walks through the **legacy allocator of Netty 4.1.50.Final**: tiny and small subpages plus a buddy tree. Netty 4.1.53.Final already has a redesigned allocator; the differences are listed at the end. Heap buffers use the same pool structure as the direct buffers shown here.
+
+## 1. The memory model
+
+jemalloc's full design is out of scope; this article sticks to Netty's pooled direct memory. Memory is split into nested levels:
+
 [![Arena, chunk, page and memory-unit hierarchy](assets/pooled-memory-01.svg){: .diagram}](assets/pooled-memory-01.svg)
-### Important objects
-- PooledByteBufAllocator
-Applications obtain buffers through this allocator. Here are its fields.
 
-```
+### `PooledByteBufAllocator`
 
+Applications get buffers from this allocator. Its fields:
+
+```java
     // Number of heap arenas; calculated using the corresponding heap-memory limit.
     private static final int DEFAULT_NUM_HEAP_ARENA;
     // Number of direct arenas: min(availableProcessors * 2, maxDirectMemory / chunkSize / 2 / 3).
@@ -68,40 +70,36 @@ Applications obtain buffers through this allocator. Here are its fields.
     private final PoolThreadLocalCache threadCache;
     // Bytes represented by one PoolChunk; default 16 MiB.
     private final int chunkSize;
-
 ```
 
-Initialization creates heap and direct arenas. Here is how the arena arrays are allocated.
+It creates the heap and direct arena arrays:
 
-```
-
+```java
  private static <T> PoolArena<T>[] newArenaArray(int size) {
         return new PoolArena[size];
     }
-
 ```
 
-Each slot is then assigned an arena. The direct-memory case follows.
+and fills every slot with an arena (direct case shown):
 
-```
-
+```java
    for (int i = 0; i < directArenas.length; i ++) {
                 PoolArena.DirectArena arena = new PoolArena.DirectArena(
                         this, pageSize, maxOrder, pageShifts, chunkSize, directMemoryCacheAlignment);
                 directArenas[i] = arena;
                 metrics.add(arena);
             }
-
 ```
 
-- Arena
-An arena is a memory-management unit inspired by jemalloc. Threads allocate and free regions through their assigned arena. There are normally several arenas; each thread is assigned an arena, and several threads can share one. Their relationship is shown below.
+### Arena
+
+An **arena** is jemalloc's unit of memory management. Threads allocate and free through their assigned arena. There are several arenas; each thread is bound to one, and several threads can share an arena:
+
 [![Threads bound to arenas in the arena pool](assets/pooled-memory-02.svg){: .diagram}](assets/pooled-memory-02.svg)
 
-Here are the fields of `PoolArena`.
+`PoolArena`'s fields:
 
-```
-
+```java
     // Default maxOrder is 11.
     private final int maxOrder;
     // Default logical page size is 8192 bytes.
@@ -152,60 +150,65 @@ Here are the fields of `PoolArena`.
 
     // Number of thread caches backed by this arena.
     final AtomicInteger numThreadCaches = new AtomicInteger();
-
 ```
 
-First examine initialization of the tiny and small subpage-head arrays.
+The tiny and small subpage-pool arrays are created first:
 
-```
-
+```java
  private PoolSubpage<T>[] newSubpagePoolArray(int size) {
         return new PoolSubpage[size];
     }
-
 ```
 
-Each array element becomes a sentinel `PoolSubpage`. It is a doubly linked list node whose `prev` and `next` initially point to itself.
+Each slot gets a sentinel `PoolSubpage` head: a doubly linked list node whose `prev` and `next` point to itself:
 
-```
-
+```java
 private PoolSubpage<T> newSubpagePoolHead(int pageSize) {
         PoolSubpage<T> head = new PoolSubpage<T>(pageSize);
         head.prev = head;
         head.next = head;
         return head;
     }
-
 ```
 
-The initialized arrays therefore have the following structure.
+So the arrays start out like this:
+
 [![SubpagePools: circular lists of PoolSubpage linked by prev and next](assets/pooled-memory-03.svg){: .diagram}](assets/pooled-memory-03.svg)
 
-Before examining `PoolSubpage`, consider allocation granularity. Netty obtains pooled backing storage in chunks, defaulting to 16 MiB per chunk. Internally, a chunk contains logical pages of 8 KiB, giving 2048 pages at these defaults.
+### Chunks and pages
+
+Netty takes backing memory in **chunks** of 16 MiB by default. Each chunk is divided into **pages** of 8 KiB, so 2048 pages per chunk.
+
 [![A chunk divided into pages](assets/pooled-memory-04.svg){: .diagram}](assets/pooled-memory-04.svg)
-Requests are handled in two broad ways:
-1) A normalized capacity no larger than a chunk is pooled. For requests at least one page, the legacy allocator reserves a power-of-two run of pages: a 10 KiB request normalizes to 16 KiB and uses two pages. A subpage request reserves a page as backing storage and divides it into smaller allocation units; the application receives its requested size class rather than the whole page.
-2) A request larger than a chunk uses a separate unpooled allocation. The following figure shows direct-memory allocation.
+
+A request goes one of two ways:
+
+1. **Up to one chunk: pooled.** A request of at least one page gets a power-of-two **run of pages**: 10 KiB rounds up to 16 KiB, which is two pages. A smaller request reserves one page and gets a slice of it (a **subpage** unit of its size class, not the whole page).
+2. **Larger than a chunk: unpooled.** It is allocated directly:
+
 [![Requests smaller than a chunk use pooled pages; larger requests go straight to off-heap memory](assets/pooled-memory-05.svg){: .diagram}](assets/pooled-memory-05.svg)
 
+### `PoolSubpage`
 
-- PoolSubpage
-If every 32-byte request consumed a full 8 KiB page, most of the page would be wasted. `PoolSubpage` instead divides that backing page into units of the normalized requested size, so many small allocations can share it and reduce fragmentation.
-There are two legacy subpage categories:
-1) Tiny: positive normalized sizes below 512 bytes.
-2) Small: normalized sizes 512, 1024, 2048, and 4096 bytes with the default page size.
-The following diagram illustrates them.
+If a 32-byte request used a whole 8 KiB page, most of the page would be wasted. `PoolSubpage` divides a page into equal units of one size class, so many small allocations share it. The legacy allocator has two subpage categories:
+
+| Category | Sizes | Pool array |
+| --- | --- | --- |
+| Tiny | multiples of 16, below 512 bytes | `tinySubpagePools` |
+| Small | 512, 1024, 2048, 4096 bytes (default page size) | `smallSubpagePools` |
+
 [![tinySubpagePools: one SubpagePool list per element size from 16 to 496 bytes](assets/pooled-memory-06.svg){: .diagram}](assets/pooled-memory-06.svg)
+
 [![smallSubpagePools: one SubpagePool list per element size from 512 to 4096 bytes](assets/pooled-memory-07.svg){: .diagram}](assets/pooled-memory-07.svg)
 
+Each array slot is one size class:
 
-The legacy allocator manages several size classes within each category.
-1. Tiny classes are multiples of 16 through 496. `tinySubpagePools` has 32 slots: index zero handles the special zero-size case, and indexes 1 through 31 correspond to 16 through 496 bytes. The final positive class is at index 31, not a nonexistent index 32.
-2. Small classes double from 512 through 4096. The four slots in `smallSubpagePools` correspond to pages divided into units of 512, 1024, 2048, and 4096 bytes.
-Here are the fields of `PoolSubpage`:
+- **Tiny:** `tinySubpagePools` has 32 slots. Slot 0 is the special zero-size case; slots 1–31 hold 16, 32, …, 496 bytes. The last class is at index 31 (there is no index 32).
+- **Small:** the 4 slots of `smallSubpagePools` hold pages split into 512, 1024, 2048 and 4096-byte units.
 
-```
+`PoolSubpage`'s fields:
 
+```java
     // The chunk owning this subpage.
     final PoolChunk<T> chunk;
    // This page's node index in the legacy memoryMap tree.
@@ -228,15 +231,13 @@ Here are the fields of `PoolSubpage`:
     private int nextAvail;
    // Number of units still available.
     private int numAvail;
-
 ```
 
+### `PoolChunk`
 
-- PoolChunk
-`PoolChunk` represents and manages one backing allocation, normally 16 MiB.
+A `PoolChunk` owns one backing allocation, normally 16 MiB:
 
-```
-
+```java
     // The arena owning this chunk.
     final PoolArena<T> arena;
     // Backing storage of chunkSize bytes.
@@ -280,17 +281,17 @@ Here are the fields of `PoolSubpage`:
     PoolChunk<T> prev;
     // Next chunk in that list.
     PoolChunk<T> next;
-
 ```
 
+### `PoolChunkList`
 
-- PoolChunkList
-An arena manages many chunks of the same configured backing size. As allocation proceeds, their *free capacities* differ; their total sizes do not shrink. The arena groups chunks by utilization band to find suitable space efficiently. `PoolChunkList` manages each group, and the groups themselves are linked.
+An arena has many chunks of the same size. As they are used, their **free space** differs (their total size never shrinks). To find space quickly, the arena groups chunks by how full they are. Each group is a `PoolChunkList`, and the lists are linked together:
+
 [![PoolChunkList linked list from qInit to q100, each holding PoolChunks](assets/pooled-memory-08.svg){: .diagram}](assets/pooled-memory-08.svg)
-Here are the fields of `PoolChunkList`:
 
-```
+`PoolChunkList`'s fields:
 
+```java
     // Owning arena.
     private final PoolArena<T> arena;
     // Next utilization-band list.
@@ -308,33 +309,43 @@ Here are the fields of `PoolChunkList`:
     // This is only update once when create the linked like list of PoolChunkList in PoolArena constructor.
     // Previous utilization-band list.
     private PoolChunkList<T> prevList;
-
 ```
 
-The arena defines six utilization bands using `minUsage` and `maxUsage`.
-[![Legacy chunk-list category initialization](assets/pooled-memory-09.svg)](assets/pooled-memory-09.svg)
-These bounds differ among its chunk lists.
+The arena creates six lists, each with a `minUsage` and `maxUsage` percentage:
 
+```java
+q100 = new PoolChunkList<T>(this, null, 100, Integer.MAX_VALUE, chunkSize);
+q075 = new PoolChunkList<T>(this, q100, 75, 100, chunkSize);
+q050 = new PoolChunkList<T>(this, q075, 50, 100, chunkSize);
+q025 = new PoolChunkList<T>(this, q050, 25, 75, chunkSize);
+q000 = new PoolChunkList<T>(this, q025, 1, 50, chunkSize);
+qInit = new PoolChunkList<T>(this, q000, Integer.MIN_VALUE, 25, chunkSize);
 ```
 
+From those percentages each list computes two free-byte thresholds:
+
+```java
 freeMinThreshold = (maxUsage == 100) ? 0 : (int) (chunkSize * (100.0 - maxUsage + 0.99999999) / 100L);
 freeMaxThreshold = (minUsage == 100) ? 0 : (int) (chunkSize * (100.0 - minUsage + 0.99999999) / 100L);
-
 ```
 
-`freeMinThreshold` is derived from `maxUsage`, and `freeMaxThreshold` from `minUsage`. For `q025`, the bounds are 25 and 75. The source computes thresholds as `(int) (chunkSize * (100.0 - usage + 0.99999999) / 100L)` (with a zero special case when usage is 100), giving approximately 4.16 MiB and 12.16 MiB for a 16 MiB chunk. After allocation takes free bytes to or below the lower threshold, a chunk moves toward a higher-utilization list. After freeing takes free bytes above the upper threshold, it moves toward a lower-utilization list. The ranges overlap deliberately; these are migration thresholds rather than a partition into mutually exclusive capacities.
+`freeMinThreshold` comes from `maxUsage`, `freeMaxThreshold` from `minUsage`. For `q025` (25–75 %) and a 16 MiB chunk they are about **4.16 MiB** and **12.16 MiB**.
+
+- After an allocation leaves a chunk with free bytes **at or below** the lower threshold, it moves to a fuller list.
+- After a free leaves it **above** the upper threshold, it moves to an emptier list.
+
+The ranges overlap on purpose, so a chunk near a boundary does not bounce between lists. They are migration thresholds, not a strict partition.
+
 [![Free-memory range of the chunks in each PoolChunkList](assets/pooled-memory-10.svg){: .diagram}](assets/pooled-memory-10.svg)
 
----
+### The thread cache
 
-- PoolThreadLocalCache
-This `FastThreadLocal` associates each thread with a `PoolThreadCache`.
-- PoolThreadCache
-As its name suggests, `PoolThreadCache` caches reusable memory regions for a thread. Arenas, chunks, pages, and subpages manage shared backing storage. The cache retains regions allocated through the thread's arenas. A later allocation first tries the appropriate cache; only a miss requires returning to shared arena allocation.
-Here are its important fields.
+- **`PoolThreadLocalCache`** is a `FastThreadLocal` that gives each thread its `PoolThreadCache`.
+- **`PoolThreadCache`** keeps memory regions the thread has freed, so it can reuse them without touching the shared arena. An allocation tries the cache first and goes to the arena only on a miss.
 
-```
+Its main fields:
 
+```java
     // Heap arena assigned to this thread.
     final PoolArena<byte[]> heapArena;
     // Direct arena assigned to this thread.
@@ -368,15 +379,13 @@ Here are its important fields.
     private final MemoryRegionCache<ByteBuffer>[] normalDirectCaches;
      // Heap-memory equivalent of normalDirectCaches.
     private final MemoryRegionCache<byte[]>[] normalHeapCaches;
-
 ```
 
-- MemoryRegionCache
-`MemoryRegionCache` manages reuse for one region size class.
-Here are its fields:
+### `MemoryRegionCache`
 
-```
+One `MemoryRegionCache` handles reuse for one size class:
 
+```java
         // Bound the number of entries: tiny defaults to 512, small to 256,
         // and normal to 64 in this legacy implementation.
          // A full queue rejects additional returns until entries are consumed or freed.
@@ -385,29 +394,27 @@ Here are its fields:
         private final Queue<Entry<T>> queue;
         // Region category: tiny, small, or normal.
         private final SizeClass sizeClass;
-
 ```
 
-These are the central classes used to manage pooled buffer backing storage and the per-thread caches layered over it.
+Those are the main classes: the shared pool structure, and the per-thread cache in front of it.
 
----
+## 2. Follow one allocation
 
-The following code requests a direct buffer; we will follow its allocation.
+This call asks for an 18-byte direct buffer:
 
-```
-
+```java
  ByteBuf byteBuf5 = pooledByteBufAllocator.buffer(18) ;
-
 ```
 
-The call chain is long, so follow it one step at a time.
+The call chain is long:
+
 [![Allocation call chain from PooledByteBufAllocator.buffer to Arena.allocate](assets/pooled-memory-11.svg){: .diagram}](assets/pooled-memory-11.svg)
 
-- ##### newDirectBuffer()
-Skip the allocator's forwarding methods and start at `newDirectBuffer`.
+### `newDirectBuffer()`
 
-```
+Skip the forwarding methods and start here:
 
+```java
 protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
        // Obtain this thread's PoolThreadCache.
         PoolThreadCache cache = threadCache.get();
@@ -431,13 +438,11 @@ protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
 
         return toLeakAwareBuffer(buf);
     }
-
 ```
 
-- ##### First arena allocate overload
+### `PoolArena.allocate` (first overload)
 
-```
-
+```java
   PooledByteBuf<T> allocate(PoolThreadCache cache, int reqCapacity, int maxCapacity) {
         // Obtain the pooled ByteBuf wrapper that will be returned to the caller.
        // This wrapper is recyclable; newByteBuf obtains it through an object recycler.
@@ -447,14 +452,13 @@ protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
         allocate(cache, buf, reqCapacity);
         return buf;
     }
-
 ```
 
-- ##### Second arena allocate overload
-This larger method implements the size-category decision.
+### `PoolArena.allocate` (second overload)
 
-```
+This one decides the size category:
 
+```java
 private void allocate(PoolThreadCache cache, PooledByteBuf<T> buf, final int reqCapacity) {
          // Normalize the requested capacity according to the legacy size classes.
          // Positive tiny requests below 512 round up to a multiple of 16.
@@ -540,15 +544,15 @@ private void allocate(PoolThreadCache cache, PooledByteBuf<T> buf, final int req
             allocateHuge(buf, reqCapacity);
         }
     }
-
 ```
 
-Allocation first tries the thread's `PoolThreadCache`, then uses the arena's backing storage on a miss. Examine the tiny-size cache path first.
-- cacheForTiny
-The cache has a 32-slot array for tiny heap regions and an analogous array for direct regions. `cacheForTiny` finds the matching `MemoryRegionCache` for `normCapacity`, choosing the appropriate heap or direct array according to the arena.
+Allocation tries the thread cache first, then the arena. The tiny path first.
 
-```
+### `cacheForTiny`
 
+The cache has a 32-slot array of tiny regions for heap and another for direct memory. `cacheForTiny` picks the `MemoryRegionCache` for `normCapacity` from the right one:
+
+```java
 private MemoryRegionCache<?> cacheForTiny(PoolArena<?> area, int normCapacity) {
        // Calculate the tiny cache's size-class index.
         int idx = PoolArena.tinyIdx(normCapacity);
@@ -565,14 +569,13 @@ private MemoryRegionCache<?> cacheForTiny(PoolArena<?> area, int normCapacity) {
         }
         return cache[idx];
     }
-
 ```
 
-- MemoryRegionCache.allocate()
-Obtain a region from the thread cache:
+### `MemoryRegionCache.allocate()`
 
-```
+Take a region from the thread cache:
 
+```java
  public final boolean allocate(PooledByteBuf<T> buf, int reqCapacity, PoolThreadCache threadCache) {
            // queue contains Entry records describing regions of this size class.
             Entry<T> entry = queue.poll();
@@ -589,14 +592,13 @@ Obtain a region from the thread cache:
             ++ allocations;
             return true;
         }
-
 ```
 
-On a cache miss, arena allocation handles the request. For a tiny allocation there are two cases:
-1) Locate the normalized-size list in `tinySubpagePools`. If it has an available subpage after its sentinel head, allocate a unit from that subpage.
+On a cache miss the arena handles a tiny request in one of two ways:
 
-```
+1. Find the size class's list in `tinySubpagePools`. If a subpage follows the sentinel head, take a unit from it:
 
+```java
  long allocate() {
          // A zero-size element uses its special handle encoding.
         if (elemSize == 0) {
@@ -621,13 +623,11 @@ On a cache miss, arena allocation handles the request. For a tiny allocation the
        // Return a handle encoding the allocated unit and page.
         return toHandle(bitmapIdx);
     }
-
 ```
 
-2) With no suitable available subpage, allocate through `allocateNormal`.
+2. If there is no suitable subpage, go through `allocateNormal`:
 
-```
-
+```java
  // Pooled requests are bounded by chunkSize.
  // First search existing chunks through the arena's utilization lists.
  private void allocateNormal(PooledByteBuf<T> buf, int reqCapacity, int normCapacity, PoolThreadCache threadCache) {
@@ -649,14 +649,13 @@ On a cache miss, arena allocation handles the request. For a tiny allocation the
        // Insert the chunk into the utilization-list structure.
         qInit.add(c);
     }
-
 ```
 
-- newChunk()
-If the allocator has no backing chunk yet, or no existing chunk can supply the required region, it obtains another chunk from the JVM/native allocator. The default backing size is 16 MiB. Sufficient total free bytes alone do not guarantee a sufficiently large contiguous run.
+### `newChunk()`
 
-```
+If there is no chunk yet, or no existing chunk has a big enough region, the arena allocates a new 16 MiB chunk. (Enough free bytes in total is not enough: the region must be one contiguous run.)
 
+```java
  protected PoolChunk<ByteBuffer> newChunk(int pageSize, int maxOrder,
                 int pageShifts, int chunkSize) {
             if (directMemoryCacheAlignment == 0) {
@@ -671,18 +670,17 @@ If the allocator has no backing chunk yet, or no existing chunk can supply the r
                     maxOrder, pageShifts, chunkSize,
                     offsetCacheLine(memory));
         }
-
 ```
 
-Constructing a legacy `PoolChunk` initializes `memoryMap` and `depthMap`.
-The legacy allocator reserves normal regions in power-of-two page runs. A three-page request therefore rounds to four pages; a five-page request rounds to eight. At the defaults, a chunk contains 2048 logical pages, managed by a complete binary tree with 12 levels numbered 0 through 11. The 2048 leaves each represent one page, and an internal node represents the combined capacity of its children.
+### The buddy tree
+
+Creating a legacy `PoolChunk` sets up `memoryMap` and `depthMap`. Normal regions are reserved as power-of-two runs of pages, so three pages round up to four and five round up to eight. A chunk's 2048 pages are managed by a complete binary tree with 12 levels (0–11): each of the 2048 leaves is one page, and each inner node stands for the combined space of its children.
 
 [![Buddy tree over a 16 MiB chunk with 8 KiB pages at layer 11](assets/pooled-memory-12.svg){: .diagram}](assets/pooled-memory-12.svg)
 
-`memoryMap` and `depthMap` encode this tree in arrays. Their default length is 4096, but the tree has 4095 nodes because index zero is unused. `memoryMap` changes as regions are allocated and freed; `depthMap` retains each node's original depth. Here is their initialization.
+`memoryMap` and `depthMap` store this tree in arrays of length 4096. The tree has 4095 nodes; index 0 is unused. `memoryMap` changes as regions are allocated and freed; `depthMap` keeps each node's original depth. Their initialization:
 
-```
-
+```java
         // Use one-based indexes for the complete binary tree.
         int memoryMapIndex = 1;
        // maxOrder defaults to 11; depth d ranges from 0 through 11.
@@ -699,22 +697,24 @@ The legacy allocator reserves normal regions in power-of-two page runs. A three-
                 memoryMapIndex ++;
             }
         }
-
 ```
 
-Each node's represented byte capacity follows the formula below.
-`8 KiB * 2^(maxOrder - d)`
+A node at depth `d` stands for:
 
-The allocation algorithm is examined next.
-
-- PoolChunk.allocate()
-`PoolChunk.allocate` reserves memory from the tree. It distinguishes two cases:
-1) A normalized subpage capacity uses `allocateSubpage`.
-2) A normalized capacity at least one page uses `allocateRun`.
-The subpage case also subdivides one page into equal-size units and records their occupancy. Start with that more involved case.
-
+```text
+8 KiB × 2^(maxOrder − d)
 ```
 
+### `PoolChunk.allocate()`
+
+Reserves memory from the tree, in one of two ways:
+
+1. a subpage size class uses `allocateSubpage`;
+2. one page or more uses `allocateRun`.
+
+The subpage case also splits its page into units and tracks which are used. It is the more involved one, so start there:
+
+```java
    // A subpage request reserves one backing page.
  private long allocateSubpage(int normCapacity) {
         // Obtain the head of the PoolSubPage pool that is owned by the PoolArena and synchronize on it.
@@ -750,14 +750,13 @@ The subpage case also subdivides one page into equal-size units and records thei
             return subpage.allocate();
         }
     }
-
 ```
 
-- allocateNode(int d)
-Allocate a node from the tree encoded by `memoryMap`:
+### `allocateNode(int d)`
 
-```
+Find a free node at depth `d` in `memoryMap`:
 
+```java
 // d is the requested tree depth: 11 for 8 KiB and 10 for 16 KiB at the defaults.
  private int allocateNode(int d) {
       // Start from root index 1 and search for an available node at depth d.
@@ -787,14 +786,13 @@ Allocate a node from the tree encoded by `memoryMap`:
         updateParentsAlloc(id);
         return id;
     }
-
 ```
 
-- updateParentsAlloc(id)
-Update parent availability after allocating a child:
+### `updateParentsAlloc(id)`
 
-```
+Update the parents' availability after a child is taken:
 
+```java
   private void updateParentsAlloc(int id) {
         while (id > 1) {
             // Find the parent node.
@@ -810,14 +808,13 @@ Update parent availability after allocating a child:
             id = parentId;
         }
     }
-
 ```
 
-- PoolSubpage initialization
-After obtaining a page, initialize the `PoolSubpage` that divides it into units.
+### `PoolSubpage` initialization
 
-```
+With a page reserved, a `PoolSubpage` splits it into units:
 
+```java
  PoolSubpage(PoolSubpage<T> head, PoolChunk<T> chunk, int memoryMapIdx, int runOffset, int pageSize, int elemSize) {
        // These fields were described earlier.
         this.chunk = chunk;
@@ -858,14 +855,13 @@ void init(PoolSubpage<T> head, int elemSize) {
        // Insert this available subpage immediately after its size-class sentinel.
         addToPool(head);
     }
-
 ```
 
-- PoolSubpage.allocate()
-Return a unit of `normCapacity` bytes:
+### `PoolSubpage.allocate()`
 
-```
+Return one unit of `normCapacity` bytes:
 
+```java
 long allocate() {
         if (elemSize == 0) {
             return toHandle(0);
@@ -893,21 +889,25 @@ long allocate() {
         // Return the encoded handle.
         return toHandle(bitmapIdx);
     }
-
 ```
 
-- toHandle
-[![Legacy subpage handle bit layout](assets/pooled-memory-13.svg)](assets/pooled-memory-13.svg)
-The legacy handle combines three values with bitwise OR. Its subpage marker is `0x4000000000000000L`, or `2^62`; the original claim of `2^64` was incorrect.
-The second portion stores the unit's index within its page (for example, unit 19), and the low 32 bits store the page's tree node index within the chunk.
-These fields allow the allocator to recover both the page and the unit's position within it.
+### `toHandle`
 
-- getNextAvail
-The next free unit is found through `getNextAvail`,
-`findNextAvail`, and `findNextAvail0`. Examine the search below.
+A subpage allocation is identified by a 64-bit **handle** that packs three values together:
 
-```
+[![Legacy subpage handle bit layout: bit 62 is the subpage marker, bits 61 to 32 the bitmap index of the unit inside its page, bits 31 to 0 the memoryMap index of the page in the buddy tree.](assets/pooled-memory-13.svg)](assets/pooled-memory-13.svg)
 
+- `0x4000000000000000L` (**2^62**) marks the handle as a subpage handle. The original article said 2^64, which was wrong.
+- The middle bits hold the unit's index inside its page (for example, unit 19).
+- The low 32 bits hold the page's node index in the chunk's tree.
+
+From a handle, the allocator can recover both the page and the unit inside it.
+
+### `getNextAvail`
+
+The next free unit is found through `getNextAvail`, `findNextAvail` and `findNextAvail0`:
+
+```java
 private int findNextAvail() {
 
         final long[] bitmap = this.bitmap;
@@ -950,14 +950,13 @@ private int findNextAvail0(int i, long bits) {
         }
         return -1;
     }
-
 ```
 
-- PoolChunk.initBuf
-After obtaining a region identified by its handle, initialize the `ByteBuf` wrapper.
+### `PoolChunk.initBuf`
 
-```
+With a handle in hand, set up the `ByteBuf` wrapper:
 
+```java
 void initBuf(PooledByteBuf<T> buf, ByteBuffer nioBuffer, long handle, int reqCapacity,
                  PoolThreadCache threadCache) {
         int memoryMapIdx = memoryMapIdx(handle);
@@ -991,16 +990,15 @@ private void initBufWithSubpage(PooledByteBuf<T> buf, ByteBuffer nioBuffer,
             runOffset(memoryMapIdx) + (bitmapIdx & 0x3FFFFFFF) * subpage.elemSize + offset,
                 reqCapacity, subpage.elemSize, threadCache);
     }
-
 ```
 
-Both normal and subpage allocations eventually call `PooledByteBuf.init`. The main difference is how their start offset within the backing chunk is computed. Examine the two cases.
-- runOffset
-For a normal run, calculate the run's starting position within the chunk.
+Normal and subpage allocations both end in `PooledByteBuf.init`. They differ only in how the start offset inside the chunk is computed.
 
-```
+### `runOffset`
 
+For a normal run, the run's start inside the chunk:
 
+```java
 private int runOffset(int id) {
         // represents the 0-based offset in #bytes from start of the byte-array chunk
        // depth(id) reads the node's immutable depth from depthMap.
@@ -1024,28 +1022,27 @@ private int runOffset(int id) {
         // log2ChunkSize defaults to 24 because 16 MiB is 2 to the power 24 bytes.
         return 1 << log2ChunkSize - depth(id);
     }
-
 ```
 
-For a subpage allocation, the offset formula is:
+For a subpage unit:
 
-```
-
+```java
 runOffset(memoryMapIdx) + (bitmapIdx & 0x3FFFFFFF) * subpage.elemSize + offset
-
 ```
 
-It has three terms:
-1) `runOffset(memoryMapIdx)` gives the page's starting position within the chunk.
-2) `(bitmapIdx & 0x3FFFFFFF) * subpage.elemSize` gives the unit's offset within that page. The mask removes the marker bit carried into the upper 32-bit bitmap field when the handle is shifted; it is not simply a signed-number correction.
-3) The chunk's backing-storage `offset`, normally zero unless alignment adds an offset.
-Adding the three terms gives the allocated unit's start in the backing storage.
+Three terms:
 
-- buf.init
-Finally, initialize the pooled buffer wrapper. The fields below follow from the region information already examined.
+1. `runOffset(memoryMapIdx)`: where the page starts in the chunk.
+2. `(bitmapIdx & 0x3FFFFFFF) * subpage.elemSize`: where the unit starts in the page. The mask clears the marker bit that ends up in the upper 32-bit field when the handle is shifted; it is not a sign fix.
+3. `offset`: the chunk's own offset in its backing memory, normally 0 unless alignment adds one.
 
-```
+The sum is the unit's start in the backing memory.
 
+### `buf.init`
+
+Finally the pooled buffer wrapper is filled in from everything above:
+
+```java
 private void init0(PoolChunk<T> chunk, ByteBuffer nioBuffer,
                        long handle, int offset, int length, int maxLength, PoolThreadCache cache) {
         assert handle >= 0;
@@ -1061,13 +1058,9 @@ private void init0(PoolChunk<T> chunk, ByteBuffer nioBuffer,
         this.length = length;
         this.maxLength = maxLength;
     }
-
 ```
 
-
-The huge-allocation path for requests larger than `chunkSize` is shorter and is not examined further here.
-This completes the allocation walkthrough.
-
+Requests larger than a chunk take a shorter, unpooled path that is not covered here. That completes the allocation walkthrough.
 
 ## References
 
@@ -1076,14 +1069,19 @@ This completes the allocation walkthrough.
 [https://www.jianshu.com/p/4856bd30dd56](https://www.jianshu.com/p/4856bd30dd56)
 [https://juejin.im/post/5d4f6d74f265da03e83b5e07](https://juejin.im/post/5d4f6d74f265da03e83b5e07)
 
+## Notes on the source: 4.1.50 vs 4.1.53
 
-## Source version and figures
+Everything above is the **legacy 4.1.50.Final allocator**. `tinySubpagePools`, `memoryMap`, `depthMap` and tree-index handles do **not** exist in 4.1.53.Final, where:
 
-The allocator excerpts are preserved as a **legacy Netty 4.1.50.Final walkthrough**, an explicit exception to the series baseline. Their `tinySubpagePools`, `memoryMap`, `depthMap`, and tree-index handles do not describe Netty 4.1.53.Final. At 4.1.53, `PoolArena` extends `SizeClasses`, tiny allocations are merged into small size classes, `PoolChunk` manages runs with size-indexed priority queues and a run map, and handles encode run offset, page count, used/subpage flags, and bitmap index. Defaults of `pageSize = 8192` and `maxOrder = 11` still produce a 16 MiB chunk in both versions. Legacy size rounding, cache defaults, and tree formulas above must be read in the historical context. The original explanations of whole-page delivery for tiny requests, changing chunk sizes, cache-trim trigger, handle marker, bitmap mask, and array indexing have been corrected.
+- `PoolArena` extends `SizeClasses`, and tiny allocations are merged into the small size classes;
+- `PoolChunk` manages runs with size-indexed priority queues and a run map;
+- a handle encodes the run offset, page count, used and subpage flags, and bitmap index.
 
-Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
+The defaults `pageSize = 8192` and `maxOrder = 11` still give a 16 MiB chunk in both versions. Read the size rounding, cache defaults and tree formulas above as history.
 
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+The original article's explanations of whole-page delivery for tiny requests, changing chunk sizes, the cache-trim trigger, the handle marker, the bitmap mask and array indexing have been corrected.
+
+Source references (legacy allocator at Netty 4.1.50.Final; the redesign at 4.1.53.Final):
 
 - [Legacy PoolArena.java](https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java)
 - [Legacy PoolChunk.java](https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java)

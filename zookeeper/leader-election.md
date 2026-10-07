@@ -11,81 +11,92 @@ description: "Trace FastLeaderElection, its queues and worker threads, and the c
 
 # Following ZooKeeper Fast Leader Election
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The figures are the author's original diagrams, with their labels translated into English.
+Before an ensemble can replicate anything, its servers must agree on one **leader**. This article follows ZooKeeper's fast leader election: the voting rule, the threads and queues that carry votes, and the socket connections between peers.
 
-## Introduction
-A ZooKeeper ensemble with several servers must elect one server as leader before it can establish the quorum and process replicated transactions. How does its election protocol work? Let us follow the implementation.
-## The election protocol
-ZooKeeper distinguishes two types of ensemble members:
-- **Participant:** a voting member that participates in election.
-- **Observer:** a non-voting member that cannot participate in election.
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; `...` marks omitted code. Figures are the author's original diagrams with English labels.
 
-Participants take part in leader election. The following sequence introduces the main steps.
-1. When a server starts, it creates its own vote. The original overview highlights three fields:
+## 1. The election protocol
 
-```text
+An ensemble has two kinds of members:
 
-id: the proposed leader's server ID; initially the server proposes itself
-zxid: the latest transaction ID logged on this server
-electionEpoch: the logical round of this election
+- **Participants** vote in elections.
+- **Observers** do not vote.
 
-```
+Only participants take part. The election runs like this:
 
-2. Each server sends its current vote to the other voting servers.
-3. When a server receives another server's vote, `r_vote`, it decides whether to update its proposal. The original two-field sketch is corrected below: the implementation first compares peer epoch, then zxid, then server ID. Larger values win in this ordering.
+1. On startup, each server creates a vote **for itself**. A vote carries:
 
-```text
+   | Field | Meaning |
+   | --- | --- |
+   | `id` | Proposed leader's server ID. At first, the server itself. |
+   | `zxid` | Latest transaction ID logged on this server. |
+   | `electionEpoch` | The election round. |
 
-1. Within the same peer epoch, compare vote.zxid with r_vote.zxid. If vote.zxid < r_vote.zxid, adopt r_vote.id as the proposed leader. If vote.zxid > r_vote.zxid, retain the local proposal. If the zxids are equal,
-continue with step 2 below.
-2. Compare vote.id with r_vote.id. If vote.id > r_vote.id, retain the proposal; if vote.id < r_vote.id, adopt the received proposal.
+2. Each server sends its vote to every other voting server.
+3. When a server receives another vote, `r_vote`, it compares it with its own. The **larger** candidate wins, compared in this order:
 
-```
+   1. `peerEpoch`: the candidate's epoch.
+   2. `zxid`: the candidate's latest transaction. A server with more history is preferred.
+   3. `sid`: the server ID, as a tie-breaker.
 
-4. Update the proposal when the received candidate outranks it.
-5. Check whether one proposal has the required quorum of votes. In the usual equal-weight ensemble, this means more than half the participants.
-6. If there is no quorum, continue exchanging notifications as in step 2.
+4. If the received candidate wins, the server switches its vote to it and broadcasts the new vote.
+5. The server checks whether one candidate has a quorum of votes. In a normal equal-weight ensemble, that is more than half of the participants.
+6. If not, it keeps exchanging votes from step 2.
 
-##### tips
-Each server maintains an `electionEpoch` for the logical election round. Servers eventually converge on the same round. If a server learns of a larger round, it clears its collected votes, updates its logical clock, and participates in that newer round. A lower-round notification is ignored by the election loop. **Correction:** `electionEpoch` is distinct from the proposed candidate's `peerEpoch`; the latter comes first in candidate ordering. The original zxid comparison was reversed and omitted peer epoch. The pinned [`totalOrderPredicate`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java#L721) establishes the order `(peerEpoch, zxid, sid)`, with the larger tuple preferred. Quorum checks use `QuorumVerifier`, so “more than half” describes a standard majority configuration rather than every possible verifier.
+### Rounds and ordering
 
+Each server keeps an `electionEpoch` for the current round. If it hears about a **newer** round, it clears its collected votes, updates its logical clock and joins that round. Notifications from **older** rounds are ignored, so the servers converge on one round.
 
-## Threads involved in election
+> **Note:** the original sketch compared only `zxid` and `id`, and had the zxid comparison reversed. The real rule, [`totalOrderPredicate`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java#L721), compares `(peerEpoch, zxid, sid)` and prefers the larger tuple. `peerEpoch` is the candidate's epoch and is different from the round number `electionEpoch`. Quorums are checked by a `QuorumVerifier`; "more than half" describes the standard majority verifier.
 
-##### - WorkerSender
-Consumes local `ToSend` notifications from `sendqueue`, serializes them, and hands them to `QuorumCnxManager`. It delegates socket I/O to the per-connection worker. **Correction:** the original introduction swapped the descriptions of WorkerSender and WorkerReceiver; their responsibilities here follow the source.
-##### - WorkerReceiver
-Consumes received messages from `QuorumCnxManager.recvQueue`, validates and decodes them, then puts `Notification` objects in the election algorithm's `recvqueue`. It also sends replies when appropriate. It does not itself read the socket.
+## 2. The threads involved
 
-Each voting peer establishes a network connection to every other voting peer.
-##### - SendWorker
-Each retained connection has a `SendWorker` thread that writes vote messages to the remote peer's socket.
-##### - RecvWorker
-Each retained connection has a `RecvWorker` thread that reads vote messages from the remote peer. The original prose calls it ReceiveWorker; its Java class name is `RecvWorker`.
+Election work is split across several threads. The first two belong to the election algorithm and never touch sockets:
 
-##### - ListenerHandler
-Accepts other peers' election connection requests.
-##### - QuorumPeer
-Uses the received notifications to update its proposal and determine whether a leader has been elected. Once election completes, it leaves the election loop and proceeds to leader/follower discovery and synchronization; otherwise, it keeps electing.
+| Thread | Job |
+| --- | --- |
+| `WorkerSender` | Takes `ToSend` notifications from `sendqueue`, serializes them and hands them to `QuorumCnxManager`. |
+| `WorkerReceiver` | Takes raw messages from `QuorumCnxManager.recvQueue`, validates and decodes them, and puts `Notification`s into the algorithm's `recvqueue`. Sends replies when needed. |
 
-The following diagram shows the interaction among these threads and queues.
+> **Note:** the original introduction swapped the descriptions of these two threads.
+
+Every voting peer connects to every other voting peer, and each connection has its own pair of socket threads:
+
+| Thread | Job |
+| --- | --- |
+| `SendWorker` | Writes vote messages to one peer's socket. |
+| `RecvWorker` | Reads vote messages from one peer's socket. (The original called it ReceiveWorker.) |
+
+Two more:
+
+| Thread | Job |
+| --- | --- |
+| `ListenerHandler` | Accepts election connections from other peers. |
+| `QuorumPeer` | Reads notifications, updates its vote and decides when a leader is elected. Then it leaves the election loop for discovery and synchronization. |
+
+How votes move between these threads and queues:
+
 [![Election votes cross thread and queue boundaries](assets/leader-election-01.svg){: .diagram}](assets/leader-election-01.svg)
-With those roles in place, we can begin tracing ZooKeeper's election source code.
 
+With the roles clear, follow the code.
 
-## Peer startup entry point
-`QuorumPeerMain` is the startup entry point for an ensemble server.
-##### initializeAndRun
-This startup method primarily does three things:
-1. Parses `zoo.cfg` into the properties of `QuorumPeerConfig`.
-2. Starts `DatadirCleanupManager` to remove expired snapshots and associated transaction logs periodically, when automatic purge is enabled.
+## 3. Peer startup
+
+`QuorumPeerMain` is the entry point of an ensemble server.
+
+### `initializeAndRun`
+
+It does three things:
+
+1. Parses `zoo.cfg` into a `QuorumPeerConfig`.
+2. Starts `DatadirCleanupManager`, which deletes old snapshots and logs if auto-purge is on.
 3. Starts the peer through `runFromConfig`.
 
-##### runFromConfig
-This method is long. The following selected excerpt annotates its main steps.
+### `runFromConfig`
+
+A long method. The annotated excerpt keeps its main steps:
 
 ```java
-
  public void runFromConfig(QuorumPeerConfig config) throws IOException, AdminServerException {
 
            // Earlier setup is omitted; the relevant initialization follows.
@@ -159,14 +170,13 @@ This method is long. The following selected excerpt annotates its main steps.
             }
         }
     }
-
 ```
 
-##### QuorumPeer.start()
-This is where `QuorumPeer` starts:
+### `QuorumPeer.start()`
+
+Here `QuorumPeer` starts:
 
 ```java
-
    public synchronized void start() {
         // Check that this peer is included in the configured server list.
         if (!getView().containsKey(myid)) {
@@ -188,15 +198,13 @@ This is where `QuorumPeer` starts:
         // QuorumPeer itself is a thread; now start that thread.
         super.start();
     }
-
 ```
 
+### `startLeaderElection`
 
-#### startLeaderElection
-`startLeaderElection` creates the components and threads used by leader election.
+Creates the components and threads used by the election:
 
 ```java
-
 public synchronized void startLeaderElection() {
         try {
             if (getPeerState() == ServerState.LOOKING) {
@@ -212,14 +220,11 @@ public synchronized void startLeaderElection() {
         // Create the election algorithm.
         this.electionAlg = createElectionAlgorithm(electionType);
     }
-
 ```
 
-##### createElectionAlgorithm
-Let us read the implementation directly.
+### `createElectionAlgorithm`
 
 ```java
-
  protected Election createElectionAlgorithm(int electionAlgorithm) {
         Election le = null;
 
@@ -258,19 +263,17 @@ Let us read the implementation directly.
         }
         return le;
     }
-
 ```
 
-##### tips
-1. Why does `QuorumCnxManager` use a `Listener` to manage `ListenerHandler` instances?
-A peer can listen on multiple configured addresses, for example on different network interfaces. In that case one `QuorumCnxManager` has multiple `ListenerHandler` instances, so a `Listener` coordinates them. Multi-address configuration is a supported 3.6.2 feature; these classes are present in the pinned [`QuorumCnxManager`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java).
+> **Why does `QuorumCnxManager` use a `Listener` to manage `ListenerHandler`s?** A peer can listen on several configured addresses, for example one per network interface. Then one `QuorumCnxManager` has several `ListenerHandler`s, and the `Listener` coordinates them. Multi-address support is a 3.6.2 feature; see [`QuorumCnxManager`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java).
 
-##### FastLeaderElection
-What happens when `FastLeaderElection` is created?
-1. It creates `sendqueue` and `recvqueue` for sending and receiving election notifications.
+### `FastLeaderElection`
+
+Creating it does two things:
+
+1. It creates `sendqueue` and `recvqueue` for outgoing and incoming notifications.
 
 ```java
-
 private void starter(QuorumPeer self, QuorumCnxManager manager) {
         this.self = self;
         proposedLeader = -1;
@@ -281,13 +284,11 @@ private void starter(QuorumPeer self, QuorumCnxManager manager) {
         // Create Messenger to manage WorkerSender and WorkerReceiver.
         this.messenger = new Messenger(manager);
     }
-
 ```
 
-2. Creating `Messenger` creates `WorkerSender` and `WorkerReceiver` to process the outgoing and incoming queues. The original text's “Manager” refers to this `Messenger` helper.
+2. It creates a `Messenger`, which starts `WorkerSender` and `WorkerReceiver` to serve those queues. (The original text calls this helper "Manager".)
 
 ```java
-
 Messenger(QuorumCnxManager manager) {
 
             this.ws = new WorkerSender(manager);
@@ -300,17 +301,15 @@ Messenger(QuorumCnxManager manager) {
             this.wrThread = new Thread(this.wr, "WorkerReceiver[myid=" + self.getId() + "]");
             this.wrThread.setDaemon(true);
         }
-
 ```
 
+## 4. The election loop
 
+### `QuorumPeer.run`
 
-#### QuorumPeer.run
-Now let us examine the logic executed by the `QuorumPeer` thread.
+The `QuorumPeer` thread's main loop:
 
 ```java
-
-
 try {
             /*
              * Main loop
@@ -353,14 +352,13 @@ try {
            // Additional cleanup is omitted.
         }
     }
-
 ```
 
-##### FastLeaderElection.lookForLeader
-Election takes place in `lookForLeader`. This is a long method of roughly 200 lines; the original excerpt omits unrelated code so we can focus on election.
+### `FastLeaderElection.lookForLeader`
+
+The election itself happens in `lookForLeader`, about 200 lines long. The excerpt drops unrelated code:
 
 ```java
-
  public Vote lookForLeader() throws InterruptedException {
           // JMX registration is omitted here.
 
@@ -595,21 +593,19 @@ Election takes place in `lookForLeader`. This is a long method of roughly 200 li
             LOG.debug("Number of connection processing threads: {}", manager.getConnectionThreadCount());
         }
     }
-
 ```
 
-The following diagram describes the decisions in this election loop.
+The decisions in this loop:
+
 [![Election loop: propose, exchange votes, decide](assets/leader-election-02.svg){: .diagram}](assets/leader-election-02.svg)
 
-That is the election logic executed by the `QuorumPeer` thread.
-Next we will inspect the details that connect this loop to the other threads introduced earlier.
+That is the logic the `QuorumPeer` thread runs. Next, the plumbing that connects it to the other threads.
 
+### `sendNotifications`
 
-##### sendNotifications
-When a peer starts or adopts a better candidate from another peer's `r_vote`, it uses `sendNotifications` to send its proposed leader to the other participants. Let us inspect that method.
+When a peer starts, or switches to a better candidate after an `r_vote`, it broadcasts its vote with `sendNotifications`:
 
 ```java
-
  private void sendNotifications() {
         for (long sid : self.getCurrentAndNextConfigVoters()) {
             QuorumVerifier qv = self.getQuorumVerifier();
@@ -637,15 +633,15 @@ When a peer starts or adopts a better candidate from another peer's `r_vote`, it
             sendqueue.offer(notmsg);
         }
     }
-
 ```
 
+## 5. Sending a vote
 
-##### WorkerSender.run
-Now examine the `run` method of `WorkerSender`, which consumes `sendqueue`.
+### `WorkerSender.run`
+
+`WorkerSender` consumes `sendqueue`:
 
 ```java
-
 public void run() {
                 while (!stop) {
                     try {
@@ -662,14 +658,11 @@ public void run() {
                 }
                 LOG.info("WorkerSender is down");
             }
-
 ```
 
-
-##### WorkerSender.process
+### `WorkerSender.process`
 
 ```java
-
  void process(ToSend m) {
                 // Serialize ToSend as a ByteBuffer.
                 ByteBuffer requestBuffer = buildMsg(m.state.ordinal(), m.leader, m.zxid, m.electionEpoch, m.peerEpoch, m.configData);
@@ -677,15 +670,11 @@ public void run() {
                 manager.toSend(m.sid, requestBuffer);
 
             }
-
 ```
 
-
-##### QuorumCnxManager.toSend
-What does the peer connection manager's `toSend` method do?
+### `QuorumCnxManager.toSend`
 
 ```java
-
  public void toSend(Long sid, ByteBuffer b) {
      /*
       * If sending message to myself, then simply enqueue it (loopback).
@@ -709,24 +698,23 @@ What does the peer connection manager's `toSend` method do?
          connectOne(sid);
      }
  }
-
 ```
 
+### Connection topology
 
-##### Connection topology
-Before discussing `connectOne`, let us describe the network topology among ZooKeeper's voting peers.
-The following diagram shows the election connections for a three-peer ensemble.
+Before `connectOne`, look at how the voting peers are connected. For three peers:
+
 [![Peer connection topology for election](assets/leader-election-03.svg){: .diagram}](assets/leader-election-03.svg)
-Every peer connects to every other peer. ZooKeeper uses `SendWorker` and `RecvWorker` threads for outgoing and incoming vote messages on each retained connection. Because both ends can initially attempt to connect, ZooKeeper resolves duplicate connections with a server-ID rule.
-The retained connection is initiated by the server with the larger sid toward the server with the smaller sid. Consider peers with IDs 1 and 2.
-If peer 1 initiates a socket connection to peer 2, TCP may connect successfully, but ZooKeeper's election handshake detects the smaller initiating ID and closes that connection. The connection initiated from peer 2 to peer 1 is retained. **Clarification:** this is an application-level tie-break after TCP connection, not a rule preventing TCP establishment. See the pinned [`startConnection` and `handleConnection`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java).
 
+Every peer connects to every other peer, and each kept connection has a `SendWorker` and a `RecvWorker`. Because both ends may try to connect, ZooKeeper keeps only one connection per pair with a simple rule:
 
-##### QuorumCnxManager.connectOne
-`connectOne` helps establish the topology described above.
+> **The peer with the larger sid keeps its connection.** If peer 1 connects to peer 2, TCP succeeds, but the election handshake sees that the smaller ID initiated it and closes it. The connection from peer 2 to peer 1 is kept. This tie-break happens **after** TCP connects; it does not stop TCP itself. See [`startConnection` and `handleConnection`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumCnxManager.java).
+
+### `QuorumCnxManager.connectOne`
+
+`connectOne` builds that topology:
 
 ```java
-
  synchronized void connectOne(long sid) {
       // senderWorkerMap holds the SendWorker associated with each remote sid.
      if (senderWorkerMap.get(sid) != null) {
@@ -772,17 +760,15 @@ If peer 1 initiates a socket connection to peer 2, TCP may connect successfully,
          }
      }
  }
-
 ```
 
 The `connectOne(sid, electionAddr)` overload calls `initiateConnectionAsync`.
 
+### `QuorumCnxManager.initiateConnectionAsync`
 
-##### QuorumCnxManager.initiateConnectionAsync
-`initiateConnectionAsync` packages the connection attempt as a `QuorumConnectionReqThread` task and schedules it asynchronously.
+It wraps the attempt in a `QuorumConnectionReqThread` task and runs it asynchronously:
 
 ```java
-
 public boolean initiateConnectionAsync(final MultipleAddresses electionAddr, final Long sid) {
     if (!inprogressConnections.add(sid)) {
         // simply return as there is a connection request to
@@ -803,15 +789,13 @@ public boolean initiateConnectionAsync(final MultipleAddresses electionAddr, fin
     }
     return true;
 }
-
 ```
 
-##### QuorumConnectionReqThread
-This task establishes a socket connection to the specified remote peer.
-Let us inspect `initiateConnection`, called from its `run` method.
+### `QuorumConnectionReqThread`
+
+The task opens a socket to the remote peer. Its `run` method calls `initiateConnection`:
 
 ```java
-
  public void initiateConnection(final MultipleAddresses electionAddr, final Long sid) {
      Socket sock = null;
      try {
@@ -858,14 +842,13 @@ Let us inspect `initiateConnection`, called from its `run` method.
          closeSocket(sock);
      }
  }
-
 ```
 
-##### QuorumCnxManager.startConnection
-`startConnection` performs the server-ID connection check introduced above, then creates the corresponding `SendWorker` and `RecvWorker`.
+### `QuorumCnxManager.startConnection`
+
+Applies the sid rule above, then creates the connection's `SendWorker` and `RecvWorker`:
 
 ```java
-
  private boolean startConnection(Socket sock, Long sid) throws IOException {
      // The socket output stream.
      DataOutputStream dout = null;
@@ -954,15 +937,11 @@ Let us inspect `initiateConnection`, called from its `run` method.
      }
      return false;
  }
-
 ```
 
-
-##### SendWorker
-How does `SendWorker` operate?
+### `SendWorker`
 
 ```java
-
  public void run() {
       threadCnt.incrementAndGet();
       try {
@@ -1031,17 +1010,13 @@ How does `SendWorker` operate?
 
             LOG.warn("Send worker leaving thread id {} my id = {}", sid, self.getId());
         }
-
-
 ```
 
+## 6. Receiving a vote
 
-
-##### RecvWorker
-After `SendWorker.run`, let us examine `RecvWorker.run`.
+### `RecvWorker`
 
 ```java
-
  public void run() {
             threadCnt.incrementAndGet();
             try {
@@ -1080,16 +1055,13 @@ After `SendWorker.run`, let us examine `RecvWorker.run`.
         }
 
     }
-
 ```
 
-##### WorkerReceiver
-`RecvWorker` reads vote messages and places the resulting `Message` objects in `recvQueue`. Now we need to see how `WorkerReceiver` consumes that queue; let us inspect its `run` method.
-This method is long, but following it completes the incoming-message path.
+### `WorkerReceiver`
+
+`RecvWorker` puts raw `Message`s into `recvQueue`. `WorkerReceiver` consumes that queue. A long method, but it completes the incoming path:
 
 ```java
-
-
   public void run() {
 
                 Message response;
@@ -1344,18 +1316,19 @@ This method is long, but following it completes the incoming-message path.
             }
 
         }
-
 ```
 
+`WorkerReceiver` decodes messages into `Notification`s and puts them into `recvqueue`, where the `QuorumPeer` election loop picks them up.
 
-This completes the `WorkerReceiver` path. It decodes vote messages into `Notification` objects and places them in `recvqueue`; `QuorumPeer` consumes those notifications through the election loop we examined earlier. The source uses two different queues: `QuorumCnxManager.recvQueue` contains raw `Message` objects, while `FastLeaderElection.recvqueue` contains decoded `Notification` objects.
+> **Two queues, similar names:** `QuorumCnxManager.recvQueue` holds raw `Message`s; `FastLeaderElection.recvqueue` holds decoded `Notification`s.
 
-## Closing the loop
-We have now followed ZooKeeper's leader election from peer startup, through proposal comparison and quorum checks, to the worker threads and socket connections carrying votes.
+## Summary
 
-The original export cut off two logging statements in `startConnection`; the edition above restores their endings from the pinned source without changing the connection logic. It also corrects the method headings `QuorumPeer.run` and `QuorumCnxManager.startConnection` and uses the actual `RecvWorker` class name.
+We followed leader election from peer startup, through vote comparison and quorum checks, down to the threads and sockets that carry the votes. The [next article](leader-follower-initialization.html) continues once a leader is chosen.
 
-## Pinned source references
+> **Note:** the original export cut off two log statements in `startConnection`; their endings are restored from the pinned source without changing the logic. The headings `QuorumPeer.run` and `QuorumCnxManager.startConnection` and the class name `RecvWorker` are also corrected.
+
+## Source references
 
 - [`QuorumPeerMain`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeerMain.java): configuration parsing and peer startup.
 - [`QuorumPeer`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/QuorumPeer.java): role transitions and election component creation.

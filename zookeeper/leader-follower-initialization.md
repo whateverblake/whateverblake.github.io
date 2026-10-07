@@ -11,33 +11,39 @@ description: "Follow leader discovery, epoch agreement, DIFF/TRUNC/SNAP synchron
 
 # How ZooKeeper Leaders and Followers Form an Ensemble
 
-> **Source version.** This English edition checks the original analysis against ZooKeeper 3.6.2, available in October 2020, pinned at commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The annotated excerpts retain the original selection and executable logic; ellipses mark omissions and are not complete compilable methods. The figures are the author's original diagrams, with their labels translated into English.
+[Fast leader election](leader-election.html) picks a leader. This article follows what happens next, until the ensemble can serve clients: followers connect to the leader, everyone agrees on a new epoch, followers catch up on data, and both sides start their request processors.
 
-## Before we begin
-[Following ZooKeeper Fast Leader Election](leader-election.html) examined the election process in detail. This article follows what happens next: the initialization of the leader and its followers.
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; `...` marks omitted code. Figures are the author's original diagrams with English labels.
 
-## Initialization diagrams
-After a leader is elected, the leader and followers form a quorum and synchronize their data. This includes the following stages.
-### 1. Establish connections
-The leader starts `LearnerCnxAcceptorHandler` to accept follower connections on the quorum port: the first of the two server ports configured in `zoo.cfg`.
+## 1. The three stages
+
+### Connect
+
+The leader starts `LearnerCnxAcceptorHandler` to accept follower connections on the **quorum port**, the first of the two ports in each `server.n` line of `zoo.cfg`.
+
 [![Connect followers to the elected leader](assets/leader-follower-initialization-01.svg){: .diagram}](assets/leader-follower-initialization-01.svg)
+
 ### Agree on a new epoch
-The newly formed ensemble needs a new epoch identifying its new leadership period, so the peers can agree on the generation in which they are working.
+
+The new ensemble needs a new **epoch**, a number that identifies this leader's term, so every peer knows which generation it is working in.
+
 [![Agree on the new epoch](assets/leader-follower-initialization-02.svg){: .diagram}](assets/leader-follower-initialization-02.svg)
 
 ### Synchronize data
-After agreeing on a new epoch, the peers synchronize their data. Once synchronization and the new-leader quorum acknowledgment are complete, the follower and leader request processing engines start and the ensemble can serve clients. **Protocol clarification:** epoch acknowledgment (`ACKEPOCH`) and acknowledgment of the synchronized `NEWLEADER` are separate barriers; `LEADERINFO` alone does not make the server ready to serve. The diagrams reconstruct the handshake from the pinned [`Leader`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java), [`Learner`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Learner.java), and [`LearnerHandler`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java).
+
+Then followers catch up with the leader's data. When synchronization is done and a quorum has acknowledged `NEWLEADER`, both sides start their request processing and the ensemble serves clients.
+
 [![Synchronize data, then begin serving](assets/leader-follower-initialization-03.svg){: .diagram}](assets/leader-follower-initialization-03.svg)
------
 
-Now let us follow the source code in detail.
+> **Two separate barriers:** the quorum of `ACKEPOCH` replies ends epoch agreement; the quorum of `NEWLEADER` acknowledgments ends synchronization. `LEADERINFO` alone does not make a server ready. The diagrams follow [`Leader`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java), [`Learner`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Learner.java) and [`LearnerHandler`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/LearnerHandler.java).
 
-#### Leader
-After voting successfully elects a leader, the corresponding `QuorumPeer` enters its `LEADING` branch.
+Now the code, side by side.
+
+## 2. The leader starts
+
+Once a peer wins the election, its `QuorumPeer` enters the `LEADING` branch:
 
 ```java
-
-
 while (running) {
                 switch (getPeerState()) {
                    case LOOKING:  .....
@@ -66,16 +72,15 @@ while (running) {
                }
 
        }
-
 ```
 
-## QuorumPeer creates the Leader
-`Leader` extends `LearnerMaster`. It has many fields; rather than listing them all here, we will explain each relevant field when we encounter it.
+### Create the `Leader`
 
-##### new Leader
+`Leader` extends `LearnerMaster`. It has many fields; each one is explained when it first matters.
+
+### `new Leader`
 
 ```java
-
 // LeaderZooKeeperServer extends ZooKeeperServer and represents the server in its leader role.
 public Leader(QuorumPeer self, LeaderZooKeeperServer zk) throws IOException {
         this.self = self;
@@ -100,15 +105,13 @@ public Leader(QuorumPeer self, LeaderZooKeeperServer zk) throws IOException {
 
         this.zk = zk;
     }
-
 ```
 
+### `new LeaderZooKeeperServer`
 
-##### new  LeaderZooKeeperServer
-Creating `LeaderZooKeeperServer` ultimately initializes `ZooKeeperServer`. The following constructor was explained in [How a Standalone ZooKeeper Server Starts](standalone-server-startup.html), so we will not repeat that analysis here.
+Creating `LeaderZooKeeperServer` ends in the `ZooKeeperServer` constructor, already covered in [standalone server startup](standalone-server-startup.html):
 
 ```java
-
  public ZooKeeperServer(FileTxnSnapLog txnLogFactory, int tickTime, int minSessionTimeout, int maxSessionTimeout, int clientPortListenBacklog, ZKDatabase zkDb, String initialConfig, boolean reconfigEnabled) {
         serverStats = new ServerStats(this);
         this.txnLogFactory = txnLogFactory;
@@ -151,15 +154,15 @@ Creating `LeaderZooKeeperServer` ultimately initializes `ZooKeeperServer`. The f
             txnLogFactory.getDataDir(),
             txnLogFactory.getSnapDir());
     }
-
 ```
 
-We will return to `LeaderZooKeeperServer` when discussing the leader's request processing chain; for now, leave that part aside.
-##### Leader.lead
-Once created, `Leader` enters its leadership routine through `lead`. This method is long, so we will inspect it in stages, starting with its first section.
+The leader's request processor chain comes later.
+
+### `Leader.lead`
+
+`lead` is the leader's main routine. It is long, so read it in parts. The first part:
 
 ```java
-
             // Set the ZAB state to DISCOVERY.
            self.setZabState(QuorumPeer.ZabState.DISCOVERY);
             self.tick.set(0);
@@ -175,14 +178,13 @@ Once created, `Leader` enters its leadership routine through `lead`. This method
             cnxAcceptor.start();
             // Wait for a quorum of voting participants, including the leader itself, and propose a new epoch.
             long epoch = getEpochToPropose(self.getId(), self.getAcceptedEpoch());
-
 ```
 
-##### LearnerCnxAcceptor
-`lead` creates `LearnerCnxAcceptor`. Let us examine its `run` implementation.
+### `LearnerCnxAcceptor`
+
+`lead` creates a `LearnerCnxAcceptor`. Its `run`:
 
 ```java
-
  public void run() {
             if (!stop.get() && !serverSockets.isEmpty()) {
                 ExecutorService executor = Executors.newFixedThreadPool(serverSockets.size());
@@ -208,16 +210,13 @@ Once created, `Leader` enters its leadership routine through `lead`. This method
                 }
             }
         }
-
 ```
 
+### `LearnerCnxAcceptorHandler`
 
-##### LearnerCnxAcceptorHandler
-This handler accepts follower connection requests on the leader.
-Let us inspect `LearnerCnxAcceptorHandler.run`.
+This handler accepts follower connections on the leader. Its `run`:
 
 ```java
-
 public void run() {
                 try {
                     Thread.currentThread().setName("LearnerCnxAcceptorHandler-" + serverSocket.getLocalSocketAddress());
@@ -236,13 +235,11 @@ public void run() {
                     latch.countDown();
                 }
             }
-
 ```
 
-##### LearnerCnxAcceptorHandler.acceptConnections
+### `LearnerCnxAcceptorHandler.acceptConnections`
 
 ```java
-
   private void acceptConnections() throws IOException {
                 Socket socket = null;
                 boolean error = false;
@@ -284,20 +281,15 @@ public void run() {
                     }
                 }
             }
-
 ```
 
-### LearnerHandler represents a follower on the leader
-We will defer its detailed explanation until we have introduced the follower's side of the handshake.
+Each accepted connection gets a **`LearnerHandler`**, the leader's representative for one follower. It makes more sense after seeing the follower's side, so switch over.
 
+## 3. The follower starts
 
-#### Follower
-So far we have examined part of leader initialization. Continuing requires the follower's actions to make the handshake clear, so we will now move to follower initialization.
-After a leader is elected, the remaining voting servers become followers and enter `followLeader` (observers are outside this article's main path). Here is the `FOLLOWING` branch in a follower's `QuorumPeer`:
+After the election, the other voting servers become followers and call `followLeader` (observers are not covered here). The follower's `FOLLOWING` branch:
 
 ```java
-
-
                 case FOLLOWING:
                     try {
                         LOG.info("FOLLOWING");
@@ -311,24 +303,21 @@ After a leader is elected, the remaining voting servers become followers and ent
                         updateServerState();
                     }
                     break;
-
 ```
 
-### Create the Follower
-Creating a `Follower` first creates a `FollowerZooKeeperServer`. This class extends `ZooKeeperServer` and represents the follower's server instance, with its own request processing chain. We will explain that chain when discussing request processing.
+### Create the `Follower`
+
+Creating a `Follower` first creates a `FollowerZooKeeperServer`: the follower's server instance, with its own processor chain (covered with request processing).
 
 ```java
-
        new Follower(this, new FollowerZooKeeperServer(logFactory, this, this.zkDb));
-
 ```
 
+### `Follower.followLeader`
 
-##### follower.followLeader
-After creating the `Follower` instance, `followLeader` starts its interaction with the leader.
+`followLeader` drives the whole conversation with the leader:
 
 ```java
-
  void followLeader() throws InterruptedException {
         self.end_fle = Time.currentElapsedTime();
         long electionTimeTaken = self.end_fle - self.start_fle;
@@ -422,16 +411,11 @@ After creating the `Follower` instance, `followLeader` starts its interaction wi
             }
         }
     }
-
 ```
 
-
-##### connectToLeader
-Let us read how the follower connects to the leader.
+### `connectToLeader`
 
 ```java
-
-
  protected void connectToLeader(MultipleAddresses multiAddr, String hostname) throws IOException {
 
         this.leaderAddr = multiAddr;
@@ -478,18 +462,17 @@ Let us read how the follower connects to the leader.
         // leaderOs wraps the leader socket's output stream.
         leaderOs = BinaryOutputArchive.getArchive(bufferedOutput);
     }
-
 ```
 
-##### LeaderConnector
-`LeaderConnector` is a runnable task whose job is to establish the follower's connection to the leader. Once the connection attempt is complete, that task ends. The implementation is straightforward and is not expanded further in the original article.
+### `LeaderConnector`
 
+A runnable task that opens the follower's connection to the leader and ends once the attempt is finished. It is simple, and the original article does not expand on it.
 
-##### Follower.registerWithLeader
-The follower registers its information with the leader.
+### `Follower.registerWithLeader`
+
+The follower sends its information to the leader:
 
 ```java
-
  protected long registerWithLeader(int pktType) throws IOException {
         /*
          * Send follower info, including last zxid and sid
@@ -555,18 +538,17 @@ The follower registers its information with the leader.
             return qp.getZxid();
         }
     }
-
 ```
 
-----
-## Pause at the message exchange: how the leader responds
-----
-Earlier we saw the leader create a `LearnerHandler` thread to handle a follower's requests. Now let us examine `LearnerHandler.run`.
-##### LearnerHandler.run
-`LearnerHandler` handles all communication with this learner. The method is long, so we will split it into stages. The first stage receives the epoch and identification information sent by the follower.
+## 4. The leader answers: epoch agreement
+
+On the leader, each follower is served by its `LearnerHandler` thread.
+
+### `LearnerHandler.run`
+
+It handles all traffic with one learner. In parts again; first, receiving the follower's epoch and identity:
 
 ```java
-
  public void run() {
         try {
             // Add this LearnerHandler to LearnerMaster's learner set.
@@ -637,13 +619,11 @@ Earlier we saw the leader create a `LearnerHandler` thread to handle a follower'
            // The leader's QuorumPeer thread is also waiting in getEpochToPropose until a quorum of participants has connected.
           // Each eligible follower contributes its sid and accepted epoch. With a quorum including the leader, waiting threads resume and obtain a proposed epoch greater than the accepted epochs seen.
             long newEpoch = learnerMaster.getEpochToPropose(this.getSid(), lastAcceptedEpoch);
-
 ```
 
-The second section sends the proposed new epoch to the follower.
+Second, sending the proposed new epoch to the follower:
 
 ```java
-
            // Construct the leader's new epoch zxid.
           long newLeaderZxid = ZxidUtils.makeZxid(newEpoch, 0);
 
@@ -670,14 +650,11 @@ The second section sends the proposed new epoch to the follower.
                     LOG.error("{} is not ACKEPOCH", ackEpochPacket.toString());
                     return;
                 }
-
 ```
 
-
-Now return to `Leader.lead`. What happens when its main thread returns from `getEpochToPropose`?
+Meanwhile, what does `Leader.lead`'s main thread do after `getEpochToPropose` returns?
 
 ```java
-
             // Obtain the newly proposed epoch.
             long epoch = getEpochToPropose(self.getId(), self.getAcceptedEpoch());
 
@@ -715,28 +692,26 @@ Now return to `Leader.lead`. What happens when its main thread returns from `get
 
            // Wait for a quorum of participants to acknowledge the new epoch.
             waitForEpochAck(self.getId(), leaderStateSummary);
-
 ```
 
-At this point, the leader is waiting for the configured quorum to acknowledge the proposed epoch.
+The leader now waits for a quorum to acknowledge the proposed epoch.
 
-Back in `LearnerHandler`, what happens after it receives the follower's epoch acknowledgment?
+Back in `LearnerHandler`, after the follower's `ACKEPOCH` arrives:
 
 ```java
-
  ByteBuffer bbepoch = ByteBuffer.wrap(ackEpochPacket.getData());
  ss = new StateSummary(bbepoch.getInt(), ackEpochPacket.getZxid());
  // On receiving ACKEPOCH, call the leader's waitForEpochAck with the follower's state summary.
     learnerMaster.waitForEpochAck(this.getSid(), ss);
-
 ```
 
+### `waitForEpochAck`
 
-##### waitForEpochAck
-`waitForEpochAck` checks whether a quorum of participants has acknowledged the epoch. It also checks the learner's state summary against the leader's state. With a quorum, the discovery phase completes; the subsequent synchronization and `NEWLEADER` barrier still remain. This distinction corrects the original article's description of epoch acknowledgment as completing all of election and formation.
+Checks whether a quorum of participants has acknowledged the epoch, and compares each learner's state summary with the leader's. With a quorum, **discovery** is over. Synchronization and the `NEWLEADER` barrier are still ahead.
+
+> **Note:** the original article described epoch acknowledgment as finishing election and ensemble formation. It only finishes the discovery phase.
 
 ```java
-
  public void waitForEpochAck(long id, StateSummary ss) throws IOException, InterruptedException {
     // electingFollowers holds the IDs of participants that have acknowledged this epoch.
         synchronized (electingFollowers) {
@@ -775,16 +750,13 @@ Back in `LearnerHandler`, what happens after it receives the follower's epoch ac
             }
         }
     }
-
 ```
 
+## 5. Synchronize the data
 
-----
-After sending its epoch acknowledgment, the follower proceeds to ZAB synchronization. Let us inspect `Learner.syncWithLeader`; again, we will break this long method into sections.
+After sending `ACKEPOCH`, the follower moves on to synchronization in `Learner.syncWithLeader`. In parts; the start:
 
 ```java
-
-
   protected void syncWithLeader(long newLeaderZxid) throws Exception {
           // Prepare an ACK packet for the leader's initial epoch zxid; it will be used in the synchronization protocol.
         QuorumPacket ack = new QuorumPacket(Leader.ACK, 0, null, null);
@@ -799,16 +771,15 @@ After sending its epoch acknowledgment, the follower proceeds to ZAB synchroniza
         boolean syncSnapshot = false;
        // Read the leader's synchronization instruction.
         readPacket(qp);
-
 ```
 
+On the leader, once the epoch has a quorum, `LearnerHandler` calls `syncFollower`.
 
-Back on the leader, once the epoch has quorum agreement, `LearnerHandler` calls `syncFollower`.
-##### LearnerHandler syncFollower
-`syncFollower` compares the follower's zxid with the leader's committed history to choose how to synchronize the follower's data.
+### `LearnerHandler.syncFollower`
+
+It compares the follower's last zxid with the leader's committed history and picks a strategy: `DIFF`, `TRUNC` or `SNAP`.
 
 ```java
-
 boolean syncFollower(long peerLastZxid, LearnerMaster learnerMaster) {
         /*
          * When leader election is completed, the leader will set its
@@ -998,14 +969,11 @@ boolean syncFollower(long peerLastZxid, LearnerMaster learnerMaster) {
          // Return whether a snapshot transfer is required.
         return needSnap;
     }
-
 ```
 
-
-Return to the main `LearnerHandler` thread. What happens after it determines whether snapshot synchronization is required?
+Back in the main `LearnerHandler` thread, after deciding whether a snapshot is needed:
 
 ```java
-
  // syncFollower returns whether the learner needs a snapshot transfer.
  // When needSnap is false, the necessary DIFF/TRUNC packets and replay proposals have already been queued in queuedPackets.
  boolean needSnap = syncFollower(peerLastZxid, learnerMaster);
@@ -1108,16 +1076,13 @@ Return to the main `LearnerHandler` thread. What happens after it determines whe
             // After the NEWLEADER quorum is established, LearnerHandler waits for the leader's server engine to start.
             learnerMaster.waitForStartup();
           // Once the leader's server has started, normal request processing follows; we return to it later.
-
 ```
 
+### `Follower.syncWithLeader`
 
-
-##### Follower.syncWithLeader
-Now return to the follower and inspect the rest of `syncWithLeader`. This method is also long; we will first follow its data synchronization path.
+The rest of the follower's side. Also long; follow the data path first:
 
 ```java
-
  protected void syncWithLeader(long newLeaderZxid) throws Exception {
         QuorumPacket ack = new QuorumPacket(Leader.ACK, 0, null, null);
         QuorumPacket qp = new QuorumPacket();
@@ -1350,15 +1315,15 @@ Now return to the follower and inspect the rest of `syncWithLeader`. This method
         self.setSyncMode(QuorumPeer.SyncMode.NONE);
         // Start the follower's server engine.
         zk.startup();
-
 ```
 
+## 6. Start serving
 
-### Start the follower's server engine
-After receiving `UPTODATE`, the follower starts its server engine: initialize the request processor chain and start session tracking. The source sequences these operations inside `ZooKeeperServer.startup`; this means the follower is now ready for normal client and leader traffic.
+### The follower starts its server
+
+After `UPTODATE`, the follower starts its server: it sets up the request processor chain and session tracking inside `ZooKeeperServer.startup`. It is now ready for normal client and leader traffic.
 
 ```java
-
 protected void setupRequestProcessors() {
         RequestProcessor finalProcessor = new FinalRequestProcessor(this);
         commitProcessor = new CommitProcessor(finalProcessor, Long.toString(getServerId()), true, getZooKeeperServerListener());
@@ -1368,31 +1333,30 @@ protected void setupRequestProcessors() {
         syncProcessor = new SyncRequestProcessor(this, new SendAckRequestProcessor(getFollower()));
         syncProcessor.start();
     }
-
 ```
 
+### The follower handles leader messages
 
-### The follower processes messages from the leader
-The following excerpt from `followLeader` handles incoming leader messages. The individual packet cases belong to ensemble request processing rather than initialization, so the original article defers their detailed analysis.
+`followLeader` then loops over messages from the leader. The individual packet types belong to normal request processing, so the original article leaves them for later:
 
 ```java
-
   while (this.isRunning()) {
                     // Read a message from the leader.
                     readPacket(qp);
                     // Process the received leader message.
                     processPacket(qp);
                 }
-
 ```
 
+### The leader starts its server
 
+Once a quorum has acknowledged **`NEWLEADER`**, the leader starts its server: session tracking and the request processor chain.
 
-### Start the leader's server engine
-Once the leader receives a quorum of acknowledgments for **NEWLEADER**, it starts its ZooKeeper server engine, including session tracking and the request processor chain. **Correction:** the original prose called this a quorum acknowledgment of `LEADERINFO`; the startup barrier is `waitForNewLeaderAck`. The following excerpt initializes the leader processor chain; the original series planned a later detailed analysis of request processing.
+> **Note:** the original text said this happens after a quorum acknowledges `LEADERINFO`. The real barrier is `waitForNewLeaderAck`.
+
+The leader's processor chain:
 
 ```java
-
  protected void setupRequestProcessors() {
         RequestProcessor finalProcessor = new FinalRequestProcessor(this);
         RequestProcessor toBeAppliedProcessor = new Leader.ToBeAppliedRequestProcessor(finalProcessor, getLeader());
@@ -1406,17 +1370,17 @@ Once the leader receives a quorum of acknowledgments for **NEWLEADER**, it start
         // The manager handling container-type znodes.
         setupContainerManager();
     }
-
 ```
 
-##### Leader QuorumPeer
-After the leader's server engine starts, its main thread periodically checks that it still has enough synchronized followers to maintain a quorum.
+### The leader keeps checking its quorum
 
-### LearnerHandler request processing
-After leader startup, each corresponding `LearnerHandler` enters its normal packet-processing loop. The original article included the following excerpt for the request-processing discussion that follows initialization.
+After starting, the leader's main thread checks periodically that it still has enough synchronized followers for a quorum.
+
+### `LearnerHandler` request loop
+
+Each `LearnerHandler` now enters its normal packet loop. The original article kept this excerpt for the request-processing discussion:
 
 ```java
-
  while (true) {
                 qp = new QuorumPacket();
                 ia.readRecord(qp, "packet");
@@ -1510,18 +1474,22 @@ After leader startup, each corresponding `LearnerHandler` enters its normal pack
             messageTracker.dumpToLog(remoteAddr);
             shutdown();
         }
-
 ```
 
+## Summary
 
------
-This completes the analysis of ZooKeeper leader and follower initialization: connect, agree on an epoch, synchronize history, acknowledge NEWLEADER, start the servers, and enter normal broadcast processing.
+Leader and follower initialization, in order: **connect**, **agree on an epoch**, **synchronize history**, **acknowledge `NEWLEADER`**, **start the servers**, then normal broadcast.
 
-## Source checks and reading notes
+## Notes on the source
 
-The original excerpts were compared with the pinned 3.6.2 implementations. The multi-address acceptors, request path metrics, large-request throttling initialization, learner synchronization throttlers, and digest-aware synchronization methods shown here are present in that baseline; they do not require relabeling as later-release excerpts. The original snippets remain selected method excerpts, so some setup, closing braces, or earlier branches are intentionally outside the quoted selections.
+The excerpts were checked against 3.6.2. Multi-address acceptors, request metrics, large-request throttling, learner sync throttlers and digest-aware synchronization all exist in that release, so none of them come from a later version. The excerpts are selected parts of methods, so some setup code, closing braces and earlier branches are left out on purpose.
 
-The source-check corrections distinguish the epoch agreement barrier from the `NEWLEADER` quorum acknowledgment, describe `UPTODATE` as the end of synchronization rather than necessarily the first synchronization packet, and avoid treating the committed-log watermark as proof that a transaction lacks quorum acknowledgment. In `syncFollower`, a missing disk-log bridge forces a snapshot; it is not enough to have some transactions available on disk.
+The corrections in this article:
+
+- epoch agreement and the `NEWLEADER` acknowledgment are separate barriers;
+- `UPTODATE` marks the **end** of synchronization, not necessarily its first packet;
+- the committed-log watermark does not prove that a transaction lacks quorum acknowledgment;
+- in `syncFollower`, a gap between the in-memory committed log and the on-disk log forces a snapshot; having some transactions on disk is not enough.
 
 - [`Leader`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Leader.java): learner acceptors, proposed epoch, epoch acknowledgments, and the `NEWLEADER` quorum barrier.
 - [`Follower`](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/Follower.java): connect, register, synchronize, and process leader traffic.

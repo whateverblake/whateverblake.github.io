@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="t d"><title id="t">ChannelOutboundBuffer: write queues, flush sends</title><desc id="d">A linked list of Entry nodes. Three pointers split it into flushed and unflushed messages.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="470" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">ChannelOutboundBuffer: write queues, flush sends</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">A linked list of Entry nodes. Three pointers split it into flushed and unflushed messages.</text>
+<rect x="70.0" y="200.0" width="130.0" height="56.0" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.4"/>
+<text x="135.0" y="224.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#1a7f37" font-weight="700" text-anchor="middle">Entry 1</text>
+<text x="135.0" y="243.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">flushed</text>
+<path d="M 200.0 228.0 L 230.0 228.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<rect x="230.0" y="200.0" width="130.0" height="56.0" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.4"/>
+<text x="295.0" y="224.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#1a7f37" font-weight="700" text-anchor="middle">Entry 2</text>
+<text x="295.0" y="243.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">flushed</text>
+<path d="M 360.0 228.0 L 390.0 228.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<rect x="390.0" y="200.0" width="130.0" height="56.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1.4"/>
+<text x="455.0" y="224.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="700" text-anchor="middle">Entry 3</text>
+<text x="455.0" y="243.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">unflushed</text>
+<path d="M 520.0 228.0 L 550.0 228.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<rect x="550.0" y="200.0" width="130.0" height="56.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1.4"/>
+<text x="615.0" y="224.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="700" text-anchor="middle">Entry 4</text>
+<text x="615.0" y="243.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">unflushed</text>
+<path d="M 680.0 228.0 L 710.0 228.0" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#a-59636e)"/>
+<rect x="710.0" y="200.0" width="130.0" height="56.0" rx="6" fill="#fbefff" stroke="#8250df" stroke-width="1.4"/>
+<text x="775.0" y="224.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#8250df" font-weight="700" text-anchor="middle">Entry 5</text>
+<text x="775.0" y="243.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">unflushed</text>
+<text x="135.0" y="150.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#1a7f37" font-weight="600" text-anchor="middle">flushedEntry</text>
+<path d="M 135.0 158.0 L 135.0 198.0" fill="none" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#a-1a7f37)"/>
+<text x="455.0" y="150.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#8250df" font-weight="600" text-anchor="middle">unflushedEntry</text>
+<path d="M 455.0 158.0 L 455.0 198.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<text x="775.0" y="150.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#8250df" font-weight="600" text-anchor="middle">tailEntry</text>
+<path d="M 775.0 158.0 L 775.0 198.0" fill="none" stroke="#8250df" stroke-width="1.6" marker-end="url(#a-8250df)"/>
+<text x="860.0" y="222.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#0969da" font-weight="600" text-anchor="start">← write(msg)</text>
+<text x="860.0" y="240.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="start">appends here</text>
+<path d="M 375.0 120.0 L 375.0 290.0" fill="none" stroke="#8250df" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="375.0" y="306.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8250df" font-weight="600" text-anchor="middle">flush() → addFlush(): this boundary moves to the tail</text>
+<text x="70.0" y="346.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#1f2328" font-weight="600" text-anchor="start">doWrite():</text>
+<text x="160.0" y="346.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">nioBuffers() turns flushed entries into ByteBuffer[] → SocketChannel.write() → removeBytes()</text>
+<text x="70.0" y="392.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#1f2328" font-weight="600" text-anchor="start">totalPendingSize</text>
+<rect x="230.0" y="380.0" width="600.0" height="18.0" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+<rect x="230.0" y="380.0" width="430.0" height="18.0" rx="4" fill="#fff1e5" stroke="#bc4c00" stroke-width="1"/>
+<path d="M 470.0 372.0 L 470.0 406.0" fill="none" stroke="#1f2328" stroke-width="1.4"/>
+<text x="470.0" y="424.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">low watermark</text>
+<path d="M 650.0 372.0 L 650.0 406.0" fill="none" stroke="#1f2328" stroke-width="1.4"/>
+<text x="650.0" y="424.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">high watermark</text>
+<text x="230.0" y="452.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">above high → channel unwritable · back below low → writable again (channelWritabilityChanged)</text></svg>

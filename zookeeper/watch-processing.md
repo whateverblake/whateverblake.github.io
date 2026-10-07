@@ -11,18 +11,18 @@ description: "Trace one-shot and persistent watch registration, server notificat
 
 # How ZooKeeper Registers and Delivers Watch Events
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
+A **watch** lets a client hear about changes to a znode. This article follows a watch from registration on the client, through the server, to the callback that finally runs on the client. It continues from [Following a ZooKeeper Node Creation Request](node-creation.html).
 
-## Introduction
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. The figure is the author's original diagram with English labels.
 
-This article explains ZooKeeper watches and continues the source trace in [Following a ZooKeeper Node Creation Request](node-creation.html).
+## 1. The client registers a watch
 
-## The client
+There are two ways to register:
 
-A client can register a persistent watch on a path through `ZooKeeper.addWatch`. Traditional one-shot watches are instead registered through operations such as `exists`, `getData`, and `getChildren`.
+- **One-shot watches** come with reads: `exists`, `getData` and `getChildren`.
+- **Persistent watches** are registered explicitly with `ZooKeeper.addWatch`:
 
 ```java
-
  public void addWatch(String basePath, Watcher watcher, AddWatchMode mode)
             throws KeeperException, InterruptedException {
         PathUtils.validatePath(basePath);
@@ -40,18 +40,17 @@ A client can register a persistent watch on a path through `ZooKeeper.addWatch`.
                     basePath);
         }
     }
-
 ```
 
+## 2. The server stores the watch
 
+On the server the request takes the same path as every other request (see [node creation](node-creation.html)):
 
-## The server
+[![Server request path and request processor chain](assets/watch-processing-01.svg){: .diagram}](assets/watch-processing-01.svg)
 
-The server receives the request through the same stages described in [node creation](node-creation.html): [![Server request path and request processor chain](assets/watch-processing-01.svg){: .diagram}](assets/watch-processing-01.svg)
-The request traverses the same general pipeline as other requests. Operation-specific behavior occurs in the relevant switch branches; for `addWatch`, the important branch is in `FinalRequestProcessor.processRequest`:
+Only the operation-specific branches differ. For `addWatch`, the important branch is in `FinalRequestProcessor.processRequest`:
 
 ```java
-
  case OpCode.addWatch: {
                 lastOp = "ADDW";
                 AddWatchRequest addWatcherRequest = new AddWatchRequest();
@@ -61,36 +60,36 @@ The request traverses the same general pipeline as other requests. Operation-spe
                 rsp = new ErrorResponse(0);
                 break;
             }
-
 ```
 
-
-It delegates through `ZKDatabase.addWatch` to `DataTree.addWatch`. Here is that method.
+It calls `ZKDatabase.addWatch`, which calls `DataTree.addWatch`:
 
 ```java
-
  public void addWatch(String basePath, Watcher watcher, int mode) {
        // Determine the mode: standard, persistent, or persistent recursive.
         WatcherMode watcherMode = WatcherMode.fromZooDef(mode);
         dataWatches.addWatch(basePath, watcher, watcherMode);
         childWatches.addWatch(basePath, watcher, watcherMode);
     }
-
 ```
 
+The three watch modes behave differently:
 
-These three watch modes have different behavior:
+| Mode | After it fires | Covers |
+| --- | --- | --- |
+| **Standard** | Removed. Register again for the next event. | The path |
+| **Persistent** | Stays registered; later events are delivered too. | The path |
+| **Persistent recursive** | Stays registered. | The path and all its descendants |
 
-1. **Standard:** the watch is removed when triggered. Register it again to receive another relevant event.
-2. **Persistent:** triggering does not remove the registration; subsequent relevant events can also be delivered.
-3. **Persistent recursive:** a registration covers the specified path and its descendants. When an event occurs, the server considers recursive registrations on that path and its ancestors. **Correction:** the original description said that ancestor nodes themselves are triggered by a child-list change. The event still names the path where the change occurred, and recursive watches deliberately exclude `NodeChildrenChanged`; descendant create/delete events convey those changes instead.
+For a recursive watch, an event on a path is checked against recursive registrations on that path **and its ancestors**.
 
-##### WatchManager.addWatch
+> **Note:** the original text said ancestors are themselves triggered by a child-list change. They are not: the event still names the path that changed, and recursive watches skip `NodeChildrenChanged` on purpose. Create and delete events on descendants carry that information instead.
 
-The server watch manager adds a registration as follows.
+### `WatchManager.addWatch`
+
+The server's watch manager stores the registration:
 
 ```java
-
 public synchronized boolean addWatch(String path, Watcher watcher, WatcherMode watcherMode) {
          // A server-side connection, such as NIOServerCnxn, serves as the Watcher.
         if (isDeadWatcher(watcher)) {
@@ -120,19 +119,19 @@ public synchronized boolean addWatch(String path, Watcher watcher, WatcherMode w
         watcherModeManager.setWatcherMode(watcher, path, watcherMode);
         return paths.add(path);
     }
-
 ```
 
+`DataTree.addWatch` registers the connection in both `dataWatches` and `childWatches`.
 
+## 3. The server fires the watch
 
-`DataTree.addWatch` registers the connection in both `dataWatches` and `childWatches`. Now return to the final event-triggering calls in [node creation](node-creation.html) and follow their delivery.
+Go back to the last calls in [node creation](node-creation.html), which trigger events, and follow the delivery.
 
-##### triggerWatch
+### `triggerWatch`
 
-They ultimately call `WatchManager.triggerWatch`.
+Both end up in `WatchManager.triggerWatch`:
 
 ```java
-
  public WatcherOrBitSet triggerWatch(String path, EventType type, WatcherOrBitSet supress) {
         WatchedEvent e = new WatchedEvent(type, KeeperState.SyncConnected, path);
         Set<Watcher> watchers = new HashSet<>();
@@ -211,16 +210,13 @@ They ultimately call `WatchManager.triggerWatch`.
 
         return new WatcherOrBitSet(watchers);
     }
-
 ```
 
+### `NIOServerCnxn.process`
 
-##### NIOServerCnxn.process
-
-On the server, the Watcher here is a connection object. Let us inspect `NIOServerCnxn.process`.
+On the server, the "watcher" is the client's connection object. `NIOServerCnxn.process` sends the notification:
 
 ```java
-
 public void process(WatchedEvent event) {
         // Construct the notification response header.
         ReplyHeader h = new ReplyHeader(ClientCnxn.NOTIFICATION_XID, -1L, 0);
@@ -240,18 +236,15 @@ public void process(WatchedEvent event) {
         // Send the notification to the client.
         sendResponse(h, e, "notification", null, null, ZooDefs.OpCode.error);
     }
-
 ```
 
+## 4. The client delivers the event
 
-## Handling watch responses on the client
+### `ClientCnxn.readResponse`
 
-##### ClientCnxn.readResponse
-
-`SendThread.readResponse` handles messages received from the server.
+`SendThread.readResponse` handles every message from the server, including notifications:
 
 ```java
-
  void readResponse(ByteBuffer incomingBuffer) throws IOException {
             ByteBufferInputStream bbis = new ByteBufferInputStream(incomingBuffer);
             BinaryInputArchive bbia = BinaryInputArchive.getArchive(bbis);
@@ -359,17 +352,13 @@ public void process(WatchedEvent event) {
                 finishPacket(packet);
             }
         }
-
 ```
 
+### `eventThread.queueEvent`
 
-
-##### eventThread.queueEvent
-
-`queueEvent` puts the notification in the client's event queue.
+`queueEvent` puts the notification into the client's event queue:
 
 ```java
-
  private void queueEvent(WatchedEvent event, Set<Watcher> materializedWatchers) {
             if (event.getType() == EventType.None && sessionState == event.getState()) {
                 return;
@@ -389,15 +378,11 @@ public void process(WatchedEvent event) {
             // queue the pair (watch set & event) for later processing
             waitingEvents.add(pair);
         }
-
 ```
 
-
-
-Next, examine how `EventThread` dispatches queued work. First, its `run` method:
+`EventThread` takes work from that queue. Its `run` method:
 
 ```java
-
  public void run() {
             try {
                 isRunning = true;
@@ -425,14 +410,11 @@ Next, examine how `EventThread` dispatches queued work. First, its `run` method:
 
             LOG.info("EventThread shut down for session: 0x{}", Long.toHexString(getSessionId()));
         }
-
 ```
 
-
-##### processEvent
+### `processEvent`
 
 ```java
-
 private void processEvent(Object event) {
             try {
                 if (event instanceof WatcherSetEventPair) {
@@ -598,14 +580,13 @@ private void processEvent(Object event) {
         }
 
     }
-
 ```
 
+That is the whole path, on both sides.
 
+> **Note:** watcher callbacks run on `EventThread`. A callback that blocks delays every other event and callback on that client.
 
-This completes the watch registration and delivery path on both client and server. User watcher callbacks run on `EventThread`, so blocking one callback delays other events and callbacks on that client.
-
-## Pinned source references
+## Source references
 
 - [ZooKeeper.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ZooKeeper.java)
 - [DataTree.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java)

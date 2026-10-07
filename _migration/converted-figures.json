@@ -1,0 +1,110 @@
+{
+  "zookeeper/assets/debugging-environment-01.svg": {
+    "replacement": "steps",
+    "note": "Setup steps are written out in the article instead of a picture of text."
+  },
+  "zookeeper/assets/debugging-environment-02.svg": {
+    "replacement": "steps",
+    "note": "Setup steps are written out in the article instead of a picture of text."
+  },
+  "zookeeper/assets/debugging-environment-03.svg": {
+    "replacement": "steps",
+    "note": "Setup steps are written out in the article instead of a picture of text."
+  },
+  "zookeeper/assets/debugging-environment-04.svg": {
+    "replacement": "steps",
+    "note": "Setup steps are written out in the article instead of a picture of text."
+  },
+  "zookeeper/assets/debugging-environment-05.svg": {
+    "replacement": "steps",
+    "note": "Setup steps are written out in the article instead of a picture of text."
+  },
+  "zookeeper/assets/standalone-server-startup-01.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/standalone-server-startup-02.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/client-startup-01.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/client-startup-02.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/client-startup-03.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/data-recovery-01.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/data-recovery-05.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/data-recovery-06.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "zookeeper/assets/data-recovery-07.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "netty/assets/java-reference-processing-02.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "netty/assets/java-reference-processing-07.svg": {
+    "replacement": "table",
+    "note": "Field list shown as a Markdown table instead of a picture of text."
+  },
+  "netty/assets/thread-model-03.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/pooled-memory-09.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/recycler-02.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/recycler-03.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/recycler-04.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/java-reference-processing-01.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/java-reference-processing-03.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/java-reference-processing-05.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/java-reference-processing-06.svg": {
+    "replacement": "code",
+    "note": "Source excerpt shown as a highlighted code block instead of a picture of code."
+  },
+  "netty/assets/pooled-memory-13.svg": {
+    "replacement": "diagram",
+    "note": "Redrawn by netty/assets/draw_diagrams.py in the series diagram style."
+  },
+  "netty/assets/java-reference-processing-04.svg": {
+    "replacement": "diagram",
+    "note": "Redrawn by netty/assets/draw_diagrams.py in the series diagram style."
+  }
+}

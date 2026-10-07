@@ -1,25 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" role="img" aria-labelledby="title description"><title id="title">Legacy subpage handle bit layout</title><desc id="description">handle = 0x4000000000000000L | ((long) bitmapIdx &lt;&lt; 32) | memoryMapIdx; marker is bit 62, not 2^64.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2161ad"/></marker></defs><rect width="1000" height="640" rx="16" fill="#f5f8fc"/><g font-family="Arial, Helvetica, sans-serif">
-<text x="34" y="38" font-size="13" fill="#54677d" font-weight="700" text-anchor="start">LEGACY: NETTY 4.1.50.FINAL</text>
-<text x="34" y="77" font-size="27" fill="#182a42" font-weight="700" text-anchor="start">Legacy subpage handle bit layout</text>
-<rect x="34" y="156" width="110" height="128" rx="10" fill="#eef0f4" stroke="#d5dfeb"/>
-<text x="89.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 63</text>
-<text x="89.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">unused</text>
-<rect x="144" y="156" width="110" height="128" rx="10" fill="#dfeaf8" stroke="#d5dfeb"/>
-<text x="199.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 62</text>
-<text x="199.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">subpage</text>
-<text x="199.0" y="249" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">marker</text>
-<rect x="254" y="156" width="332" height="128" rx="10" fill="#e0f3ed" stroke="#d5dfeb"/>
-<text x="420.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 61 … 32</text>
-<text x="420.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">bitmapIdx</text>
-<rect x="586" y="156" width="380" height="128" rx="10" fill="#eee6f6" stroke="#d5dfeb"/>
-<text x="776.0" y="188" font-size="16" fill="#182a42" font-weight="700" text-anchor="middle">bits 31 … 0</text>
-<text x="776.0" y="224" font-size="18" fill="#182a42" font-weight="400" text-anchor="middle">memoryMapIdx</text>
-<text x="54" y="344" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">0x4000000000000000L</text>
-<text x="54" y="377" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">| ((long) bitmapIdx &lt;&lt; 32)</text>
-<text x="54" y="410" font-size="22" fill="#2161ad" font-weight="400" text-anchor="start" font-family="Menlo, Consolas, monospace" xml:space="preserve" style="white-space:pre">| memoryMapIdx</text>
-<text x="34" y="476" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">bitmapIdx identifies an element within one subpage.</text>
-<text x="34" y="507" font-size="18" fill="#182a42" font-weight="400" text-anchor="start">memoryMapIdx identifies the selected page in the legacy buddy tree.</text>
-<text x="34" y="554" font-size="14" fill="#54677d" font-weight="400" text-anchor="start">handle = 0x4000000000000000L | ((long) bitmapIdx &lt;&lt; 32) | memoryMapIdx; marker is bit 62, not 2^64.</text>
-<a href="https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolSubpage.java">
-<text x="34" y="618" font-size="13" fill="#2161ad" font-weight="400" text-anchor="start">Source: PoolSubpage.java • Legacy: Netty 4.1.50.Final</text>
-</a></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" role="img" aria-labelledby="t d"><title id="t">Legacy subpage handle (Netty 4.1.50)</title><desc id="d">One long identifies a subpage unit: which page in the chunk, and which unit in that page.</desc><defs><marker id="a-0969da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/></marker><marker id="a-8250df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8250df"/></marker><marker id="a-1a7f37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/></marker><marker id="a-bc4c00" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bc4c00"/></marker><marker id="a-59636e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker><marker id="a-d1d9e0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d9e0"/></marker></defs><rect width="960" height="330" fill="#ffffff"/><text x="32.0" y="40.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1f2328" font-weight="600" text-anchor="start">Legacy subpage handle (Netty 4.1.50)</text>
+<text x="32.0" y="64.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" fill="#59636e" font-weight="400" text-anchor="start">One long identifies a subpage unit: which page in the chunk, and which unit in that page.</text>
+<rect x="50.0" y="96.0" width="70.0" height="76.0" rx="4" fill="#f6f8fa" stroke="#59636e" stroke-width="1.4"/>
+<text x="85.0" y="122.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#59636e" font-weight="700" text-anchor="middle">bits 63</text>
+<text x="85.0" y="146.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="600" text-anchor="middle">unused</text>
+<rect x="120.0" y="96.0" width="130.0" height="76.0" rx="4" fill="#fff1e5" stroke="#bc4c00" stroke-width="1.4"/>
+<text x="185.0" y="122.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#bc4c00" font-weight="700" text-anchor="middle">bits 62</text>
+<text x="185.0" y="146.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="600" text-anchor="middle">subpage marker</text>
+<rect x="250.0" y="96.0" width="330.0" height="76.0" rx="4" fill="#fbefff" stroke="#8250df" stroke-width="1.4"/>
+<text x="415.0" y="122.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#8250df" font-weight="700" text-anchor="middle">bits 61 … 32</text>
+<text x="415.0" y="146.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="600" text-anchor="middle">bitmapIdx</text>
+<text x="415.0" y="163.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">unit inside the page</text>
+<rect x="580.0" y="96.0" width="330.0" height="76.0" rx="4" fill="#ddf4ff" stroke="#0969da" stroke-width="1.4"/>
+<text x="745.0" y="122.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#0969da" font-weight="700" text-anchor="middle">bits 31 … 0</text>
+<text x="745.0" y="146.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328" font-weight="600" text-anchor="middle">memoryMapIdx</text>
+<text x="745.0" y="163.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#59636e" font-weight="400" text-anchor="middle">page in the buddy tree</text>
+<text x="50.0" y="222.0" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#1f2328" font-weight="600" text-anchor="start">handle = 0x4000000000000000L | (long) bitmapIdx &lt;&lt; 32 | memoryMapIdx</text>
+<text x="50.0" y="252.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">0x4000000000000000L is 2^62: it marks a subpage handle, so a handle is never 0 even for unit 0.</text>
+<text x="50.0" y="274.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#59636e" font-weight="400" text-anchor="start">Offset of the unit = runOffset(memoryMapIdx) + (bitmapIdx &amp; 0x3FFFFFFF) × elemSize + chunk offset.</text>
+<text x="50.0" y="304.0" font-family="IBM Plex Sans, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" fill="#818b98" font-weight="400" text-anchor="start">4.1.53 replaced this layout: its handles encode run offset, page count, used/subpage flags and bitmap index.</text></svg>

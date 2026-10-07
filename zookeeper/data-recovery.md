@@ -11,114 +11,114 @@ description: "Understand snapshot and transaction log formats and trace ZooKeepe
 
 # How ZooKeeper Recovers Data from Snapshots and Transaction Logs
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The original screenshots are unavailable. The log and snapshot format figures are the author's own diagrams of those structures, with English labels; the other figures are reconstructed from the source and are explanatory, not newly observed debugger output.
+ZooKeeper writes every state change to a **transaction log** before completing it, and now and then saves its whole in-memory state as a **snapshot**. On startup it rebuilds its data from those two files. This article explains both formats and then follows the recovery code.
 
-## Introduction
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. The original screenshots are lost; the log and snapshot figures are the author's own diagrams of those formats, with English labels.
 
-ZooKeeper logs state-changing transactions before completing them and periodically saves its in-memory state as a snapshot. In this context, transactional changes include create, set-data, delete, session, and related state changes; a read is not a state-changing transaction simply because it belongs to CRUD terminology.
-On startup, the server restores data using the snapshot and transaction log files.
+"State changes" here means writes: create, set-data, delete, session changes and similar. Reads are never logged.
 
-## The recovery process
+## 1. Why both a snapshot and a log
 
-Recovery has two parts:
+Recovery has two steps:
 
-- Restore a snapshot.
-- Replay transaction logs.
+1. Restore a snapshot.
+2. Replay the transaction logs written after it.
 
-Why are both needed?
-The transaction log records changes, whereas a snapshot is a checkpoint of server data generated under configured conditions. A snapshot alone may omit transactions processed after it began. If the server crashes before the next snapshot, those changes must be recovered from logs. Conversely, rebuilding entirely from a complete log history would require retaining that history and replaying it all, which can be slow. **Correction:** log-only reconstruction is possible in principle from a suitable initial state and complete history; it is not categorically impossible as the original explanation suggested. Normal recovery uses snapshots to bound replay work, with the retained covering log and subsequent logs completing the restored state.
+Each file covers what the other can't:
 
-## Log and snapshot formats
+- A **snapshot** is a checkpoint taken under configured conditions. It misses everything that happened after it started, so if the server crashes before the next snapshot, those changes must come from the logs.
+- The **log** has every change, but rebuilding from the log alone would mean keeping the whole history forever and replaying all of it, which is slow.
 
-[![Transaction log and snapshot filenames](assets/data-recovery-01.svg)](assets/data-recovery-01.svg)
+So normal recovery loads a snapshot to skip most of the history, then replays only the logs that cover what came after.
 
-This reconstructed figure illustrates the log and snapshot naming scheme discussed in the original article. The filenames are examples, not the output of a new local run.
-Log filenames have the form `log.x`, and snapshots `snapshot.y`. The suffix is a zxid written in hexadecimal. A state-changing transaction receives a server-assigned zxid. In standalone operation these advance monotonically; in an ensemble, zxids encode an epoch and a counter. If transaction B follows A, its zxid is larger, but not necessarily A's zxid plus one if other transactions intervene.
+> **Note:** the original text said log-only recovery is impossible. It is possible in principle, given a starting state and the complete history; snapshots just keep the replay short.
 
-### Meaning of filename suffixes
+## 2. File names
 
-For `log.y`, the suffix identifies the first zxid in that log; its records have zxids at least that value. The original explanation described every log as a fixed 64 MiB file. **Correction:** 64 MiB is the default preallocation increment, configurable through `zookeeper.preAllocSize`, and a log may grow through multiple increments. Preallocation reduces allocation work during append; it does not guarantee physically contiguous placement or eliminate all seeks. For `snapshot.x`, x is the last-processed zxid captured when snapshot generation starts. ZooKeeper snapshots are fuzzy: concurrent state changes can be reflected in some serialized nodes, so the file is not simply a strict list of all transactions below x. Recovery replays overlapping transactions safely.
+| File | Suffix (hexadecimal zxid) |
+| --- | --- |
+| `log.<zxid>` | The **first** zxid in that log. All its records have that zxid or higher. |
+| `snapshot.<zxid>` | The last processed zxid when the snapshot **started**. |
 
+Every state change gets a server-assigned **zxid**. On a standalone server zxids only go up; in an ensemble a zxid combines an epoch and a counter. If transaction B comes after A, B's zxid is larger, but not necessarily A's plus one.
 
-### Transaction log contents
+Two details matter for recovery:
+
+- **Logs grow in steps.** The original text said every log is a fixed 64 MiB file. In fact 64 MiB is the default **preallocation** step (`zookeeper.preAllocSize`), and a log can grow by several steps. Preallocation saves allocation work while appending; it does not guarantee contiguous disk placement.
+- **Snapshots are fuzzy.** Changes keep happening while a snapshot is written, so some nodes in it may already include changes made after `<zxid>`. The file is not an exact copy of the state at one zxid. Replaying the overlapping transactions on top is safe.
+
+## 3. What a log entry holds
 
 [![Transaction log recovery: TxnLogEntry with TxnHeader, Record and TxnDigest](assets/data-recovery-02.svg){: .diagram}](assets/data-recovery-02.svg)
 
-The diagram shows how a log file is read during recovery: each entry is a `TxnLogEntry` made of a `TxnHeader`, an operation-specific `Record` and a `TxnDigest`. The example values below reproduce the original explanation and do not claim a newly observed execution.
+Each log entry is a `TxnLogEntry` with three parts: a `TxnHeader`, an operation-specific `Record` and an optional `TxnDigest`. Read with a log viewer, one entry shows:
 
-- Transaction timestamp.
-- Session ID.
-- Client request ID, `cxid`.
-- Server transaction ID, `zxid`.
-- The operation-specific transaction body:
+| Part | Example from the original article |
+| --- | --- |
+| Timestamp | when the transaction ran |
+| Session ID | the client session |
+| `cxid` | the client's request ID |
+| `zxid` | the server's transaction ID |
+| Operation type | `create2` |
+| Node path | `/test/hsbxxxxxxx` |
+| Node data | `#xxxxxx` |
+| ACL | `v{s{31,s{'world,'anyone}}}` (world/anyone) |
+| Digest version | `2` |
+| Digest value | `10546528799` |
 
-```text
+The values are illustrative, not constants found in every log.
 
-  1. Operation type, such as `create2`.
-  2. Node path, such as `/test/hsbxxxxxxx`.
-  3. Node data, such as `#xxxxxx`.
-  4. ACL information, such as the serialized world/anyone entry `v{s{31,s{'world,'anyone}}}`.
-
-```
-
-
-- Optional digest information:
-
-```text
-
-  1. Digest version, shown as `2` in the original example.
-  2. Digest value, shown as `10546528799` in the original example. These are illustrative values, not constants required for every log.
-
-```
-
-
-### Snapshot contents
+## 4. What a snapshot holds
 
 [![Snapshot file format: DataTree with aclCache and DataNode records, then checksums and digest](assets/data-recovery-03.svg){: .diagram}](assets/data-recovery-03.svg)
 
 [![Snapshot file format: FileHeader, session count and sessionWithTimeOut entries](assets/data-recovery-04.svg){: .diagram}](assets/data-recovery-04.svg)
 
-The two diagrams show the snapshot file layout: the `DataTree` section with the ACL cache and each `DataNode`, and the file header followed by the session table.
+A snapshot has two parts: the header and session table, and the `DataTree` with its ACL cache and every `DataNode`.
 
-1. **Znodes:** the data tree serializes its nodes, their state, data, and ACL references. The serialization is a fuzzy snapshot rather than an atomic point-in-time copy of every node.
-2. **Sessions:** the server also serializes session IDs and their timeout values.
+- **Znodes:** each node's state, data and ACL reference. The snapshot is fuzzy, not an atomic point-in-time copy.
+- **Sessions:** each session ID with its timeout.
 
 ### Znode state
 
-The displayed znode state includes:
+Each node's state, as a viewer shows it:
 
-- `czxid`: the transaction that created the node.
-- `ctime`: creation time.
-- `mzxid`: the transaction that last changed the node's data.
-- `mtime`: last data modification time.
-- `pzxid`: the transaction that last changed the node's child list.
-- `cversion`: child-list version, not the node's creation version.
-- `dataVersion`: data version, exposed as `version` in `Stat`.
-- `aclVersion`: ACL version, exposed as `aversion` in `Stat`.
-- `ephemeralOwner`: the owning session ID for an ordinary ephemeral node; container and TTL nodes use special encodings.
-- `dataLength`: length of the node's data.
+| Field | Meaning |
+| --- | --- |
+| `czxid` | Transaction that created the node. |
+| `ctime` | Creation time. |
+| `mzxid` | Transaction that last changed the node's data. |
+| `mtime` | Time of the last data change. |
+| `pzxid` | Transaction that last changed the node's child list. |
+| `cversion` | Child-list version (not a creation version). |
+| `dataVersion` | Data version; `version` in `Stat`. |
+| `aclVersion` | ACL version; `aversion` in `Stat`. |
+| `ephemeralOwner` | Owning session of an ephemeral node; container and TTL nodes use special values. |
+| `dataLength` | Length of the node's data. |
 
-The display may omit stored data and ACL details. `dataLength` and child counts are derived for the public `Stat`; they are not separate fields in the serialized `StatPersisted` record.
+`dataLength` and the child count are computed for the public `Stat`; they are not stored in the serialized `StatPersisted` record.
 
-### Session information
+### Sessions
 
-Session inspection exposes the following information:
+A session entry shows:
 
-- sessionid
-- Session timeout.
-- Number of ephemeral nodes owned by the session. **Correction:** snapshots directly persist the session-ID-to-timeout map; the owner-to-ephemeral-node sets are reconstructed from node state, rather than serializing this displayed count as a session field.
+- the session ID,
+- its timeout,
+- the number of ephemeral nodes it owns.
 
-----
+> **Note:** only the session-ID → timeout map is stored in the snapshot. Which ephemeral nodes a session owns is rebuilt from the nodes' `ephemeralOwner` field, not stored per session.
 
-With these formats in mind, we can follow the recovery implementation.
-Find the newest valid snapshot, then replay the log containing the next required zxid and later logs. A log that starts below the snapshot zxid can still contain required later entries, so selecting only logs whose filenames exceed it would miss data. In the illustrative filename list, `snapshot.30` and `log.27` can be sufficient when that log covers all later transactions. The suffixes are hexadecimal; sufficiency depends on actual valid record contents, not filenames alone.
+## 5. The recovery code
 
-##### ZooKeeperServer.startData
+The plan: find the newest valid snapshot, then replay the log that contains the next needed zxid and every later log.
 
-Startup enters recovery through `ZooKeeperServer.startdata` (lowercase `d` in this version).
+> **Watch out:** a log whose name is **below** the snapshot zxid can still hold needed entries, because its name is only its first zxid. With `snapshot.30` and `log.27`, those two files can be enough: recovery replays `log.27` from zxid `0x31` on, if that log contains the later transactions. Picking only logs named above the snapshot would lose data. What counts is the records inside, not the file names.
+
+### `ZooKeeperServer.startdata`
+
+Recovery starts in `ZooKeeperServer.startdata` (lowercase `d` in this version):
 
 ```java
-
   public void startdata() throws IOException, InterruptedException {
         //check to see if zkDb is not null
         // ZKDatabase represents the server's data store.
@@ -130,14 +130,11 @@ Startup enters recovery through `ZooKeeperServer.startdata` (lowercase `d` in th
             loadData();
         }
     }
-
 ```
 
-
-##### loadData
+### `loadData`
 
 ```java
-
   public void loadData() throws IOException, InterruptedException {
 
         if (zkDb.isInitialized()) {
@@ -165,16 +162,13 @@ Startup enters recovery through `ZooKeeperServer.startdata` (lowercase `d` in th
         // Make a clean snapshot
         takeSnapshot();
     }
-
 ```
 
+### `ZKDatabase.loadDataBase()`
 
-##### ZKDatabase.loadDataBase()
-
-Recovery repopulates the fields of `ZKDatabase`.
+Recovery fills in the fields of `ZKDatabase`:
 
 ```java
-
 public long loadDataBase() throws IOException {
         long startTime = Time.currentElapsedTime();
          // Restore dataTree and sessionsWithTimeouts and return the highest recovered zxid.
@@ -187,32 +181,49 @@ public long loadDataBase() throws IOException {
                 loadTime, Long.toHexString(zxid), dataTree.getTreeDigest());
         return zxid;
     }
-
 ```
 
+The data ends up in `DataTree`.
 
-Now consider `DataTree`.
+### `DataTree`
 
-##### DataTree
+`DataTree` is ZooKeeper's in-memory data store. Its key members:
 
-`DataTree` is ZooKeeper's in-memory data engine. The following figure identifies its key fields.
+| Member | Type | Holds |
+| --- | --- | --- |
+| `nodes` | `NodeHashMap` | Full path → `DataNode`. |
+| `dataWatches` / `childWatches` | `IWatchManager` | Watch registrations. |
+| `ephemerals` | `Map<Long, HashSet<String>>` | Session → its ephemeral paths. |
+| `aclCache` | `ReferenceCountedACLCache` | Shared ACL records. |
+| `lastProcessedZxid` | `long` | Latest applied transaction. |
 
-[![DataTree: the in-memory data model](assets/data-recovery-05.svg)](assets/data-recovery-05.svg)
+`nodes` is a `NodeHashMapImpl`:
 
-Its `nodes` map holds the data nodes.
+| Member | Type | Job |
+| --- | --- | --- |
+| `nodes` | `ConcurrentHashMap<String, DataNode>` | The node storage. |
+| `digestEnabled` | `boolean` | Whether to track a digest of the whole tree. |
+| `digestCalculator` | `DigestCalculator` | Computes each node's contribution. |
+| `hash` | `AdHash` | The aggregate digest. |
+| `put` / `remove` / `preChange` / `postChange` | methods | Keep storage and digest in step. |
 
-[![NodeHashMapImpl: nodes and digest accounting](assets/data-recovery-06.svg)](assets/data-recovery-06.svg)
+> **Note:** the map key is the **full path**, not just the node's own name.
 
-Internally, the node storage uses a concurrent map keyed by full node path, with `DataNode` values. The figure shows the fields of a `DataNode`. **Terminology correction:** the key is the full path, not merely the final node name.
+Each value is a `DataNode`:
 
-[![DataNode: persisted and derived state](assets/data-recovery-07.svg)](assets/data-recovery-07.svg)
+| Member | Type | Holds |
+| --- | --- | --- |
+| `data` | `byte[]` | The node's payload. |
+| `acl` | `Long` | Key into the ACL cache. |
+| `stat` | `StatPersisted` | Persistent metadata (zxids, times, versions, owner). |
+| `children` | `Set<String>` | Child **names**, not full paths. |
+| `digest` / `digestCached` | | Cached node digest and its validity flag. |
 
-##### snapLog.restore
+### `snapLog.restore`
 
-Continue with `FileTxnSnapLog.restore` on the recovery call chain.
+Back on the call chain, `FileTxnSnapLog.restore`:
 
 ```java
-
  public long restore(DataTree dt, Map<Long, Integer> sessions, PlayBackListener listener) throws IOException {
         long snapLoadingStartTime = Time.currentElapsedTime();
        // Deserialize snapshot data through snapLog.
@@ -277,17 +288,13 @@ Continue with `FileTxnSnapLog.restore` on the recovery call chain.
 
         return finalizer.run();
     }
-
 ```
 
+### `FileSnap.deserialize`
 
-
-##### FileSnap.deserialize
-
-First, examine snapshot restoration.
+First the snapshot:
 
 ```java
-
 public long deserialize(DataTree dt, Map<Long, Integer> sessions) throws IOException {
         // we run through 100 snapshots (not all of them)
         // if we cannot get it running within 100 snapshots
@@ -348,16 +355,13 @@ public long deserialize(DataTree dt, Map<Long, Integer> sessions) throws IOExcep
         }
         return dt.lastProcessedZxid;
     }
-
 ```
 
+### `deserialize`
 
-##### deserialize
-
-Here is the snapshot `deserialize` call chain.
+The snapshot `deserialize` chain:
 
 ```java
-
 public void deserialize(DataTree dt, Map<Long, Integer> sessions, InputArchive ia) throws IOException {
 
         FileHeader header = new FileHeader();
@@ -369,15 +373,11 @@ public void deserialize(DataTree dt, Map<Long, Integer> sessions, InputArchive i
          //
         SerializeUtils.deserializeSnapshot(dt, ia, sessions);
     }
-
 ```
 
-
-#####  SerializeUtils.deserializeSnapshot
+### `SerializeUtils.deserializeSnapshot`
 
 ```java
-
-
 public static void deserializeSnapshot(DataTree dt, InputArchive ia, Map<Long, Integer> sessions) throws IOException {
         // Restore session timeout information first.
         int count = ia.readInt("count");
@@ -397,14 +397,11 @@ public static void deserializeSnapshot(DataTree dt, InputArchive ia, Map<Long, I
        // Deserialize the DataTree.
         dt.deserialize(ia, "tree");
     }
-
 ```
 
-
-##### DataTree.deserialize()
+### `DataTree.deserialize()`
 
 ```java
-
 public void deserialize(InputArchive ia, String tag) throws IOException {
         // Read ACL cache information first.
         aclCache.deserialize(ia);
@@ -468,17 +465,13 @@ public void deserialize(InputArchive ia, String tag) throws IOException {
        // Purge unused ACL entries.
         aclCache.purgeUnused();
     }
-
 ```
 
+That restores the snapshot. Now the log replay.
 
-That covers snapshot restoration. Next, examine transaction log replay.
-
-##### RestoreFinalizer.run
+### `RestoreFinalizer.run`
 
 ```java
-
-
 long highestZxid = fastForwardFromEdits(dt, sessions, listener);
             // The snapshotZxidDigest will reset after replaying the txn of the
             // zxid in the snapshotZxidDigest, if it's not reset to null after
@@ -493,14 +486,11 @@ long highestZxid = fastForwardFromEdits(dt, sessions, listener);
                         Long.toHexString(snapshotZxidDigest.getZxid()));
             }
             return highestZxid;
-
 ```
 
-
-##### fastForwardFromEdits
+### `fastForwardFromEdits`
 
 ```java
-
  public long fastForwardFromEdits(
         DataTree dt,
         Map<Long, Integer> sessions,
@@ -558,17 +548,13 @@ long highestZxid = fastForwardFromEdits(dt, sessions, listener);
          // Return the highest processed zxid.
         return highestZxid;
     }
-
 ```
 
+### `TxnIterator.next()`
 
-
-##### TxnIterator.next()
-
-`next()` reads the next record from the transaction logs.
+`next()` reads the next record from the logs:
 
 ```java
-
 public boolean next() throws IOException {
             if (ia == null) {
                 return false;
@@ -617,16 +603,13 @@ public boolean next() throws IOException {
             }
             return true;
         }
-
 ```
 
+## Summary
 
+ZooKeeper recovers by restoring a snapshot and replaying the logs after it. For how each replayed transaction is applied, see [node creation](node-creation.html).
 
-## Closing remarks
-
-This is ZooKeeper's recovery path through snapshot restoration and transaction replay. See [node creation](node-creation.html) for the transaction application stage.
-
-## Pinned source references
+## Source references
 
 - [ZooKeeperServer.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServer.java)
 - [ZKDatabase.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ZKDatabase.java)

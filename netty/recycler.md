@@ -11,26 +11,23 @@ series_order: 8
 
 # How Netty Recycler Reuses Objects Across Threads
 
-## Background
-Repeatedly creating and collecting many objects of the same type can increase allocation and GC work. An object pool allows reuse: return an object when finished, and obtain one from the pool when needed. Netty uses many short-lived internal objects and provides a thread-local recycler for them.
+Creating and garbage-collecting many objects of the same type costs allocation and GC time. An **object pool** avoids that: return an object when you are done and take one back from the pool next time. Netty uses many short-lived internal objects and pools them with `Recycler`, a pool with one stack per thread. This article explains how it works, including the hard part: an object returned by a *different* thread.
 
-## Defining a reusable type in Netty
-- Create a recycler for the object type.
-- Give the reusable class a recycle method.
-- Keep its `Handle` in each reusable object.
+> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
 
-```
+## 1. Make a type reusable
 
-`Handle` is a Netty interface whose ordinary implementation is `DefaultHandle`. It provides the operation used to return an object to the recycler.
+Three steps:
 
-```
+1. Create a `Recycler` for the type.
+2. Give the class a `recycle` method.
+3. Keep the object's `Handle` inside it.
 
+`Handle` is a Netty interface; the usual implementation is `DefaultHandle`. It is how an object returns itself to the pool.
 
+## 2. A small example
 
-## A simple example
-
-```
-
+```java
 import io.netty.util.Recycler;
 import io.netty.util.internal.ObjectPool;
 
@@ -68,63 +65,102 @@ public class Recycler_T {
     }
 
 }
-
 ```
 
-The example shows the requirements for a reusable object type:
-1) Create the recycler.
-2) Store the supplied handle in `Product`.
-3) Expose a method that returns the object through that handle.
-In `main`, obtaining `p1` initially calls the recycler's `newObject` because no reusable object exists. After using and recycling `p1`, obtaining `p2` can return that same object. In the shown sequence `p3` and `p4` differ. Why? The recycler's admission policy, described below, decides which newly recycled objects to retain; object identity observations depend on that policy and the example's operation order.
+In `main`:
 
-## Before discussing the implementation
-Each thread has its own stack for a recycler. A thread obtains objects from its own stack rather than sharing a single synchronized pool with all other threads. Cross-thread recycling uses separate transfer queues, so this does not mean objects can never move between threads.
+- `p1` comes from the recycler's `newObject`, because the pool is empty.
+- After `p1` is used and recycled, `p2` can be **the same object**.
+- `p3` and `p4`, though, are different objects. Why? The recycler does not keep every returned object: an **admission policy** (below) decides which ones to keep. What you observe depends on that policy and on the order of operations.
 
-## Implementation model
-Start with the diagram.
+## 3. The model
+
+Each thread has **its own stack** per recycler and takes objects from it, instead of sharing one synchronized pool with every other thread. Objects can still move between threads: returns from another thread go through separate transfer queues.
+
 [![Recycler ownership and cross-thread queues](assets/recycler-01.svg){: .diagram}](assets/recycler-01.svg)
-The main elements are described below.
-- ##### stack
-`Stack` is a thread's local pool implementation. Each owning thread has its own stack.
-- ##### stack -> elements
-`elements` is a `DefaultHandle` array, initially sized to `min(maxCapacity, 256)`. Each occupied slot represents a retained reusable object.
-- ##### DefaultHandle
-`DefaultHandle` links reuse to the object: `stack` identifies the owning pool and `value` identifies the reusable object. The pool actually stores handles.
-[![DefaultHandle: object and ownership state](assets/recycler-02.svg)](assets/recycler-02.svg)
 
-- ##### stack -> head
-`head` points to the first `WeakOrderQueue` in a linked list.
-- ##### stack -> cursor
-`cursor` records the queue at which scavenging resumes; it is examined below.
-- ##### stack -> pre
-`prev` records the preceding queue during scavenging; it is examined below.
-- ##### WeakOrderQueue
-Thread-local stacks avoid synchronizing every ordinary obtain and recycle operation. However, another thread can return an object to its owner's recycler. Instead of changing the owner's `elements` array directly, that producer thread creates a `WeakOrderQueue` for the stack and appends handles to it. Several producer threads therefore create several queues, linked together. The stack's `head` points to the most recently linked queue.
-- ##### WeakOrderQueue -> next
-`next` points to the next queue in that linked list.
-- ##### WeakOrderQueue -> id
-Each queue has a unique `id`.
-- ##### WeakOrderQueue -> head
-`head` within the queue points to a `Head` object, discussed below.
-- ##### WeakOrderQueue -> tail
-`tail` points to the final `Link` in the queue's link list.
-- ##### Head
-`Head` connects the queue to its link list and manages reservations from the stack's shared-capacity budget. The links hold the handles recycled by another thread.
-[![Head: capacity accounting and the first Link](assets/recycler-03.svg)](assets/recycler-03.svg)
+The parts:
 
-- ##### Link
-Objects recycled by their owner go into the stack's `elements` array. Objects returned by other threads enter `Link.elements`; each link has a default capacity of 16 handles.
-[![Link: a batch of recycled handles](assets/recycler-04.svg)](assets/recycler-04.svg)
-A link has a `readIndex` and a published write index. Since `Link` extends `AtomicInteger`, its atomic value acts as the write index. Returning an object appends at the write index and increments it; transferring objects advances the read index. Equal indexes mean there is currently no unread handle in that link. Handles are not returned to callers directly from these links: they first move into the owner's stack, from which `pop` obtains an object.
+| Part | Role |
+| --- | --- |
+| `Stack` | One thread's local pool. Each owning thread has its own. |
+| `Stack.elements` | `DefaultHandle[]`, initially `min(maxCapacity, 256)` long. Each filled slot is one pooled object. |
+| `DefaultHandle` | Links an object to its pool: `stack` is the owning pool, `value` the object. The pool stores handles, not objects. |
 
----
-## Source walkthrough: recycling an object
-Start with returning objects, so the later obtain path has a clear source for the objects it finds.
-[![Recycle an object back through its handle](assets/recycler-05.svg){: .diagram}](assets/recycler-05.svg)
-The diagram shows the recycling call chain. What happens in `stack.push`?
+`DefaultHandle` in full:
 
+```java
+private static final class DefaultHandle<T> implements Handle<T> {
+    int lastRecycledId;
+    int recycleId;
+    boolean hasBeenRecycled;
+    Stack<?> stack;
+    Object value;
+    DefaultHandle(Stack<?> stack) {
+        this.stack = stack;
+    }
+    @Override
+    public void recycle(Object object) {
+        if (object != value) {
+            throw new IllegalArgumentException("object does not belong to handle");
+        }
+        Stack<?> stack = this.stack;
+        if (lastRecycledId != recycleId || stack == null) {
+            throw new IllegalStateException("recycled already");
+        }
+        stack.push(this);
+    }
+}
 ```
 
+### Returns from other threads
+
+The owner thread pushes into its own `elements` array without locks. But another thread may also return an object to the owner's pool. It must not touch the owner's array, so it creates a **`WeakOrderQueue`** for that stack and appends handles there. Several returning threads create several queues, linked into a list.
+
+| Member | Role |
+| --- | --- |
+| `Stack.head` | The most recently linked `WeakOrderQueue`. |
+| `Stack.cursor` | The queue where the next scavenge resumes. |
+| `Stack.prev` | The queue before `cursor` during scavenging. |
+| `WeakOrderQueue.next` | The next queue in the list. |
+| `WeakOrderQueue.id` | A unique ID. |
+| `WeakOrderQueue.head` | Its `Head` (below). |
+| `WeakOrderQueue.tail` | The last `Link` in its link list. |
+
+**`Head`** connects a queue to its links and reserves space from the stack's shared capacity budget:
+
+```java
+private static final class Head {
+    private final AtomicInteger availableSharedCapacity;
+    Link link;
+    Head(AtomicInteger availableSharedCapacity) {
+        this.availableSharedCapacity = availableSharedCapacity;
+    }
+    // ...
+}
+```
+
+**`Link`** holds a batch of handles returned by another thread, 16 by default:
+
+```java
+static final class Link extends AtomicInteger {
+    final DefaultHandle<?>[] elements = new DefaultHandle[LINK_CAPACITY];
+    int readIndex;
+    Link next;
+}
+```
+
+Because `Link` extends `AtomicInteger`, its atomic value is the **write index**. A return appends at the write index and increments it; a transfer advances `readIndex`. Equal indexes mean the link has nothing unread. Handles in links are never handed out directly: they first move into the owner's stack, and `pop` takes them from there.
+
+## 4. Recycle an object
+
+Start with returning objects, so the obtain path later has something to find.
+
+[![Recycle an object back through its handle](assets/recycler-05.svg){: .diagram}](assets/recycler-05.svg)
+
+What does `stack.push` do?
+
+```java
  void push(DefaultHandle<?> item) {
             Thread currentThread = Thread.currentThread();
             if (threadRef.get() == currentThread) {
@@ -137,16 +173,15 @@ The diagram shows the recycling call chain. What happens in `stack.push`?
                 pushLater(item, currentThread);
             }
         }
-
 ```
 
-`threadRef` weakly identifies the stack's owning thread. If that same thread returns an object, the stack uses `pushNow`; if another thread returns it, the stack uses `pushLater`.
+`threadRef` weakly references the stack's owner thread. If the owner returns the object, `push` uses `pushNow`; any other thread uses `pushLater`.
+
 [![Stack.push chooses the return path](assets/recycler-06.svg){: .diagram}](assets/recycler-06.svg)
-Examine the two cases separately.
-- ##### pushNow
 
-```
+### `pushNow`
 
+```java
  private void pushNow(DefaultHandle<?> item) {
             if ((item.recycleId | item.lastRecycledId) != 0) {
                 throw new IllegalStateException("recycled already");
@@ -171,13 +206,11 @@ Examine the two cases separately.
            // Increase the count of available handles.
             this.size = size + 1;
         }
-
 ```
 
-`dropHandle` decides whether this handle should be retained.
+`dropHandle` decides whether to keep the handle:
 
-```
-
+```java
 boolean dropHandle(DefaultHandle<?> handle) {
 
              // hasBeenRecycled identifies a handle previously admitted to reuse.
@@ -197,16 +230,15 @@ boolean dropHandle(DefaultHandle<?> handle) {
             }
             return false;
         }
-
 ```
 
-That is the same-thread return path.
+That is the same-thread path.
 
-- ##### pushLater
-When another thread returns an object to this stack, it uses the following method.
+### `pushLater`
 
-```
+When another thread returns the object:
 
+```java
  private void pushLater(DefaultHandle<?> item, Thread thread) {
             // maxDelayedQueues bounds the producer thread's delayed-queue map.
             // Its default is availableProcessors * 2; zero disables this delayed-queue path.
@@ -249,15 +281,11 @@ When another thread returns an object to this stack, it uses the following metho
            // Add the handle to the delayed return queue.
             queue.add(item);
         }
-
 ```
 
+### `newQueue`
 
-
-- Implementation of newWeakOrderQueue
-
-```
-
+```java
 static WeakOrderQueue newQueue(Stack<?> stack, Thread thread) {
             // We allocated a Link so reserve the space
             // Bound the shared capacity for cross-thread returns to this stack.
@@ -281,13 +309,11 @@ static WeakOrderQueue newQueue(Stack<?> stack, Thread thread) {
 
             return queue;
         }
-
 ```
 
-Here is `reserveSpaceForLink`:
+`reserveSpaceForLink`:
 
-```
-
+```java
  static boolean reserveSpaceForLink(AtomicInteger availableSharedCapacity) {
                 for (;;) {
                     int available = availableSharedCapacity.get();
@@ -300,24 +326,20 @@ Here is `reserveSpaceForLink`:
                 }
             }
         }
-
 ```
 
-Here is `stack.setHead`:
+`stack.setHead`:
 
-```
-
+```java
 synchronized void setHead(WeakOrderQueue queue) {
             queue.setNext(head);
             head = queue;
         }
-
 ```
 
-After a queue is obtained and admission checks succeed, `WeakOrderQueue.add` returns the object.
+Once the thread has a queue and the admission check passes, `WeakOrderQueue.add` stores the handle:
 
-```
-
+```java
 void add(DefaultHandle<?> handle) {
             handle.lastRecycledId = id;
 
@@ -358,31 +380,25 @@ void add(DefaultHandle<?> handle) {
             // Publish the updated write index.
             tail.lazySet(writeIndex + 1);
         }
-
 ```
 
-That completes the delayed queue's return path.
-Here is `Head.newLink`:
+That is the cross-thread return path. `Head.newLink`:
 
-```
-
+```java
 Link newLink() {
                 return reserveSpaceForLink(availableSharedCapacity) ? new Link() : null;
             }
-
 ```
 
+## 5. Get an object
 
-## The complete recycling path has now been covered.
----
-## Obtaining a reusable object
+The obtain call chain:
 
-The obtain call chain is shown below.
 [![Get an object from Recycler](assets/recycler-07.svg){: .diagram}](assets/recycler-07.svg)
-The central method is `Recycler.get`.
 
-```
+The core is `Recycler.get`:
 
+```java
 public final T get() {
         // maxCapacityPerThread bounds each thread's local pool; the default is 4096.
         if (maxCapacityPerThread == 0) {
@@ -400,14 +416,11 @@ public final T get() {
         }
         return (T) handle.value;
     }
-
 ```
 
-### stack.pop
-Continue into the implementation.
+### `stack.pop`
 
-```
-
+```java
  DefaultHandle<T> pop() {
             // size counts handles currently stored in the local elements array.
             int size = this.size;
@@ -442,15 +455,13 @@ Continue into the implementation.
             ret.lastRecycledId = 0;
             return ret;
         }
-
 ```
 
-When `elements` is nonempty, `pop` simply obtains a handle from it. When empty, it tries `scavenge`.
+If `elements` has handles, `pop` takes one. If it is empty, it tries `scavenge` to pull handles in from the queues.
 
-### scavenge
+### `scavenge`
 
-```
-
+```java
  private boolean scavenge() {
             // continue an existing scavenge, if any
            // scavengeSome performs the actual delayed-queue search.
@@ -467,14 +478,13 @@ When `elements` is nonempty, `pop` simply obtains a handle from it. When empty, 
             cursor = head;
             return false;
         }
-
 ```
 
-### scavengeSome
-The more involved `scavengeSome` method searches the `WeakOrderQueue` list.
+### `scavengeSome`
 
-```
+The interesting part: walking the `WeakOrderQueue` list.
 
+```java
 private boolean scavengeSome() {
             WeakOrderQueue prev;
            // Choose the starting queue for this traversal.
@@ -537,18 +547,25 @@ private boolean scavengeSome() {
             this.cursor = cursor;
             return success;
         }
-
 ```
 
-`scavengeSome` transfers delayed returns into the local stack. For a queue with a live producer, a successful link transfer ends the search. For a dead producer, it attempts to drain final data as capacity and admission allow. A drained dead-owner queue can be unlinked when a predecessor is available. The code does not replace the stack's head from this path; that choice avoids racing with synchronized producer-side insertion. Consequently, a dead head or a leading run of dead-owner queues may remain linked until later lifecycle cleanup. This observation is about list reachability in this implementation, not proof that every such queue permanently retains all its returned objects.
+`scavengeSome` moves returned handles from the queues into the local stack:
+
+- For a queue whose producer thread is **alive**, one successful link transfer ends the search.
+- For a queue whose producer is **dead**, it drains the remaining data as far as capacity and admission allow. A drained dead queue is unlinked if it has a predecessor (`prev`).
+- The stack's `head` is never replaced on this path, to avoid racing with producers inserting new queues (which is synchronized). So dead queues at the front of the list stay linked until later cleanup.
+
 [![Dead and active WeakOrderQueue nodes during scavenging](assets/recycler-08.svg){: .diagram}](assets/recycler-08.svg)
-In the figure, the blue `Dead_WeakOrderQueue` nodes sit at the front of the chain, before any live queue that could serve as `prev`. With no predecessor to unlink through, they cannot be reclaimed. A dead queue later in the chain, including the last node, can be unlinked once a live queue has become `prev`; the original claim that a dead last node can never be reclaimed was incorrect.
 
-### WeakOrderQueue.transfer(stack)
-`transfer` moves reusable handles from one queue link into the stack. Its source follows.
+In the figure, the blue `Dead_WeakOrderQueue` nodes sit at the front of the list, before any live queue that could act as `prev`. With no predecessor to unlink through, they stay. A dead queue **later** in the list, including the last one, can be unlinked once a live queue has become `prev`.
 
-```
+> **Note:** the original article said a dead queue at the end of the list can never be reclaimed. That was wrong. Also, a queue staying linked does not mean it keeps all of its returned objects forever.
 
+### `WeakOrderQueue.transfer(stack)`
+
+Moves handles from one link of the queue into the stack:
+
+```java
 boolean transfer(Stack<?> dst) {
             // Start from the queue Head's current link.
             Link head = this.head.link;
@@ -643,24 +660,27 @@ boolean transfer(Stack<?> dst) {
                 return false;
             }
         }
-
 ```
 
-
 ## References
-Thanks to the authors of the following articles, whose explanations helped me read this code.
-[https://huzb.me/2019/10/17/netty%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E6%B1%A0/](https://huzb.me/2019/10/17/netty%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E6%B1%A0/)
 
-[https://www.cnblogs.com/jackion5/p/11369705.html](https://www.cnblogs.com/jackion5/p/11369705.html)
+These articles helped me read this code:
 
+- [huzb.me: Netty object pool notes](https://huzb.me/2019/10/17/netty%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E6%B1%A0/)
 
-## Source version and figures
+- [cnblogs: jackion5](https://www.cnblogs.com/jackion5/p/11369705.html)
 
-This is the Stack/WeakOrderQueue implementation present in Netty 4.1.53.Final. The default maximum delayed queues is `availableProcessors() * 2`, not a universal constant 16. The initial local array is bounded by the configured maximum. Queues weakly reference their producer threads, and the delayed-map keys are weak. Some synchronization and atomics remain on cross-thread paths, despite the absence of a global synchronized object pool. With the default interval 8, the actual counter logic admits the first candidate and then drops eight new candidates before admitting another; the source comment describing every eighth try is imprecise. Recycling is an admission decision, not a guarantee of future reuse; applications must stop using an object once returned.
+## Notes on the source
 
-Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
+- This is the Stack/WeakOrderQueue implementation in 4.1.53.Final.
+- The default maximum number of delayed queues is `availableProcessors() * 2`, not a fixed 16.
+- The initial `elements` size is capped by the configured maximum.
+- Queues hold weak references to their producer threads, and the delayed-queue map has weak keys.
+- There is no global synchronized pool, but the cross-thread path still uses some locks and atomics.
+- With the default ratio of 8, the counter keeps the first candidate and then drops the next eight before keeping another. (The source comment says "every eighth", which is imprecise.)
+- Recycling is an admission decision, not a promise of reuse. Never touch an object after returning it.
 
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [Recycler.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java)
 - [ObjectPool.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/internal/ObjectPool.java)

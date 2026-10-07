@@ -8,6 +8,7 @@ BUILD=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/jianshu-english-site'
 manifest=json.loads((REPO/'_migration/article-manifest.json').read_text())
 figures=json.loads((REPO/'_migration/figure-provenance.json').read_text())
 errors=[]; stats=[]
+PROSE_FENCES_CONVERTED={'standalone-server-startup':4,'data-recovery':2,'leader-election':2,'expiry-queue':1,'recycler':1}
 def check(condition,msg):
  if not condition:errors.append(msg)
 def target(current,url):
@@ -39,25 +40,31 @@ for a in manifest['articles']:
  check(fm.get('order')==a['order'],'Incorrect order '+str(p))
  check(not re.search(r'[\u3400-\u9fff]',s),'Visible Chinese remains '+str(p))
  check('upload-images.jianshu.io' not in s,'Old image host remains '+str(p))
- check(len(re.findall(r'!\[',s))==len(a['images']),'Image count mismatch '+str(p))
+ inline=sum(1 for r in figures if r['article']==a['slug'] and r['topic']==a['topic'] and r['kind'].startswith('inline-'))
+ added=sum(1 for r in figures if r['article']==a['slug'] and r['topic']==a['topic'] and r['kind']=='diagram-added')
+ expected=len(a['images'])-inline+added
+ check(len(re.findall(r'!\[',s))==expected,'Image count mismatch '+str(p))
  origf=len(re.findall(r'^\s*```',orig,re.M));newf=len(re.findall(r'^\s*```',s,re.M))
- check(newf>=origf and newf%2==0,'Missing/unbalanced original code fences '+str(p))
+ # Fences that held prose (not code) in the original were turned into tables, lists or paragraphs.
+ converted=PROSE_FENCES_CONVERTED.get(a['slug'],0)*2
+ check(newf>=origf-converted and newf%2==0,'Missing/unbalanced original code fences '+str(p))
  check(not re.search(r'\$\$|\$2\^\{',s),'Unrendered math syntax '+str(p))
  built=BUILD/a['topic']/(a['slug']+'.html')
  check(built.exists(),'Missing built article '+str(built))
  if not built.exists():continue
  parsed=Page();parsed.feed(built.read_text());check(parsed.h1==1,'Wrong H1 count '+str(built))
  check(not any(t.startswith('math/tex') for t in parsed.scripts),'Hidden math script '+str(built))
- check(len(parsed.images)==len(a['images']),'Built image count mismatch '+str(built))
+ check(len(parsed.images)==expected,'Built image count mismatch '+str(built))
  for im in parsed.images:check(bool(im.get('alt')),'Missing image alt '+str(built))
  for url in parsed.refs:
   t=target(built,url)
   if t is not None:check(t.exists(),'Broken local link '+str(built)+' → '+url)
  stats.append({'article':str(p.relative_to(REPO)),'original_code_blocks':origf//2,'english_code_blocks':newf//2,'illustrations':len(a['images']),'built':str(built)})
 check(len(stats)==23,'Expected23 translated pages')
-check(len(figures)==69,'Expected69 figure provenance records')
+check(len(figures)==72,'Expected 69 original figure slots plus 3 added diagrams')
 seen=set()
 for f in figures:
+ if f['asset'] is None:continue
  p=REPO/f['asset'];check(p.exists(),'Missing figure '+str(p))
  if not p.exists():continue
  check(f['asset'] not in seen,'Duplicate figure '+f['asset']);seen.add(f['asset'])

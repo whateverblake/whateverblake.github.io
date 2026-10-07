@@ -11,27 +11,23 @@ description: "Follow server selection, client threads, NIO framing, and the ZooK
 
 # How a ZooKeeper Client Starts and Establishes a Session
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
+This article follows a ZooKeeper client from `new ZooKeeper(...)` to an established session: parsing the connect string, picking a server, opening the socket and running the session handshake.
 
-## Introduction
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Diagrams from the original article are redrawn with English labels.
 
-The previous article examined [server startup](standalone-server-startup.html). Here we trace the startup of a ZooKeeper client.
+The previous article covered [server startup](standalone-server-startup.html). Now the other side: the client.
 
-## Creating the client connection object
+## 1. Create the client object
 
-A typical client created through the native ZooKeeper Java library looks like this:
+A client built with the native Java library looks like this:
 
 ```java
-
 Zookeeper zookeeper = new Zookeeper(connectionString,sessionTimeout,watcher)
-
 ```
 
-
-Let us go directly to the `ZooKeeper` constructor.
+Go straight to the `ZooKeeper` constructor:
 
 ```java
-
 public ZooKeeper(
         String connectString,
         int sessionTimeout,
@@ -70,24 +66,28 @@ public ZooKeeper(
         // Start the client threads.
         cnxn.start();
     }
-
 ```
 
+### ConnectStringParser
 
+`ConnectStringParser` splits the connect string into two fields:
 
-##### ConnectStringParser
+| Field | Type | Example for `192.168.11.1:2181,192.168.11.2:2181/tt` |
+| --- | --- | --- |
+| `chrootPath` | `String` | `/tt` |
+| `serverAddresses` | `ArrayList<InetSocketAddress>` | the two host/port pairs, unresolved |
 
-First, examine `ConnectStringParser`.
+A host without a port gets the default client port, 2181, and a non-empty chroot is validated.
 
-[![ConnectStringParser: split endpoints and path](assets/client-startup-01.svg)](assets/client-startup-01.svg)
+A **chroot** makes every later client path relative to that server-side subtree. It does not create the subtree.
 
-The figure shows its two important fields, `chrootPath` and `serverAddresses`. It derives both from the connection string. For `192.168.11.1:2181,192.168.11.2:2181/tt`, the chroot is `/tt`, and the address list contains the two host/port pairs. **Correction:** the original explanation wrote `tt`; the parsed chroot retains its leading slash. A chroot makes subsequent client paths relative to that server-side subtree; it does not create the subtree.
-**Source variant note:** the following original excerpt uses `ConfigUtils.getHostAndPort` inside a `try/catch`. This is not the pinned 3.6.2 constructor, which uses `NetUtils.getIPV6HostAndPort` with a colon-parsing fallback. The original variant is retained for its analysis; consult the pinned implementation for historical behavior. The shared chroot and address-list explanation applies to both.
+> **Note:** the original text wrote the chroot as `tt`; the parsed value keeps its leading slash, `/tt`.
 
-Here is the original parsing excerpt.
+> **Source variant:** the excerpt below is the original article's version, which calls `ConfigUtils.getHostAndPort` inside a `try/catch`. The pinned 3.6.2 constructor uses `NetUtils.getIPV6HostAndPort` with a colon-parsing fallback instead. The chroot and address-list logic is the same in both.
+
+The original parsing excerpt:
 
 ```java
-
 public ConnectStringParser(String connectString) {
         // parse out chroot, if any
         // Find the separator preceding the chroot path.
@@ -125,24 +125,25 @@ public ConnectStringParser(String connectString) {
             serverAddresses.add(InetSocketAddress.createUnresolved(host, port));
         }
     }
-
-
 ```
 
+### HostProvider
 
+The connect string can list several servers. `HostProvider` picks which one to try; the default implementation is `StaticHostProvider`:
 
-##### HostProvider
+| Member | Type | Job |
+| --- | --- | --- |
+| `serverAddresses` | `List<InetSocketAddress>` | Candidate servers, shuffled once at startup. |
+| `currentIndex` | `int` | The server being tried now. |
+| `lastIndex` | `int` | The last server that connected. |
+| `next(spinDelay)` | method | Move to the next server and resolve its address. |
+| `onConnected()` | method | Record `currentIndex` as `lastIndex`. |
 
-The parser allows multiple server addresses. `HostProvider` chooses which one to connect to; its default implementation is `StaticHostProvider`.
+Other fields support dynamic reconfiguration and are not used on this path.
 
-[![StaticHostProvider: select a server](assets/client-startup-02.svg)](assets/client-startup-02.svg)
-
-The figure highlights `serverAddresses`, `lastIndex`, and `currentIndex`, the key fields used for server selection. `StaticHostProvider.next()` encapsulates choosing the next server. The provider shuffles the supplied list during initialization before cycling through it.
-
-##### next()
+#### next()
 
 ```java
-
 public InetSocketAddress next(long spinDelay) {
         boolean needToSleep = false;
         InetSocketAddress addr;
@@ -186,20 +187,24 @@ public InetSocketAddress next(long spinDelay) {
       // Return the resolved server address.
         return resolve(addr);
     }
-
 ```
 
+### ClientCnxn
 
-#### ClientCnxn
+`ClientCnxn` holds everything needed to talk to a server. Its most important members:
 
-`ClientCnxn` stores the state required to connect the client to a server. The figure annotates several of its many fields.
+| Member | Type | Job |
+| --- | --- | --- |
+| `sendThread` | `SendThread` | Owns the connection and all request/reply I/O. |
+| `eventThread` | `EventThread` | Delivers callbacks and watch events to the application. |
+| `outgoingQueue` | `LinkedBlockingDeque<Packet>` | Requests waiting to be sent. |
+| `pendingQueue` | `Queue<Packet>` | Requests sent and waiting for a reply. |
+| `sessionId` / `sessionTimeout` | `long` / `int` | Session identity and timing. |
+| `hostProvider` / `watcher` | | Server selection and the client's watch registry. |
 
-[![ClientCnxn: transport, requests and events](assets/client-startup-03.svg)](assets/client-startup-03.svg)
-
-Here is its ultimate constructor.
+Its full constructor:
 
 ```java
-
  public ClientCnxn(
         String chrootPath,
         HostProvider hostProvider,
@@ -228,32 +233,26 @@ Here is its ultimate constructor.
         this.clientConfig = zooKeeper.getClientConfig();
         initRequestTimeout();
     }
-
 ```
 
+#### ClientCnxn.start()
 
-##### ClientCnxn.start()
-
-`ClientCnxn.start()` starts `SendThread` and `EventThread`.
+`start()` launches the two threads:
 
 ```java
-
   public void start() {
         sendThread.start();
         eventThread.start();
     }
-
 ```
 
+## 2. SendThread
 
-#### SendThread
+`SendThread` does all of the client's I/O. Here is its `run` method.
 
-`SendThread` handles client I/O. Let us examine its `run` method. **Debugging modification:** this original excerpt sets `MAX_SEND_PING_INTERVAL` to `10000000` milliseconds. The pinned release sets it to `10000` milliseconds (10 seconds). This cap is distinct from the ordinary ping deadline derived from the negotiated session timeout. The enlarged value is retained to document the original experiment.
-
-##### SendThread.run
+> **Debugging change:** this original excerpt sets `MAX_SEND_PING_INTERVAL` to `10000000` ms so pings don't interrupt debugging. The real value is `10000` ms (10 seconds). It is a cap, separate from the normal ping deadline derived from the negotiated session timeout.
 
 ```java
-
  public void run() {
             // Initialize the socket's session ID and outgoingQueue.
             // On the first connection, the server has not assigned a session ID, so it is zero.
@@ -406,16 +405,13 @@ Here is its ultimate constructor.
                 ZooTrace.getTextTraceLevel(),
                 "SendThread exited loop for session: 0x" + Long.toHexString(getSessionId()));
         }
-
 ```
 
+## 3. Connect the socket
 
-### Connecting the client socket
-
-Socket establishment occurs in `ClientCnxnSocketNIO.connect`.
+The socket is opened in `ClientCnxnSocketNIO.connect`:
 
 ```java
-
   void connect(InetSocketAddress addr) throws IOException {
        // Create the client SocketChannel.
         SocketChannel sock = createSock();
@@ -440,16 +436,13 @@ Socket establishment occurs in `ClientCnxnSocketNIO.connect`.
         lenBuffer.clear();
         incomingBuffer = lenBuffer;
     }
-
 ```
 
+After starting the connect, execution reaches `ClientCnxnSocketNIO.doTransport`, the entry point for all client readiness handling.
 
-After initiating the connection, execution reaches `ClientCnxnSocketNIO.doTransport`, the entry point for client readiness processing.
-
-##### ClientCnxnSocketNIO.doTransport
+### ClientCnxnSocketNIO.doTransport
 
 ```java
-
  void doTransport(
         int waitTimeOut,
         Queue<Packet> pendingQueue,
@@ -489,19 +482,17 @@ After initiating the connection, execution reaches `ClientCnxnSocketNIO.doTransp
       // Clear the selected keys.
         selected.clear();
     }
-
 ```
 
+## 4. The session handshake
 
-Once the TCP connection is established, the client begins the ZooKeeper session handshake.
-`SendThread.primeConnection()` prepares this stage; it queues the request rather than itself completing the session.
+Once TCP is connected, the client starts the ZooKeeper session handshake. `SendThread.primeConnection()` prepares it: it **queues** the connect request; it does not complete the session by itself.
 
-##### sendThread.primeConnection
+### primeConnection
 
-The client requests a new session, or reconnects an existing session, using the following logic.
+It asks for a new session, or reconnects an existing one:
 
 ```java
-
 void primeConnection() throws IOException {
             LOG.info(
                 "Socket connection established, initiating session, client: {}, server: {}",
@@ -602,18 +593,15 @@ void primeConnection() throws IOException {
             clientCnxnSocket.connectionPrimed();
             LOG.debug("Session establishment request sent on {}", clientCnxnSocket.getRemoteSocketAddress());
         }
-
 ```
 
+The queued request is sent by `ClientCnxnSocketNIO.doIO`.
 
-The queued connection request is sent through `ClientCnxnSocketNIO.doIO`.
+### ClientCnxnSocketNIO.doIO
 
-##### ClientCnxnSocketNIO.doIO
-
-This method is long because it handles both directions of the transport. We will walk through its important branches.
+This method is long because it handles both directions. Follow the main branches:
 
 ```java
-
 void doIO(Queue<Packet> pendingQueue, ClientCnxn cnxn) throws InterruptedException, IOException {
        // Get the SocketChannel from the SelectionKey.
         SocketChannel sock = (SocketChannel) sockKey.channel();
@@ -729,20 +717,17 @@ void doIO(Queue<Packet> pendingQueue, ClientCnxn cnxn) throws InterruptedExcepti
             }
         }
     }
-
 ```
 
+### How a request becomes bytes
 
-Having traced `doIO`, let us examine how a message becomes a `ByteBuffer`.
-First, consider the message object.
+The unit of work is a `Packet`:
 
 [![Packet: request and response state](assets/client-startup-04.svg){: .diagram}](assets/client-startup-04.svg)
 
-For an outgoing message, `Packet` holds a request header, `requestHeader`, and a request body, `request`.
-These are serialized into its `bb` ByteBuffer. Here is that process.
+For a request, `Packet` holds a header (`requestHeader`) and a body (`request`). Both are serialized into its `bb` ByteBuffer:
 
 ```java
-
  public void createBB() {
             try {
                // Create the output stream.
@@ -775,17 +760,13 @@ These are serialized into its `bb` ByteBuffer. Here is that process.
                 LOG.warn("Unexpected exception", e);
             }
         }
-
 ```
 
+ZooKeeper uses its own serialization library, **Jute**; the records are defined in [zookeeper.jute](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-jute/src/main/resources/zookeeper.jute). That covers the outgoing side. Now the reply that establishes the session.
 
-ZooKeeper uses its own Jute serialization library. The [pinned Jute definitions](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-jute/src/main/resources/zookeeper.jute) define these protocol records.
-We have examined outgoing framing. Now let us trace the response that establishes the session.
-
-##### ClientCnxnSocket.readConnectResult
+### ClientCnxnSocket.readConnectResult
 
 ```java
-
 void readConnectResult() throws IOException {
         if (LOG.isTraceEnabled()) {
             StringBuilder buf = new StringBuilder("0x[");
@@ -818,15 +799,15 @@ void readConnectResult() throws IOException {
        // Notify the client of the connection result through SendThread.onConnected.
         sendThread.onConnected(conRsp.getTimeOut(), this.sessionId, conRsp.getPasswd(), isRO);
     }
-
 ```
 
+That completes client startup: first the socket, then the session.
 
-This completes client startup: first the socket connection, then the session handshake. The diagram summarizes the sequence. Constructing a `ZooKeeper` object starts this work asynchronously; applications should wait for the appropriate connection event before relying on an established session.
+> **Note:** the `ZooKeeper` constructor starts this work **asynchronously**. Wait for the `SyncConnected` event before you rely on the session.
 
 [![Establish the socket, then the session](assets/client-startup-05.svg){: .diagram}](assets/client-startup-05.svg)
 
-## Pinned source references
+## Source references
 
 - [ZooKeeper.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/ZooKeeper.java)
 - [ConnectStringParser.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/client/ConnectStringParser.java)

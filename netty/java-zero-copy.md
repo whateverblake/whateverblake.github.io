@@ -11,16 +11,19 @@ series_order: 10
 
 # Understanding Java Zero-Copy with sendfile and mmap
 
-## What zero-copy means
-When an application reads network or disk data, the bytes often move between application buffers and kernel buffers. Zero-copy techniques reduce copies between user space and kernel space, and sometimes between kernel buffers. The term does not imply that no data movement occurs: devices still transfer bytes, often through DMA. Reducing avoidable CPU copies can reduce CPU work and the memory occupied by intermediate buffers.
+Reading a file and sending it over the network usually moves the same bytes several times between kernel buffers and your application. **Zero-copy** techniques cut out some of those copies. This article compares an ordinary Java socket transfer, `FileChannel.transferTo` (`sendfile`) and memory-mapped files (`mmap`).
 
-## sendfile
-The following Java socket example uses blocking I/O. The server accepts a client connection, reads the client's bytes, and writes a response. The client connects to the server, reads data from a file, and sends it to the server.
+> **Source:** OpenJDK 8u272-b10 (October 2020). The figures are the author's original diagrams with English labels; the first one came from a third-party source and is redrawn in the same style.
 
-####  server
+"Zero-copy" does not mean no data moves. Devices still transfer bytes, usually by DMA. It means fewer **CPU copies**, which saves CPU time and the memory used by intermediate buffers.
 
-```
+## 1. The ordinary path
 
+A blocking-I/O example: the server accepts a client, reads its bytes and writes a response; the client reads a file and sends it to the server.
+
+### Server
+
+```java
 public class Server {
 
     private ServerSocket ss;
@@ -71,13 +74,11 @@ public class Server {
     }
 
 }
-
 ```
 
-#### Client
+### Client
 
-```
-
+```java
 class Client {
     Socket socket;
 
@@ -111,20 +112,22 @@ class Client {
         }
     }
 }
-
 ```
 
-From the client's perspective, the traditional path copies data through disk, the kernel cache, the application buffer, and the socket buffer as shown below.
-1. DMA transfers file data from the device into the kernel page cache.
-2. The CPU copies bytes from the kernel buffer into the application buffer.
-3. The CPU copies the application bytes into a socket buffer in kernel space.
-4. DMA transfers the socket data to the network device.
+On the client, the file's bytes take four steps to reach the network:
+
+1. **DMA:** disk → kernel page cache.
+2. **CPU:** page cache → application buffer (`read`).
+3. **CPU:** application buffer → kernel socket buffer (`write`).
+4. **DMA:** socket buffer → network device.
 
 [![Traditional copy path: disk, page cache, user buffer, socket buffer, network](assets/java-zero-copy-01.svg){: .diagram}](assets/java-zero-copy-01.svg)
-If the application does not need to inspect or modify the file contents, the intermediate application-buffer copies can be avoided. Linux provides `sendfile` for this purpose. The following client uses `FileChannel.transferTo`, whose implementation can use the operating system's direct transfer mechanism. A kernel-to-kernel copy may still occur on some paths; scatter/gather support can avoid that additional CPU copy. This is an implementation-dependent optimization rather than a guarantee that every `transferTo` invocation makes zero CPU copies.
 
-```
+## 2. `sendfile`: skip the application buffer
 
+If the application does not need to look at or change the file, the two copies through the application buffer are wasted. Linux has `sendfile` for this. In Java, `FileChannel.transferTo` can use it:
+
+```java
 class ClientChannel {
     SocketChannel socketChannel;
 
@@ -155,18 +158,19 @@ class ClientChannel {
         }
     }
 }
-
 ```
 
 [![sendfile copies from the page cache to the socket buffer inside the kernel](assets/java-zero-copy-02.svg){: .diagram}](assets/java-zero-copy-02.svg)
 
-## mmap
-For an application that must read file contents and apply business logic, how can we reduce copying between kernel and application buffers?
+Now the bytes stay in the kernel. A kernel-to-kernel CPU copy (page cache → socket buffer) can remain on some paths; with scatter/gather support the network card reads straight from the page cache and that copy disappears too. Which one you get depends on the platform. `transferTo` is an optimization, not a promise of zero CPU copies.
 
-##### Without memory mapping
+## 3. `mmap`: share the page cache
 
-```
+What if the application **does** need to process the file contents? Then it must read them, but it can still avoid the copy from the kernel into its own buffer.
 
+### Without mapping
+
+```java
 public class FileReader {
     File f ;
 
@@ -191,19 +195,18 @@ public class FileReader {
     }
 
 }
-
 ```
 
-The preceding code follows this data-copy path:
+The data path:
+
 [![Ordinary read: DMA into the kernel page cache, then a CPU copy to user memory](assets/java-zero-copy-03.svg){: .diagram}](assets/java-zero-copy-03.svg)
 
-1. DMA transfers data into the kernel page cache.
-2. Data is copied from the kernel buffer into the application buffer.
+1. **DMA:** disk → kernel page cache.
+2. **CPU:** page cache → application buffer.
 
-##### With memory mapping
+### With mapping
 
-```
-
+```java
 public class MmapFileReader {
 
     byte buffer[];
@@ -227,27 +230,33 @@ public class MmapFileReader {
 
     }
 }
-
 ```
 
-This code uses a file channel to create a mapping through the operating system's `mmap` mechanism.
-The mapping lets user-space loads and stores address file-backed pages that also belong to the kernel page cache. Writes through a shared read/write mapping dirty those pages; they are written back according to the operating system's policy. Use `MappedByteBuffer.force()` when explicit writeback is required, and account for the filesystem and device's persistence guarantees. The particular example still calls `mappedByteBuffer.get(buffer)`, which copies mapped bytes into a Java array: memory mapping avoids the read-system-call copy, but this extra application copy remains. Processing the mapped buffer directly is necessary to avoid that array copy.
+`FileChannel.map` uses the operating system's `mmap`. The mapping lets the process read and write the file's pages **directly in the page cache**, with no copy into a separate buffer.
+
+- Writes through a shared read/write mapping mark those pages dirty, and the OS writes them back on its own schedule. Call `MappedByteBuffer.force()` when you need the data on disk, and remember the filesystem's and device's own durability guarantees.
+- This example still calls `mappedByteBuffer.get(buffer)`, which **copies** the mapped bytes into a Java array. Mapping removed the `read` copy, but this one remains; process the mapped buffer directly to avoid it.
 
 [![mmap: user memory shares the kernel page cache](assets/java-zero-copy-04.svg){: .diagram}](assets/java-zero-copy-04.svg)
 
+## References
 
-### References
-[https://www.jianshu.com/p/fad3339e3448](https://www.jianshu.com/p/fad3339e3448)
-[https://zhuanlan.zhihu.com/p/66595734](https://zhuanlan.zhihu.com/p/66595734)
+- [jianshu.com/p/fad3339e3448](https://www.jianshu.com/p/fad3339e3448)
+- [zhuanlan.zhihu.com/p/66595734](https://zhuanlan.zhihu.com/p/66595734)
 
+## Notes on the examples
 
-## Source version and figures
+The snippets are illustrations, not production code. If you reuse them:
 
-The original Java socket, `transferTo`, buffered file reader, and mapped file reader examples are retained. `sendfile` targets file-to-socket transfer without application inspection; `mmap` provides file-backed memory for application processing. The original blanket claims about eliminating every CPU copy and immediate disk persistence have been qualified. These are illustrative snippets. The original server writes to a `BufferedOutputStream` without flushing, so a short echoed response can remain buffered; call `flush()` after a response. The clients do not read the echoed response, so sufficiently large transfers can deadlock under backpressure. Give the protocol an explicit end-of-file boundary (for example, a length header or `shutdownOutput()`), read responses concurrently when needed, and close streams/channels. A single `transferTo` can transfer fewer than the requested bytes; loop on its returned count, taking care to handle zero progress. The mapped example casts file length to `int` and is limited to a single mapping and Java-array-sized files; map large files in windows. Do not assume TCP preserves write boundaries.
+- **Flush responses.** The server writes to a `BufferedOutputStream` without `flush()`, so a short reply can stay buffered.
+- **Read the replies.** The clients never read the echoed response, so a large transfer can deadlock under backpressure. Give the protocol an explicit end (a length header or `shutdownOutput()`), read replies concurrently if needed, and close streams and channels.
+- **Loop on `transferTo`.** One call can transfer fewer bytes than asked. Loop on the returned count and handle zero progress.
+- **Map big files in windows.** The mmap example casts the file length to `int`, so it only works for one mapping and files that fit in a Java array.
+- **TCP has no message boundaries** (see [framing](message-framing.html)).
 
-The figures are the author's original diagrams with English labels. The first figure originally came from a third-party source; it is redrawn here in the style of the others.
+The original article's blanket claims, that zero-copy removes every CPU copy and that mapped writes hit the disk immediately, are qualified above.
 
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references:
 
 - [FileChannel implementation (OpenJDK 8u272-b10)](https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/sun/nio/ch/FileChannelImpl.java)
 - [MappedByteBuffer (OpenJDK 8u272-b10)](https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/nio/MappedByteBuffer.java)

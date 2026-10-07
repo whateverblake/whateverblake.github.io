@@ -11,68 +11,63 @@ description: "Read the bucketed expiration queue used to manage ZooKeeper connec
 
 # How ExpiryQueue Manages Connection and Session Timeouts
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The figures are the author's original diagrams, with their labels translated into English.
+The server has two kinds of objects that can time out: **connections** and **sessions**. Both use the same small container, `ExpiryQueue`. This article explains its trick: it rounds every deadline up into a time bucket, so expiring objects means handling a whole bucket at once instead of checking each object.
 
-## Background
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The figure is the author's original diagram with English labels.
 
-The ZooKeeper server manages two kinds of objects with timeouts: connections and sessions. `ExpiryQueue` provides a reusable container for expiration management.
+## 1. Round deadlines into buckets
 
-## Implementation
-
-Consider connection timeouts. Different connections can have different expiration deadlines.
+Every connection has its own deadline, and the deadlines are all different:
 
 [![Connections and their timeout points](assets/expiry-queue-01.svg){: .diagram}](assets/expiry-queue-01.svg)
 
-How does ZooKeeper manage these deadlines efficiently?
-`ExpiryQueue` has an `expirationInterval` field. It groups each deadline into an interval bucket using this calculation:
-
-`normalizeTimeout = (timeoutPoint/expirationInterval +1) * expirationInterval`
-Connections whose timeout points fall in the same interval are therefore grouped into one bucket. In the example below, three nearby deadlines all round to the same bucket.
-
-```text
-
-Suppose `expirationInterval = 10000`:
-connection_1_timeout_point = 1599715479084
-connection_2_timeout_point =  1599715479184
-connection_3_timeout_point =  1599715479384
-normalized_deadline = 1599715480000
-
-```
-
-
-
-The example uses illustrative numeric timestamps. **Clock correction:** the implementation obtains elapsed time through `Time.currentElapsedTime()`, not the wall-clock Unix epoch, so do not compare these numbers directly with calendar time.
-
-Here are two important fields in `ExpiryQueue`.
+Checking each deadline separately would be expensive. Instead, `ExpiryQueue` has an `expirationInterval` and rounds every deadline **up** to the next multiple of it:
 
 ```java
+normalizeTimeout = (timeoutPoint / expirationInterval + 1) * expirationInterval
+```
 
+Deadlines that fall into the same interval end up in the same bucket. With `expirationInterval = 10000`:
+
+| Object | Deadline | Bucket |
+| --- | --- | --- |
+| connection 1 | `1599715479084` | `1599715480000` |
+| connection 2 | `1599715479184` | `1599715480000` |
+| connection 3 | `1599715479384` | `1599715480000` |
+
+> **Note:** the numbers are illustrative. The real code reads time from `Time.currentElapsedTime()`, an elapsed-time clock, not the Unix wall clock, so don't compare them with calendar time.
+
+`ExpiryQueue` keeps two maps, one in each direction:
+
+```java
   // Each object maps to its rounded expiration deadline.
   private final ConcurrentHashMap<E, Long> elemMap = new ConcurrentHashMap<E, Long>();
 
    // Each expiration deadline maps to the set of objects expiring in that bucket.
   private final ConcurrentHashMap<Long, Set<E>> expiryMap = new ConcurrentHashMap<Long, Set<E>>();
-
 ```
 
+## 2. The consumer
 
-## The expiration management thread
-
-A container also needs a consumer to monitor expired objects. The expiration consumer works in units of `expirationInterval`. Its next scheduled expiration boundary is stored in `nextExpirationTime`, initialized as follows:
-
-`nextExpirationTime = (now / expirationInterval + 1) * expirationInterval`
-Here `now` is the elapsed-time clock value when the queue is created.
-Later boundaries advance according to:
-
-`nextExpirationTime = nextExpirationTime + expirationInterval`
-Both `nextExpirationTime` and the rounded connection deadlines are multiples of `expirationInterval`. The rounding expression advances to the next boundary even when the supplied time is already exactly on a boundary.
-
-### Retrieving expired objects
-
-The consumer obtains an expired bucket through `ExpiryQueue.poll`.
+Something has to watch for expired buckets. The consumer works in steps of `expirationInterval`, and its next boundary is `nextExpirationTime`. It starts at:
 
 ```java
+nextExpirationTime = (now / expirationInterval + 1) * expirationInterval
+```
 
+where `now` is the elapsed-time clock when the queue is created. Each step then adds one interval:
+
+```java
+nextExpirationTime = nextExpirationTime + expirationInterval
+```
+
+So both `nextExpirationTime` and every bucket are multiples of `expirationInterval`. Note that the rounding always moves to the **next** boundary, even when a time already sits exactly on one.
+
+### Get expired objects
+
+The consumer takes an expired bucket with `ExpiryQueue.poll`:
+
+```java
  public Set<E> poll() {
         long now = Time.currentElapsedTime();
         long expirationTime = nextExpirationTime.get();
@@ -93,18 +88,15 @@ The consumer obtains an expired bucket through `ExpiryQueue.poll`.
        // Return the objects expiring at this boundary.
         return set;
     }
-
 ```
 
+Then it does whatever fits the object: close a connection, expire a session. The scheduling belongs to that consumer; `ExpiryQueue` itself starts no thread.
 
-After obtaining an expired bucket, the consumer applies behavior appropriate to the object: for example closing a connection or expiring a session. Scheduling belongs to that consumer; `ExpiryQueue` itself does not create a management thread.
+## 3. Move a deadline
 
-## Updating expiration deadlines
-
-Objects update their deadlines as activity occurs. For a connection, an I/O event can refresh its expiration time. `ExpiryQueue.update` implements the change.
+Activity pushes deadlines forward. For a connection, any I/O event refreshes its expiry time. `ExpiryQueue.update` moves the object from its old bucket to the new one:
 
 ```java
-
  // timeout is the object's allowed lifetime from the current time.
  public Long update(E elem, int timeout) {
       // Retrieve the previous expiration deadline from elemMap.
@@ -150,14 +142,11 @@ Objects update their deadlines as activity occurs. For a connection, an I/O even
         }
         return newExpiryTime;
     }
-
 ```
 
+That is all of ZooKeeper's expiry management. For more background I recommend *From Paxos to ZooKeeper: Principles and Practice of Distributed Consistency*, which helped me understand this design.
 
-
-This is how ZooKeeper implements expiration management in the source. For additional background, I recommend *From Paxos to ZooKeeper: Principles and Practice of Distributed Consistency*, the book that helped me understand this part of the design.
-
-## Pinned source references
+## Source references
 
 - [ExpiryQueue.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ExpiryQueue.java)
 - [SessionTrackerImpl.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/SessionTrackerImpl.java)

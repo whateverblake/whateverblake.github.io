@@ -11,80 +11,58 @@ description: "Trace configuration, request processors, connection acceptance, an
 
 # How a Standalone ZooKeeper Server Starts
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Diagrams drawn for the original article are reproduced with English labels. Where the original was a screenshot that could not be recovered, the figure is reconstructed from the source; those are explanatory diagrams, not newly observed debugger output.
+This article starts a standalone ZooKeeper server and follows it until it accepts client connections: configuration, the server object, and the NIO threads that accept and dispatch I/O.
 
-## Introduction
+> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Diagrams from the original article are redrawn with English labels.
 
-I began using ZooKeeper several years ago and found it useful enough to turn a general file collector, which originally lacked distributed deployment and task dispatch, into a distributed system. After reading *From Paxos to ZooKeeper: Principles and Practice of Distributed Consistency*, I debugged the standalone source under several scenarios. I did not take notes at the time, and eventually forgot many details. Reading the source again has been rewarding; this article records what I learned.
+## Why read it
 
-## Server startup
+I started using ZooKeeper years ago, when I used it to turn a file collector that had no distributed deployment or task dispatch into a distributed system. After reading *From Paxos to ZooKeeper: Principles and Practice of Distributed Consistency*, I debugged the standalone server in several scenarios, but I took no notes and forgot most of it. Reading the source again was worth it; this article records what I found.
 
-### 1. Parsing configuration
+## 1. Server startup
 
-Let us begin with standalone server startup. The entry point is `org.apache.zookeeper.server.ZooKeeperServerMain`, with `zoo.cfg` supplied as its argument. Configuration values become fields in `ServerConfig`. Two especially useful settings are `minSessionTimeout` and `maxSessionTimeout`: when unspecified, the server derives their defaults from `tickTime`, as two and twenty ticks respectively.
+### Parse the configuration
 
-[![Default session timeout bounds](assets/standalone-server-startup-01.svg)](assets/standalone-server-startup-01.svg)
+The entry point is `org.apache.zookeeper.server.ZooKeeperServerMain`, with `zoo.cfg` as its argument. The config values become fields of `ServerConfig`. Two useful ones are the session timeout bounds. If you do not set them, the server derives them from `tickTime`:
 
-The following figure summarizes the `ServerConfig` fields.
+| Setting | Default | With `tickTime=2000` |
+| --- | --- | --- |
+| `tickTime` | base interval for heartbeats and timeouts | 2000 ms |
+| `minSessionTimeout` | 2 × `tickTime` | 4000 ms |
+| `maxSessionTimeout` | 20 × `tickTime` | 40000 ms |
 
-[![ServerConfig: configuration fields](assets/standalone-server-startup-02.svg)](assets/standalone-server-startup-02.svg)
+The defaults apply only when the value is `-1` (unset). The actual session timeout is negotiated with each client within these bounds.
 
-Several important parameters deserve explanation:
+The main `ServerConfig` fields:
 
-- `clientPortAddress`: the address and port on which the server accepts client connections.
-- `dataDir`: the directory holding persistent snapshots of ZooKeeper data.
-- `logDir`: the transaction log directory, derived from `dataLogDir`, or `dataDir` if omitted.
-- `tickTime`: the base interval used to derive default minimum and maximum session timeouts.
-- `maxClientCnxns`: the maximum number of connections allowed from one IP address.
-- `listenBacklog`: the requested size of the socket accept backlog.
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `clientPortAddress` | `InetSocketAddress` | Address and port for client connections. |
+| `secureClientPortAddress` | `InetSocketAddress` | Optional TLS client listener. |
+| `dataDir` | `File` | Directory for snapshots. |
+| `dataLogDir` | `File` | Directory for transaction logs; falls back to `dataDir`. |
+| `tickTime` | `int` | Base timing interval. |
+| `minSessionTimeout` / `maxSessionTimeout` | `int` | Session timeout bounds; `-1` selects the defaults above. |
+| `maxClientCnxns` | `int` | Maximum connections from one IP address. |
+| `listenBacklog` | `int` | Requested size of the socket accept backlog. |
 
+### runFromConfig
 
-#### runFromConfig
+`runFromConfig` builds the server from the parsed config in four steps:
 
-`runFromConfig` starts the server using the parsed configuration.
+1. **Create `FileTxnSnapLog`.** It holds `txnLog` and `snapLog`: the transaction-log and snapshot persistence implementations.
 
-1. Create a `FileTxnSnapLog` instance.
+2. **Create `ZooKeeperServer`.** This object is the server itself and coordinates its data and request processing.
 
-```text
+3. **Create the admin server.** It runs on Jetty and listens on port 8080 by default; open `http://ip:8080/commands` to list the available commands.
 
-FileTxnSnapLog contains txnLog and snapLog, representing the transaction log and snapshot persistence implementations.
+4. **Create `ServerCnxnFactory`.** It manages server-side connections. There are two implementations, `NIOServerCnxnFactory` and `NettyServerCnxnFactory`; NIO is the default.
 
-```
+Now look at `NIOServerCnxnFactory.configure`:
 
-
-2. Create `ZooKeeperServer`.
-
-```text
-
-ZooKeeperServer represents the server and coordinates its data and request processing.
-
-```
-
-
-3. Create the admin server.
-
-```text
-
-The admin server uses Jetty and listens on port 8080 by default. Open http://ip:8080/commands
-to inspect the available ZooKeeper commands.
-
-```
-
-
-4. Create `ServerCnxnFactory`.
-
-```text
-
-ServerCnxnFactory manages server-side connections. Its implementations include NIOServerCnxnFactory and NettyServerCnxnFactory.
-NIOServerCnxnFactory is the default.
-
-```
-
-
-Let us examine `NIOServerCnxnFactory.configure`. **Timeout correction:** `sessionlessCnxnTimeout` bounds connections that have not established a session; it is also used as the connection-expiration bucket interval. It is not the negotiated session timeout.
+> **Note:** `sessionlessCnxnTimeout` limits connections that have **not** established a session yet, and it is also the bucket interval for connection expiry. It is not the negotiated session timeout. (The original annotation mixed these up.)
 
 ```java
-
  public void configure(InetSocketAddress addr, int maxcc, int backlog, boolean secure) throws IOException {
         if (secure) {
             throw new UnsupportedOperationException("SSL isn't supported in NIOServerCnxn");
@@ -144,22 +122,21 @@ Let us examine `NIOServerCnxnFactory.configure`. **Timeout correction:** `sessio
         // Create the thread accepting client connections.
         acceptThread = new AcceptThread(ss, addr, selectorThreads);
     }
-
 ```
 
+`configure` creates three kinds of thread. The I/O worker pool comes later, when the factory starts.
 
+| Thread | Job |
+| --- | --- |
+| `ConnectionExpirerThread` | Closes connections whose expiry time has passed. |
+| `SelectorThread` | Watches its connections for read/write readiness. |
+| `AcceptThread` | Accepts new client connections. |
 
-`configure` creates three kinds of thread: connection expiration, selection, and acceptance. The I/O worker pool is created when the factory starts.
+#### SelectorThread
 
--  ConnectionExpirerThread
-- SelectorThread
-- AcceptThread
-
- ##### SelectorThread
-Here is the `SelectorThread` constructor.
+The `SelectorThread` constructor:
 
 ```java
-
  public SelectorThread(int id) throws IOException {
             super("NIOServerCxnFactory.SelectorThread-" + id);
             this.id = id;
@@ -168,17 +145,13 @@ Here is the `SelectorThread` constructor.
           // When a connection's interest operations need updating, its SelectionKey enters updateQueue.
             updateQueue = new LinkedBlockingQueue<SelectionKey>();
         }
-
 ```
 
+#### AcceptThread
 
-
-##### AcceptThread
-
-Next, examine the `AcceptThread` constructor.
+The `AcceptThread` constructor:
 
 ```java
-
 public AcceptThread(ServerSocketChannel ss, InetSocketAddress addr, Set<SelectorThread> selectorThreads) throws IOException {
              // The superclass creates the selector associated with AcceptThread.
             super("NIOServerCxnFactory.AcceptThread:" + addr);
@@ -191,19 +164,15 @@ public AcceptThread(ServerSocketChannel ss, InetSocketAddress addr, Set<Selector
             this.selectorThreads = Collections.unmodifiableList(new ArrayList<SelectorThread>(selectorThreads));
             selectorIterator = this.selectorThreads.iterator();
         }
-
 ```
 
+## 2. Start the service
 
-### Starting the ZooKeeper service
-
-The threads described above have been constructed but have not yet started. Other threads still need to be created.
-`NIOServerCnxnFactory.startup(ZooKeeperServer)` creates and starts the remaining components, completing standalone startup.
+The threads above exist but are not running yet, and some components are still missing. `NIOServerCnxnFactory.startup(ZooKeeperServer)` creates the rest and starts everything.
 
 ### NIOServerCnxnFactory.startup
 
 ```java
-
  @Override
     public void startup(ZooKeeperServer zks, boolean startServer) throws IOException, InterruptedException {
         // Start the previously constructed accept and selector threads.
@@ -216,14 +185,11 @@ The threads described above have been constructed but have not yet started. Othe
             zks.startup();
         }
     }
-
 ```
 
-
-##### start()
+#### start()
 
 ```java
-
  public void start() {
         stopped = false;
         if (workerPool == null) {
@@ -246,14 +212,11 @@ The threads described above have been constructed but have not yet started. Othe
             expirerThread.start();
         }
     }
-
 ```
 
-
-##### ZooKeeperServer.startup
+#### ZooKeeperServer.startup
 
 ```java
-
  public synchronized void startup() {
         if (sessionTracker == null) {
            // Create the session tracker to manage session expiration.
@@ -283,29 +246,21 @@ The threads described above have been constructed but have not yet started. Othe
         localSessionEnabled = sessionTracker.isLocalSessionsEnabled();
         notifyAll();
     }
-
 ```
 
+### ContainerManager
 
+`ContainerManager` manages **container znodes**: nodes meant to hold other nodes. When the last child of a container is deleted, the manager's periodic check finds the empty container and deletes it. It also handles TTL nodes when that feature is on. Deletion is a best-effort background task, not immediate.
 
-### Starting ContainerManager
+## 3. The accept and selector threads
 
-`ContainerManager` manages container znodes, which are intended to hold other nodes. After all children of a container have been removed, the manager's periodic checks can find and delete the empty container. The implementation also handles TTL nodes when that feature is enabled; deletion is a best-effort background operation, not an immediate guarantee.
+That is the whole startup. Now look closer at the two threads that handle connections: `AcceptThread` and `SelectorThread`.
 
-------
+### AcceptThread
 
-
-That is the overall startup process. Let us now look more closely at the central server threads.
-
-- acceptThread
-- selectorThread
-
-##### acceptThread
-
-After startup, the server normally listens for client connections on port 2181, as configured in `zoo.cfg`. `AcceptThread` accepts a connection and assigns a `SelectorThread` to it, following a reactor-style design. Here is `AcceptThread.run`.
+After startup the server listens for clients on the configured port (2181 by default). `AcceptThread` accepts each connection and hands it to a `SelectorThread`, a reactor-style design. `AcceptThread.run`:
 
 ```java
-
 // As discussed above, the AcceptThread constructor registers OP_ACCEPT on the server channel.
  public void run() {
             try {
@@ -329,14 +284,11 @@ After startup, the server normally listens for client connections on port 2181, 
                 LOG.info("accept thread exitted run method");
             }
         }
-
 ```
 
-
-- acceptThread.select
+`AcceptThread.select`:
 
 ```java
-
   private void select() {
             try {
               // Wait for a client connection event.
@@ -367,16 +319,11 @@ After startup, the server normally listens for client connections on port 2181, 
                 LOG.warn("Ignoring IOException while selecting", e);
             }
         }
-
 ```
 
-
-
-- acceptThread.doAccept()
+`AcceptThread.doAccept`:
 
 ```java
-
-
 private boolean doAccept() {
             boolean accepted = false;
             SocketChannel sc = null;
@@ -421,15 +368,13 @@ private boolean doAccept() {
         }
 
     }
-
 ```
 
+### SelectorThread
 
-
-Next, examine `SelectorThread.run`.
+`SelectorThread.run`:
 
 ```java
-
 // The run loop calls three important methods.
 // select(), processAcceptedConnections(), processInterestOpsUpdateRequests()
  public void run() {
@@ -468,15 +413,11 @@ Next, examine `SelectorThread.run`.
                 LOG.info("selector thread exitted run method");
             }
         }
-
 ```
 
-
-The three methods are `select()`, `processAcceptedConnections()`, and `processInterestOpsUpdateRequests()`. For clarity, we will explain `processAcceptedConnections()` first.
-Before doing so, return to the `selectorThread.addAcceptedConnection()` call inside `AcceptThread.doAccept`.
+Its loop calls three methods: `select()`, `processAcceptedConnections()` and `processInterestOpsUpdateRequests()`. Start with `processAcceptedConnections()`, but first look at the `selectorThread.addAcceptedConnection()` call made by `AcceptThread.doAccept`:
 
 ```java
-
  public boolean addAcceptedConnection(SocketChannel accepted) {
             // Add the accepted channel to acceptedQueue and wake the selector from select().
             if (stopped || !acceptedQueue.offer(accepted)) {
@@ -485,16 +426,15 @@ Before doing so, return to the `selectorThread.addAcceptedConnection()` call ins
             wakeupSelector();
             return true;
         }
-
 ```
 
+#### processAcceptedConnections
 
-- processAcceptedConnections
+`processAcceptedConnections` takes the SocketChannels waiting in `acceptedQueue` and registers them:
 
-`processAcceptedConnections` handles the SocketChannels waiting in `acceptedQueue`. **Queue correction:** the original annotation called the acceptance queue `updateQueue`; `updateQueue` instead holds SelectionKeys whose interest operations need refreshing.
+> **Note:** the original annotation called this queue `updateQueue`. `updateQueue` is a different queue: it holds SelectionKeys whose interest set needs refreshing.
 
 ```java
-
 private void processAcceptedConnections() {
             SocketChannel accepted;
              // Take a SocketChannel from acceptedQueue.
@@ -515,14 +455,13 @@ private void processAcceptedConnections() {
                 }
             }
         }
-
 ```
 
+After this, the channel's selector watches it for `OP_READ`.
 
-After this step, the channel listens for `OP_READ` through its assigned selector. Now examine `select`.
+#### select
 
 ```java
-
 private void select() {
             try {
                // Obtain readiness events.
@@ -551,15 +490,11 @@ private void select() {
                 LOG.warn("Ignoring IOException while selecting", e);
             }
         }
-
 ```
 
-
-
-The implementation of `handleIO` follows.
+#### handleIO
 
 ```java
-
   private void handleIO(SelectionKey key) {
             // Wrap a channel's readiness event in an IOWorkRequest.
            // Submit the IOWorkRequest to the worker pool.
@@ -580,16 +515,13 @@ The implementation of `handleIO` follows.
             // Submit the IOWorkRequest to the I/O worker pool.
             workerPool.schedule(workRequest);
         }
-
 ```
 
+`handleIO` clears the key's interest set before handing the work to the pool. That way, one channel never has two I/O tasks running at once. (This serializes readiness handling per channel; it does not mean every network event becomes a separately ordered message.)
 
-Disabling the key's interest operations prevents concurrent I/O tasks for the same channel. How are its interests re-enabled after one task completes? This is readiness dispatch serialization; it does not imply that every underlying network event is a separately ordered application message.
-That is the responsibility of `processInterestOpsUpdateRequests`.
-Here is its source.
+So how does the channel become selectable again after the task finishes? That is the job of `processInterestOpsUpdateRequests`:
 
 ```java
-
 // After handling I/O, IOWorkRequest puts the connection's SelectionKey into updateQueue.
  private void processInterestOpsUpdateRequests() {
             SelectionKey key;
@@ -606,20 +538,15 @@ Here is its source.
                 }
             }
         }
-
 ```
 
-
-
-The following diagram summarizes connection acceptance and I/O dispatch.
+The whole accept-and-dispatch path:
 
 [![Accept and dispatch NIO work](assets/standalone-server-startup-03.svg){: .diagram}](assets/standalone-server-startup-03.svg)
 
----
-The server also starts threads managing session and connection expiration. Their implementation is covered separately in
-[How ExpiryQueue Manages Connection and Session Timeouts](expiry-queue.html).
+The server also starts threads that expire sessions and connections. They are covered in [How ExpiryQueue Manages Connection and Session Timeouts](expiry-queue.html).
 
-## Pinned source references
+## Source references
 
 - [ZooKeeperServerMain.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ZooKeeperServerMain.java)
 - [ServerConfig.java](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/ServerConfig.java)

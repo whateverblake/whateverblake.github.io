@@ -11,99 +11,83 @@ description: "Check out ZooKeeper 3.6.2, import its Maven reactor, and configure
 
 # Setting Up a ZooKeeper Source Debugging Environment
 
-This guide sets up an IntelliJ IDEA workspace for reading and debugging ZooKeeper source. The historical reference is **ZooKeeper 3.6.2**, the latest release in the 3.6 line available in October 2020. Use commit `803c7f1a12f85978cb049af5e4ef23bd8b688715` so source locations and protocol behavior agree with the rest of this series.
+This guide sets up IntelliJ IDEA for reading and debugging the ZooKeeper source. When you finish, you can run a standalone server from the IDE and stop at breakpoints in its startup code.
 
-## Getting the source from GitHub
+> **Source version:** ZooKeeper **3.6.2** (October 2020), commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Every article in this series uses this commit, so line numbers and behavior match.
 
-In IntelliJ IDEA, use the action for obtaining a project from version control and enter the Apache ZooKeeper Git repository URL. The original article used **File → New → Project from Version Control → Git** and noted that an installed GitHub plugin did not appear as a separate provider. Menu wording varies by IDE version; the Git clone operation is sufficient.
+## 1. Get the source
 
-[![Get the historical ZooKeeper source](assets/debugging-environment-01.svg)](assets/debugging-environment-01.svg)
+Clone the Apache ZooKeeper repository. In IntelliJ IDEA this is **File → New → Project from Version Control → Git** (the menu wording changes between IDE versions). A plain Git clone is all you need; no GitHub plugin is required.
 
-If using SSH, configure your SSH key and GitHub access for the IDE's Git environment. An HTTPS URL is also suitable; public source can be read without a GitHub account.
+SSH and HTTPS URLs both work. With SSH, the IDE's Git needs your key and GitHub access. With HTTPS you can read the public source without a GitHub account.
 
-[![Clone and import the Maven project](assets/debugging-environment-02.svg)](assets/debugging-environment-02.svg)
-
-Clone the repository, then select the historical version before importing or building. Download time depends on your network. A reproducible terminal equivalent is:
+Then switch to the pinned commit **before** you import or build. From a terminal:
 
 ```sh
-
 git clone https://github.com/apache/zookeeper.git
 cd zookeeper
 git checkout --detach 803c7f1a12f85978cb049af5e4ef23bd8b688715
 git rev-parse HEAD
-
 ```
 
+The last command prints the commit, so you can confirm you are on `803c7f1`. Now open the **root** `pom.xml` as a Maven project. Do not import only `zookeeper-server`: the reactor also contains `zookeeper-jute`, which generates the protocol classes that the server and client need.
 
+## 2. Build with Maven
 
-The final command should print the pinned commit. Open the root `pom.xml` as a Maven project, rather than importing only `zookeeper-server`. The reactor includes `zookeeper-jute`, whose generated protocol classes are needed by the server and client.
+This release builds with Maven (older releases used Ant). Use JDK 8 update 211 or newer, as the pinned README requires, and set it for both the project SDK and the Maven runner.
 
-[![Confirm the version before debugging](assets/debugging-environment-03.svg)](assets/debugging-environment-03.svg)
-
-## Building with Maven
-
-Older ZooKeeper releases used Ant; this release uses Maven for the Java reactor and dependency management. Use a supported JDK. For a consistent historical setup, choose JDK 8 update 211 or newer, as specified by the pinned README, and configure both the project SDK and Maven runner to use it.
-
-From the repository root, follow the packaging instructions:
+From the repository root:
 
 ```sh
-
 mvn clean install -DskipTests
-
 ```
 
+This compiles every module and packages the distribution without running tests (drop `-DskipTests` to run them). The results:
 
+- the binary distribution in `zookeeper-assembly/target`,
+- the server's dependency jars in `zookeeper-server/target/lib`,
+- generated protocol classes in `zookeeper-jute/target/generated-sources/java`.
 
-This compiles the reactor and builds the distribution without running the test suite. To include tests, omit `-DskipTests`. The resulting binary distribution is under `zookeeper-assembly/target`; the server module's package phase also copies its dependency jars to `zookeeper-server/target/lib`. Reload the Maven model in the IDE after generation so `zookeeper-jute/target/generated-sources/java` is recognized as generated source.
+Reload the Maven project in the IDE afterwards so it marks the generated directory as a source root.
 
-[![Generate protocol classes and build](assets/debugging-environment-04.svg)](assets/debugging-environment-04.svg)
+## 3. Run the standalone server
 
-## Running the standalone server
+1. **Create the config.** Copy `conf/zoo_sample.cfg` to `conf/zoo.cfg`. Set `dataDir` to an absolute, writable directory made for this experiment, and pick a free `clientPort` such as 2181. `dataLogDir` is optional; without it, logs go into `dataDir`.
+2. **Create a run configuration.** Main class `org.apache.zookeeper.server.ZooKeeperServerMain`, classpath of the `zookeeper-server` module **including `provided` dependencies**, working directory = repository root, program argument `conf/zoo.cfg`.
+3. **Point logging at the checked-in file.** Add the VM option `-Dlog4j.configuration=file:conf/log4j.properties` (relative to the working directory). This leaves the Maven layout untouched; copying the file into a resource directory also works.
+4. **Debug.** Run `ZooKeeperServerMain.main` in debug mode. Breakpoints in `initializeAndRun` and `runFromConfig` take you through config parsing and server startup. The [standalone startup article](standalone-server-startup.html) continues from there.
 
-1. Copy `conf/zoo_sample.cfg` to `conf/zoo.cfg`. **Filename correction:** the original called the template `zoo_example.cfg`; this checkout supplies `zoo_sample.cfg`. Set `dataDir` to an absolute writable directory created for this experiment, and choose a free `clientPort` such as 2181. A separate `dataLogDir` is optional; otherwise logs share the data directory.
-2. Create an application run configuration with main class `org.apache.zookeeper.server.ZooKeeperServerMain`. Use the `zookeeper-server` module classpath, include dependencies with Maven `provided` scope, set the working directory to the repository root, and supply `conf/zoo.cfg` as the program argument.
-3. Configure logging explicitly with the VM option `-Dlog4j.configuration=file:conf/log4j.properties`, resolved relative to that working directory. The original moved the logging file into a module resources directory and marked it as a resource root. Keeping the checked-in configuration in `conf` and referring to it avoids altering the Maven source layout; copying it into an appropriate classpath resource directory is another option.
-4. Run or debug `ZooKeeperServerMain.main`. A breakpoint in `initializeAndRun` or `runFromConfig` lets you follow parsing and server initialization. Consult [standalone startup](standalone-server-startup.html) for the request and connection threads.
+> **Note:** the original article called the template `zoo_example.cfg`. This checkout ships `zoo_sample.cfg`.
 
-[![Configure a standalone debug launch](assets/debugging-environment-05.svg)](assets/debugging-environment-05.svg)
-
-For example, create the data directory and use this minimal configuration, replacing the example path with a real writable directory:
+A minimal `zoo.cfg` (replace the path with a real directory):
 
 ```properties
-
 tickTime=2000
 dataDir=/absolute/path/to/zookeeper-debug-data
 clientPort=2181
-
 ```
 
-
-
-A terminal alternative using the module build outputs is:
+Or start the server from a terminal with the module build outputs:
 
 ```sh
-
 java -cp 'conf:zookeeper-server/target/classes:zookeeper-jute/target/classes:zookeeper-server/target/lib/*' \
   org.apache.zookeeper.server.ZooKeeperServerMain conf/zoo.cfg
-
 ```
 
+This uses the Unix classpath separator `:`; use `;` on Windows.
 
+## Dependency errors from the original setup
 
-This uses the Unix classpath separator; use `;` on Windows. These are reproducible setup instructions derived from the checked-in build and configuration, not a claim that this migration ran an IDE debugging session.
+The original article hit two startup errors with the 3.6 source. Both come from the IDE launch leaving out `provided` dependencies, not from wrong versions:
 
-## Dependency errors encountered in the original setup
+| Error | Original workaround | Better fix |
+| --- | --- | --- |
+| `NoClassDefFoundError: com/codahale/metrics/Reservoir` | Upgrade `metrics-core` from 3.2.5 to 4.1.10. | Keep 3.2.5: it contains `Reservoir`, and the POM pins it on purpose. The jar is `provided` in the server POM, so add provided dependencies to the run classpath. |
+| `ClassNotFoundException: org.xerial.snappy.SnappyInputStream` | Remove the `provided` scope from `snappy-java`. | Leave the POM alone. The distribution already ships the library; include provided dependencies in the IDE launch or use the distribution's `lib` classpath. |
 
-The original author reported these two startup failures while using the 3.6 source:
+## Next
 
-- `java.lang.NoClassDefFoundError: com/codahale/metrics/Reservoir`. The original workaround upgraded `metrics-core` from 3.2.5 to 4.1.10. **Correction:** the pinned POM deliberately selects 3.2.5, which supplies `Reservoir`. A missing class indicates a runtime classpath problem; include the configured dependency before changing its version. The server POM marks this jar `provided`, and the distribution supplies it.
-- `java.lang.ClassNotFoundException: org.xerial.snappy.SnappyInputStream`. The original workaround removed the `provided` scope from `snappy-java`. **Correction:** that can change a local Maven application's runtime dependency set, but the historical distribution already includes the required library. For the IDE main-class launch, include provided dependencies or use the built distribution's library classpath rather than permanently editing the POM.
-
-## Closing remarks
-
-Enjoy the source-reading journey. This setup makes it possible to move between the configuration, generated wire records, server startup, and client code with a consistent historical source tree.
-
-> **Figure provenance:** All five figures reconstruct the missing original screenshots as English setup panels. They show configuration and source structure, not an invented IDE session.
+With this setup you can jump between configuration, generated wire records, server startup and client code on one consistent source tree. Continue with [setting up a three-node ensemble](ensemble-setup.html) or go straight to [standalone server startup](standalone-server-startup.html).
 
 ## Pinned references
 

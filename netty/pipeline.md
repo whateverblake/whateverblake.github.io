@@ -11,28 +11,36 @@ series_order: 3
 
 # How Netty Pipeline Events Travel Through Handlers
 
-## Pipeline
-Netty's pipeline implements the chain-of-responsibility pattern. Its nodes are ordered according to the method and position used when adding handlers. The chain is doubly linked; user handlers are wrapped in `DefaultChannelHandlerContext` objects that form its nodes.
+Every Netty channel has a **pipeline**: a chain of handlers that events pass through. This article explains how the chain is built, how a handler is wrapped in a context, and how an event moves from one handler to the next.
 
-### DefaultChannelPipeline
-The default pipeline is `DefaultChannelPipeline`. It starts with a head and a tail node, and application handlers are inserted between them. For this discussion, network I/O has two main directions: ***reading and writing***.
-Netty exposes `ChannelInboundHandler` and `ChannelOutboundHandler` as the handler interfaces for these directions. Inbound handlers receive read events and other inbound lifecycle notifications; outbound handlers receive write requests and other outbound operations. The two directions traverse the pipeline differently.
-- Inbound events propagate from the head toward the tail, visiting the relevant inbound handlers.
-- Outbound operations propagate from the tail toward the head, visiting the relevant outbound handlers. A context-initiated operation begins relative to that context rather than always at the pipeline tail.
+> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
+
+## 1. The pipeline
+
+The pipeline is the chain-of-responsibility pattern. It is a **doubly linked list**: each user handler is wrapped in a `DefaultChannelHandlerContext`, and the contexts are the list's nodes. Their order follows how and where the handlers were added.
+
+### `DefaultChannelPipeline`
+
+The default pipeline starts with two fixed nodes, **head** and **tail**; your handlers go between them. I/O has two directions, **read** and **write**, and Netty has one handler interface for each:
+
+| Direction | Interface | Receives | Travels |
+| --- | --- | --- | --- |
+| Inbound | `ChannelInboundHandler` | read events and inbound lifecycle events | head → tail |
+| Outbound | `ChannelOutboundHandler` | write requests and other outbound operations | tail → head |
+
+An outbound call made through a **context** starts at that context, not at the tail.
 
 [![Inbound and outbound event directions through the pipeline](assets/pipeline-01.svg){: .diagram}](assets/pipeline-01.svg)
 
----
 ### Handler
-A handler is the basic unit of event processing. Application I/O logic lives in custom handlers.
 
+A handler is the basic unit of event processing. Your application's I/O logic lives in your own handlers.
 
-### ChannelHandlerContext
-`ChannelHandlerContext` holds a handler's context. Pipeline nodes are contexts; the ordinary implementation is `DefaultChannelHandlerContext`.
-Here is its source:
+### `ChannelHandlerContext`
 
-```
+A context holds one handler plus its position in the pipeline. The pipeline's nodes are contexts; the usual implementation is `DefaultChannelHandlerContext`:
 
+```java
 final class DefaultChannelHandlerContext extends AbstractChannelHandlerContext {
 
     // DefaultChannelHandlerContext stores the user-defined handler.
@@ -49,17 +57,15 @@ final class DefaultChannelHandlerContext extends AbstractChannelHandlerContext {
         return handler;
     }
 }
-
 ```
 
-The superclass, `AbstractChannelHandlerContext`, has `prev` and `next` fields pointing to adjacent nodes, which makes the pipeline a doubly linked list.
+Its superclass, `AbstractChannelHandlerContext`, has `prev` and `next` fields. That is what makes the pipeline a doubly linked list.
 
-### Associating a context with a handler
-How is a user-defined handler associated with a `DefaultChannelHandlerContext`?
-Consider `pipeline.addLast()`. Adding a custom handler ultimately executes the following code:
+## 2. Wrapping a handler in a context
 
-```
+What happens when you call `pipeline.addLast()` with your handler? It ends up here:
 
+```java
  @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
@@ -88,15 +94,13 @@ Consider `pipeline.addLast()`. Adding a custom handler ultimately executes the f
         callHandlerAdded0(newCtx);
         return this;
     }
-
 ```
 
-### executionMask
-Constructing a `DefaultChannelHandlerContext` initializes its superclass, `AbstractChannelHandlerContext`. The `executionMask` field deserves a closer look.
-A pipeline supports many event types, and different handlers implement different callbacks. `executionMask` records which callbacks a handler needs to receive. The mask is calculated as follows:
+### `executionMask`
 
-```
+Creating a `DefaultChannelHandlerContext` runs the `AbstractChannelHandlerContext` constructor, which computes `executionMask`. A pipeline has many event types, and each handler implements only some callbacks. The mask records **which callbacks this handler wants**, so Netty can skip handlers that don't care about an event:
 
+```java
 private static int mask0(Class<? extends ChannelHandler> handlerType) {
         int mask = MASK_EXCEPTION_CAUGHT;
         try {
@@ -171,32 +175,25 @@ private static int mask0(Class<? extends ChannelHandler> handlerType) {
 
         return mask;
     }
-
 ```
 
-The mask is calculated from the event callbacks implemented by the handler class, including callback-skipping annotations.
+The mask comes from the callbacks the handler class overrides, taking `@Skip` annotations into account.
 
----
+## 3. How an event travels
 
+The pipeline is a linked list, so how does an event move from node to node? Take `channelRegistered` as the example. When a channel registers with its `NioEventLoop`, it fires `channelRegistered`, starting at `DefaultChannelPipeline.fireChannelRegistered()`:
 
-### How events propagate through the pipeline
-The pipeline is a doubly linked list. How do events move from node to node? We will use `channelRegistered` as the example.
-Once a channel registers with its `NioEventLoop`, it fires `channelRegistered`. The pipeline entry point is `DefaultChannelPipeline.fireChannelRegistered()`.
-
-```
-
+```java
 public final ChannelPipeline fireChannelRegistered() {
          // head is the first context: registration propagates from head toward tail.
         AbstractChannelHandlerContext.invokeChannelRegistered(head);
         return this;
     }
-
 ```
 
-Here is `AbstractChannelHandlerContext.invokeChannelRegistered`:
+The static `AbstractChannelHandlerContext.invokeChannelRegistered`:
 
-```
-
+```java
   static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
@@ -211,13 +208,11 @@ Here is `AbstractChannelHandlerContext.invokeChannelRegistered`:
             });
         }
     }
-
 ```
 
-Continue into the instance form of `invokeChannelRegistered`:
+The instance method it calls:
 
-```
-
+```java
 private void invokeChannelRegistered() {
         if (invokeHandler()) {
             try {
@@ -231,33 +226,29 @@ private void invokeChannelRegistered() {
             fireChannelRegistered();
         }
     }
-
 ```
 
-How does a custom handler continue propagation after its own work? Normally its `channelRegistered` callback calls `ctx.fireChannelRegistered()`.
-Here is `fireChannelRegistered`:
+To pass the event on, your handler's `channelRegistered` calls `ctx.fireChannelRegistered()`:
 
-```
-
-
+```java
 public ChannelHandlerContext fireChannelRegistered() {
   // Find the next inbound context toward the tail that can handle channelRegistered.
 invokeChannelRegistered(findContextInbound(MASK_CHANNEL_REGISTERED));
         return this;
     }
-
 ```
 
-The following diagram summarizes this flow. `XXX` denotes an event such as registered or added, and `YY` denotes its direction: inbound or outbound.
+The same pattern holds for every event. In the diagram, `XXX` is the event (registered, added, …) and `YY` its direction (inbound or outbound):
+
 [![Propagate an event across handler contexts](assets/pipeline-02.svg){: .diagram}](assets/pipeline-02.svg)
 
----
+> **Propagation is opt-in.** An event does not visit every handler automatically. Each handler must call `ctx.fireXXX()` (or the outbound equivalent) to pass it on.
 
-### ChannelInitializer
-`ChannelInitializer` is a special built-in inbound handler that helps application code install its handlers. It is normally added first. Developers override `initChannel` to populate the pipeline. When a handler is added, Netty invokes its `handlerAdded` callback. Here is `ChannelInitializer.handlerAdded`:
+## 4. `ChannelInitializer`
 
-```
+`ChannelInitializer` is a built-in inbound handler that installs your other handlers. You add it first and override `initChannel` to fill the pipeline. When any handler is added, Netty calls its `handlerAdded` callback; for `ChannelInitializer` that callback runs `initChannel` and then removes the initializer itself:
 
+```java
  @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
        // Check whether the channel has registered yet.
@@ -281,19 +272,16 @@ The following diagram summarizes this flow. `XXX` denotes an event such as regis
             }
         }
     }
-
 ```
 
----
-This completes the pipeline walkthrough.
+That is the whole pipeline mechanism.
 
-## Source version and figures
+## Notes on the source
 
-Pipeline traversal is callback propagation, not an automatic visit to every handler: a handler must forward an event when it wants propagation to continue. Outbound calls made through a context begin at the preceding outbound context; calls made through the channel or pipeline begin at the tail. Both lifecycle events and I/O operations participate in the pipeline.
+- Outbound calls made through a context start at the previous outbound context; calls made through the channel or the pipeline start at the tail.
+- Both lifecycle events and I/O operations go through the pipeline.
 
-The figures are the author's original diagrams, with their labels translated into English.
-
-Source baseline: Netty 4.1.53.Final (released October 13, 2020).
+Source references (Netty 4.1.53.Final, released October 13, 2020):
 
 - [DefaultChannelPipeline.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/DefaultChannelPipeline.java)
 - [AbstractChannelHandlerContext.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java)
