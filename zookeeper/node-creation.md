@@ -13,8 +13,6 @@ description: "Follow a create request through client framing, server preparation
 
 This article follows one `create` call from the client API to the server's in-memory data tree: the client request, the server's I/O path, the three request processors, the transaction log and the final update.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
-
 It builds on [client startup](client-startup.html) and [standalone server startup](standalone-server-startup.html).
 
 ## 1. The client builds the request

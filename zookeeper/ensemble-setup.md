@@ -13,8 +13,6 @@ description: "Configure and debug three ZooKeeper peers on one computer using se
 
 The earlier articles read a standalone server. The next ones follow a ZooKeeper **ensemble**: leader election and replication. This article sets up three peers on one computer so you can debug all of them.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`.
-
 ## 1. Prepare three peers
 
 1. **Give each peer its own process.** Either copy the source project twice (for example `zookeeper_2` and `zookeeper_3`), or keep one compiled tree and create three IDE run configurations. Each process still needs its own config file and data directory.

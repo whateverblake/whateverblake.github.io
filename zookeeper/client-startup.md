@@ -13,8 +13,6 @@ description: "Follow server selection, client threads, NIO framing, and the ZooK
 
 This article follows a ZooKeeper client from `new ZooKeeper(...)` to an established session: parsing the connect string, picking a server, opening the socket and running the session handshake.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Diagrams from the original article are redrawn with English labels.
-
 The previous article covered [server startup](standalone-server-startup.html). Now the other side: the client.
 
 ## 1. Create the client object

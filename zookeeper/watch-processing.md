@@ -13,8 +13,6 @@ description: "Trace one-shot and persistent watch registration, server notificat
 
 A **watch** lets a client hear about changes to a znode. This article follows a watch from registration on the client, through the server, to the callback that finally runs on the client. It continues from [Following a ZooKeeper Node Creation Request](node-creation.html).
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. The figure is the author's original diagram with English labels.
-
 ## 1. The client registers a watch
 
 There are two ways to register:

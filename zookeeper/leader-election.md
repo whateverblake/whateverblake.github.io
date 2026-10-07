@@ -13,8 +13,6 @@ description: "Trace FastLeaderElection, its queues and worker threads, and the c
 
 Before an ensemble can replicate anything, its servers must agree on one **leader**. This article follows ZooKeeper's fast leader election: the voting rule, the threads and queues that carry votes, and the socket connections between peers.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; `...` marks omitted code. Figures are the author's original diagrams with English labels.
-
 ## 1. The election protocol
 
 An ensemble has two kinds of members:

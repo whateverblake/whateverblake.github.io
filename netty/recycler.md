@@ -13,8 +13,6 @@ series_order: 8
 
 Creating and garbage-collecting many objects of the same type costs allocation and GC time. An **object pool** avoids that: return an object when you are done and take one back from the pool next time. Netty uses many short-lived internal objects and pools them with `Recycler`, a pool with one stack per thread. This article explains how it works, including the hard part: an object returned by a *different* thread.
 
-> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
-
 ## 1. Make a type reusable
 
 Three steps:
@@ -680,7 +678,7 @@ These articles helped me read this code:
 - With the default ratio of 8, the counter keeps the first candidate and then drops the next eight before keeping another. (The source comment says "every eighth", which is imprecise.)
 - Recycling is an admission decision, not a promise of reuse. Never touch an object after returning it.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [Recycler.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/Recycler.java)
 - [ObjectPool.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/common/src/main/java/io/netty/util/internal/ObjectPool.java)

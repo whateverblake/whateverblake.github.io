@@ -13,8 +13,6 @@ description: "Follow leader discovery, epoch agreement, DIFF/TRUNC/SNAP synchron
 
 [Fast leader election](leader-election.html) picks a leader. This article follows what happens next, until the ensemble can serve clients: followers connect to the leader, everyone agrees on a new epoch, followers catch up on data, and both sides start their request processors.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; `...` marks omitted code. Figures are the author's original diagrams with English labels.
-
 ## 1. The three stages
 
 ### Connect

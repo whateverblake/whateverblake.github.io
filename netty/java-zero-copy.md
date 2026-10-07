@@ -13,8 +13,6 @@ series_order: 10
 
 Reading a file and sending it over the network usually moves the same bytes several times between kernel buffers and your application. **Zero-copy** techniques cut out some of those copies. This article compares an ordinary Java socket transfer, `FileChannel.transferTo` (`sendfile`) and memory-mapped files (`mmap`).
 
-> **Source:** OpenJDK 8u272-b10 (October 2020). The figures are the author's original diagrams with English labels; the first one came from a third-party source and is redrawn in the same style.
-
 "Zero-copy" does not mean no data moves. Devices still transfer bytes, usually by DMA. It means fewer **CPU copies**, which saves CPU time and the memory used by intermediate buffers.
 
 ## 1. The ordinary path

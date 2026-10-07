@@ -13,8 +13,6 @@ description: "Trace configuration, request processors, connection acceptance, an
 
 This article starts a standalone ZooKeeper server and follows it until it accepts client connections: configuration, the server object, and the NIO threads that accept and dispatch I/O.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. Diagrams from the original article are redrawn with English labels.
-
 ## Why read it
 
 I started using ZooKeeper years ago, when I used it to turn a file collector that had no distributed deployment or task dispatch into a distributed system. After reading *From Paxos to ZooKeeper: Principles and Practice of Distributed Consistency*, I debugged the standalone server in several scenarios, but I took no notes and forgot most of it. Reading the source again was worth it; this article records what I found.

@@ -13,8 +13,6 @@ series_order: 4
 
 If the other side sends `hello world`, how do those bytes reach your handler? This article follows the read path of `NioSocketChannel`, from the selector to `channelRead`, and then explains how Netty sizes its receive buffers. The [next article](socket-write.html) follows the write path.
 
-> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated. The figure is the author's original diagram with English labels.
-
 ## 1. A read event fires
 
 Client and server channels are both initialized and registered; a client also connects, while an accepted server channel is already connected. Once a channel is active and reading is on, Netty registers interest in `OP_READ`. When bytes arrive, the channel's event loop selects the ready keys and handles them in `processSelectedKeys` (see [the thread model](thread-model.html)).
@@ -307,7 +305,7 @@ How big should the next receive buffer be? Netty adapts it to recent reads. The 
 - A "message" in the read loop means one delivered buffer, not an application message.
 - If Netty cannot instrument the selector's key set (or it is disabled), it uses the plain, non-optimized path.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [AbstractNioByteChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java)
 - [NioSocketChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java)

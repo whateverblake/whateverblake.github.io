@@ -16,7 +16,3 @@ ZooKeeper's source code is well worth studying. It is less complex than many ope
 ## Read the series
 
 {% include part-list.html topic="ZooKeeper" descriptions=true %}
-
-## Source baseline
-
-Excerpts are checked against the [ZooKeeper 3.6.2 source tree](https://github.com/apache/zookeeper/tree/803c7f1a12f85978cb049af5e4ef23bd8b688715) (October 2020). They keep the original selection of code; ellipses mark omissions, so they are not complete compilable methods. Articles note technical corrections and version differences where necessary.

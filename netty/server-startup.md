@@ -13,8 +13,6 @@ series_order: 2
 
 This article follows a Netty server from `bind(port)` to the moment it accepts connections, using `EchoServer` from Netty's examples module.
 
-> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated.
-
 ## 1. A typical server
 
 ```java
@@ -607,7 +605,7 @@ From here the boss event loop's selector reports new connections, and `ServerBoo
 - The listening channel registers for `OP_ACCEPT`; accepted channels register for `OP_READ`.
 - Interest registration happens automatically only with `autoRead`, which the example leaves on.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [EchoServer.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/example/src/main/java/io/netty/example/echo/EchoServer.java)
 - [AbstractBootstrap.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/bootstrap/AbstractBootstrap.java)

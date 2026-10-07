@@ -76,19 +76,3 @@ payload always lives in an owner.
 | Endpoint | A network address and port for one service. |
 | Lease | A time window in which the Store protects a replica that is being read. It cannot survive an owner crash. |
 | Asio | The asynchronous I/O library used by the TCP transport. |
-
-## Source version
-
-Everything is checked against Mooncake commit
-[`719735896c86b56fabec6cf3e825fb2ea640597a`](https://github.com/kvcache-ai/Mooncake/tree/719735896c86b56fabec6cf3e825fb2ea640597a)
-(`v0.3.13.post1`). Source links point at that revision. Search for the named
-function when you follow a link; line numbers differ in a modified checkout.
-
-The diagrams started from three drawings (`master_service.drawio`,
-`client_memory.drawio` and `client_put_get.drawio`) and add the missing
-steps, such as RPC server startup and Put completion. Addresses, ports and
-IDs in the examples come from one run and will differ in yours.
-
-The author's debug checkout adds descriptive thread names and fixed-port
-options. They are not in the public revision and are not needed here, so
-follow function names rather than OS thread names.

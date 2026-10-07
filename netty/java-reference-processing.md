@@ -13,8 +13,6 @@ series_order: 9
 
 Java has four kinds of reference: **strong, soft, weak and phantom**. Strong references are the everyday kind: in `Object obj = new Object()`, `obj` is a strong reference. The other three are classes, `SoftReference`, `WeakReference` and `PhantomReference`, all extending the abstract `Reference`. This article follows what happens to them after a garbage collection: how the JVM hands them to the **Reference Handler** thread, and how that thread passes them to a `Cleaner` or to your `ReferenceQueue`.
 
-> **Source:** OpenJDK 8u272-b10 (October 2020). This is JDK internals, not Netty, but Netty's direct buffers depend on it. Code excerpts keep the original selection; comments are translated.
-
 ## 1. Create references
 
 ```java
@@ -276,7 +274,7 @@ Enqueuing happens on the background Reference Handler thread, so the first `befo
 - JDK 8 phantom references are not cleared automatically; later JDKs changed that.
 - The code is JDK 8's pending-list implementation. Later JDKs process references differently.
 
-Source references (OpenJDK 8u272-b10, October 2020):
+## Source references
 
 - [Reference.java](https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/Reference.java)
 - [ReferenceQueue.java](https://github.com/openjdk/jdk8u/blob/c3b5603e949d6272d777ef57952833672a97b4e3/jdk/src/share/classes/java/lang/ref/ReferenceQueue.java)

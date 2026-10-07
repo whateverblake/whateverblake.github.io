@@ -13,8 +13,6 @@ series_order: 3
 
 Every Netty channel has a **pipeline**: a chain of handlers that events pass through. This article explains how the chain is built, how a handler is wrapped in a context, and how an event moves from one handler to the next.
 
-> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
-
 ## 1. The pipeline
 
 The pipeline is the chain-of-responsibility pattern. It is a **doubly linked list**: each user handler is wrapped in a `DefaultChannelHandlerContext`, and the contexts are the list's nodes. Their order follows how and where the handlers were added.
@@ -281,7 +279,7 @@ That is the whole pipeline mechanism.
 - Outbound calls made through a context start at the previous outbound context; calls made through the channel or the pipeline start at the tail.
 - Both lifecycle events and I/O operations go through the pipeline.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [DefaultChannelPipeline.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/DefaultChannelPipeline.java)
 - [AbstractChannelHandlerContext.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java)

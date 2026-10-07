@@ -13,8 +13,6 @@ description: "Understand snapshot and transaction log formats and trace ZooKeepe
 
 ZooKeeper writes every state change to a **transaction log** before completing it, and now and then saves its whole in-memory state as a **snapshot**. On startup it rebuilds its data from those two files. This article explains both formats and then follows the recovery code.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Code excerpts keep the original selection; comments are translated. The original screenshots are lost; the log and snapshot figures are the author's own diagrams of those formats, with English labels.
-
 "State changes" here means writes: create, set-data, delete, session changes and similar. Reads are never logged.
 
 ## 1. Why both a snapshot and a log

@@ -13,8 +13,6 @@ series_order: 5
 
 This article follows how a Netty channel sends bytes: `writeAndFlush` travels through the pipeline, `write` queues the message in a `ChannelOutboundBuffer`, and `flush` turns the queue into NIO buffers and writes them to the socket, with backpressure along the way.
 
-> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated.
-
 ## 1. Start a write
 
 Say a handler sends `hello world` from `channelActive` through its context:
@@ -635,7 +633,7 @@ That is the whole write path.
 - Writes can be partial. `incompleteWrite(true)` waits for the selector to report write readiness (no progress was made). `incompleteWrite(false)` schedules another flush because the spin budget ran out. The original article described the `false` branch as "all data flushed"; that was wrong.
 - A composite buffer can turn into several NIO buffers, and the NIO buffer array can grow.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [AbstractChannelHandlerContext.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java)
 - [AbstractChannel.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/AbstractChannel.java)

@@ -13,8 +13,6 @@ series_order: 1
 
 Netty is a high-performance networking framework for Java. This article explains its threading: how an event loop group picks a loop for each channel, what a `NioEventLoop` does in its `run` loop, and how that loop gets its thread.
 
-> **Source:** Netty 4.1.53.Final (October 2020) · NIO transport. Code excerpts keep the original selection; comments are translated. Figures are the author's original diagrams with English labels.
-
 ## 1. The reactor model
 
 A Netty server follows the **reactor** pattern. An acceptor takes connection requests and creates a `SocketChannel` for each one. Every accepted channel is bound to one event loop, and that loop's thread handles all of the channel's later events.
@@ -420,7 +418,7 @@ private void doStartThread() {
 - The loop mixes selected I/O, ordinary tasks and scheduled tasks; `ioRatio` sets how its time is split between I/O and tasks.
 - "A channel's handlers run on its event loop" is the default. A handler added with its own executor runs elsewhere.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [NioEventLoop.java at the baseline](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/nio/NioEventLoop.java)
 - [MultithreadEventLoopGroup.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/transport/src/main/java/io/netty/channel/MultithreadEventLoopGroup.java)

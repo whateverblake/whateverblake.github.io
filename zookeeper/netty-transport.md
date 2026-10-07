@@ -13,8 +13,6 @@ description: "Trace ZooKeeper client and server Netty channels, session negotiat
 
 So far the series used ZooKeeper's Java NIO network layer. ZooKeeper can also use **Netty**. This article follows the Netty transport on both sides: how the client sends requests and reads replies, and how the server reads requests and writes responses.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, which uses Netty **4.1.50.Final** (see its [POM](https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/pom.xml)). The separate [Netty series](../netty/index.html) uses 4.1.53.Final. Code excerpts keep the original selection; `...` marks omitted code.
-
 ## 1. Turn Netty on
 
 Client and server are configured separately, with JVM system properties.

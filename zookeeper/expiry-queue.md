@@ -13,8 +13,6 @@ description: "Read the bucketed expiration queue used to manage ZooKeeper connec
 
 The server has two kinds of objects that can time out: **connections** and **sessions**. Both use the same small container, `ExpiryQueue`. This article explains its trick: it rounds every deadline up into a time bucket, so expiring objects means handling a whole bucket at once instead of checking each object.
 
-> **Source:** ZooKeeper 3.6.2 · commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. The figure is the author's original diagram with English labels.
-
 ## 1. Round deadlines into buckets
 
 Every connection has its own deadline, and the deadlines are all different:

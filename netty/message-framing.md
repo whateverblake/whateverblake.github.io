@@ -20,8 +20,6 @@ This has nothing to do with whether a message is larger than an IP packet. The r
 
 [![TCP keeps bytes, not boundaries: three application writes arrive as reads that split and merge them; a length-field frame has a length field at lengthFieldOffset, and the decoder uses it to cut complete frames.](assets/message-framing-01.svg)](assets/message-framing-01.svg)
 
-> **Source:** Netty 4.1.53.Final (October 2020). Code excerpts keep the original selection; comments are translated.
-
 ## 1. Three ways to frame messages
 
 | Strategy | How the receiver finds the end | Netty decoder |
@@ -385,7 +383,7 @@ private void failIfNecessary(boolean firstDetectionOfTooLongFrame) {
 - In this version the default merge cumulator either reuses the buffer or copies into a larger one.
 - The decoder computes the full frame size from the length value, the end offset of the length field and `lengthAdjustment`. `initialBytesToStrip` only changes what is delivered, not the size used to check the frame.
 
-Source references (Netty 4.1.53.Final, released October 13, 2020):
+## Source references
 
 - [ByteToMessageDecoder.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/ByteToMessageDecoder.java)
 - [LengthFieldBasedFrameDecoder.java](https://github.com/netty/netty/blob/d4a0050ef33cab2542a80e11489a4977a63859f8/codec/src/main/java/io/netty/handler/codec/LengthFieldBasedFrameDecoder.java)

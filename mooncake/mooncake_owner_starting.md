@@ -37,10 +37,6 @@ Three details help when you read the source:
   `TransferMetadata` hold Transfer Engine descriptions. They serve different
   purposes.
 
-All source links use commit
-[`719735896c86b56fabec6cf3e825fb2ea640597a`](https://github.com/kvcache-ai/Mooncake/tree/719735896c86b56fabec6cf3e825fb2ea640597a)
-and the `TransferEngineImpl` implementation used by this TCP setup.
-
 ## 1. Start one owner
 
 Build the programs with the [environment guide](environment_setting_up.html)
@@ -668,8 +664,6 @@ step comes after mounting, not before. See `main` and
 | `127.0.0.1:50052` | Standalone real-client RPC service |
 
 Read H and D from the startup logs; this revision picks them automatically.
-(The author's debug checkout adds `MC_TE_HANDSHAKE_PORT`, `MC_TCP_DATA_PORT`
-and `mc-*` thread names locally. They are not upstream features.)
 
 ## 10. Failures and breakpoints
 

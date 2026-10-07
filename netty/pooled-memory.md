@@ -15,7 +15,7 @@ Netty allocates a huge number of short-lived buffers. Asking the JVM or the OS f
 
 There is a saying that life is like a walled city: those outside want in, those inside want out. Java programmers never call `free` and may wonder what manual memory management is like; C programmers who pair every `malloc` with a `free` may envy the garbage collector. Netty's allocator is where a Java library does the C programmer's job.
 
-> **Source: this article is the exception in the series.** It walks through the **legacy allocator of Netty 4.1.50.Final**: tiny and small subpages plus a buddy tree. Netty 4.1.53.Final already has a redesigned allocator; the differences are listed at the end. Heap buffers use the same pool structure as the direct buffers shown here.
+This article covers Netty's **legacy** pooled allocator (4.1.50.Final). The redesigned allocator in 4.1.53.Final is summarized at the end. Heap buffers use the same pool structure as the direct buffers shown here.
 
 ## 1. The memory model
 
@@ -1081,7 +1081,7 @@ The defaults `pageSize = 8192` and `maxOrder = 11` still give a 16 MiB chunk in 
 
 The original article's explanations of whole-page delivery for tiny requests, changing chunk sizes, the cache-trim trigger, the handle marker, the bitmap mask and array indexing have been corrected.
 
-Source references (legacy allocator at Netty 4.1.50.Final; the redesign at 4.1.53.Final):
+## Source references
 
 - [Legacy PoolArena.java](https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolArena.java)
 - [Legacy PoolChunk.java](https://github.com/netty/netty/blob/8c5b72aaf02e7f349a9972dd9179b449b5a6067b/buffer/src/main/java/io/netty/buffer/PoolChunk.java)

@@ -13,8 +13,6 @@ description: "Check out ZooKeeper 3.6.2, import its Maven reactor, and configure
 
 This guide sets up IntelliJ IDEA for reading and debugging the ZooKeeper source. When you finish, you can run a standalone server from the IDE and stop at breakpoints in its startup code.
 
-> **Source version:** ZooKeeper **3.6.2** (October 2020), commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`. Every article in this series uses this commit, so line numbers and behavior match.
-
 ## 1. Get the source
 
 Clone the Apache ZooKeeper repository. In IntelliJ IDEA this is **File → New → Project from Version Control → Git** (the menu wording changes between IDE versions). A plain Git clone is all you need; no GitHub plugin is required.
