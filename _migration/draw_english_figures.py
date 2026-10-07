@@ -432,7 +432,7 @@ for a in manifest['articles']:
   asset=f"{a['topic']}/{im['asset']}"
   if asset in ORIGINALS:
    o=ORIGINALS[asset]
-   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':asset,'title':o['title'],'kind':'original-diagram','source_diagram':o['source_diagram'],'region':o['region'],'drawio':f"_migration/drawio/{a['topic']}/{Path(im['asset']).stem}.drawio",'note':o['note'],'reconstruction':False})
+   records.append({'article':a['slug'],'topic':a['topic'],'image_index':im['index'],'asset':asset,'title':o['title'],'kind':'original-diagram','source_diagram':o['source_diagram'],'region':o['region'],'drawio':f"_migration/drawio/{a['topic']}/{Path(im['asset']).stem}.drawio",'redrawn_by':o.get('redrawn'),'note':o['note'],'reconstruction':False})
    continue
   if asset in CONVERTED:
    c=CONVERTED[asset]

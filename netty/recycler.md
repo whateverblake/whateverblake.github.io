@@ -555,7 +555,7 @@ private boolean scavengeSome() {
 
 [![Dead and active WeakOrderQueue nodes during scavenging](assets/recycler-08.svg){: .diagram}](assets/recycler-08.svg)
 
-In the figure, the blue `Dead_WeakOrderQueue` nodes sit at the front of the list, before any live queue that could act as `prev`. With no predecessor to unlink through, they stay. A dead queue **later** in the list, including the last one, can be unlinked once a live queue has become `prev`.
+In the figure, the grey "producer dead" queues sit at the front of the list, before any live queue that could act as `prev`. With no predecessor to unlink through, they stay. A dead queue **later** in the list, including the last one, can be unlinked once a live queue has become `prev`.
 
 > **Note:** the original article said a dead queue at the end of the list can never be reclaimed. That was wrong. Also, a queue staying linked does not mean it keeps all of its returned objects forever.
 

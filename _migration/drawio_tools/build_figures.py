@@ -73,11 +73,13 @@ def export():
     for topic in ('zookeeper', 'netty'):
         for f in sorted((OUT / topic).glob('*.drawio')):
             svg = REPO / topic / 'assets' / (f.stem + '.svg')
+            info = TITLES[f'{topic}/assets/{f.stem}.svg']
+            if info.get('redrawn'):
+                continue  # the published SVG is redrawn by <topic>/assets/draw_diagrams.py; keep the drawio as the reference
             subprocess.run([DRAWIO, '-x', '-f', 'svg', '--embed-svg-fonts', 'false', '--theme', 'light',
                             '-s', '1.5', '-b', '10', '-o', str(svg), str(f)], check=True, capture_output=True)
             s = svg.read_text().replace('background: transparent; background-color: transparent;',
                                         'background: #ffffff; background-color: #ffffff;')
-            info = TITLES[f'{topic}/assets/{f.stem}.svg']
             meta = f'<title>{escape(info["title"])}</title><desc>{escape(info["note"])}</desc>'
             s = re.sub(r'(<svg\b[^>]*>)', lambda m: m.group(1) + meta, s, count=1)
             svg.write_text(s)

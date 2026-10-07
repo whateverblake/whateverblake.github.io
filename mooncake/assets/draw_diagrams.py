@@ -125,6 +125,60 @@ class Diagram:
         self.parts.append(f'<circle cx="{x}" cy="{y}" r="10" fill="{color}"/>')
         self.text(x, y + 4.2, str(n), 11.5, "#ffffff", 700, True, "middle")
 
+    def box(self, x, y, w, h, lines, role="neutral", size=13, mono=False, strong=True, fill=None):
+        """Centered multi-line box. A line wrapped in backticks is monospace; the first line is bold if strong."""
+        color, tint = ROLE[role]
+        self.rect(x, y, w, h, fill or tint, color, 6, None, 1.3)
+        n = len(lines)
+        top = y + h / 2 - (n - 1) * (size + 4) / 2 + size * 0.36
+        for i, s in enumerate(lines):
+            m = mono or s.startswith("`")
+            s = s.strip("`")
+            weight = 600 if (strong and i == 0) else 400
+            col = color if (strong and i == 0) else INK
+            self.text(x + w / 2, top + i * (size + 4), s, size - (0.5 if m else 0), col, weight, m, "middle")
+            self._check(s, size, m, w - 12)
+        return dict(x=x, y=y, w=w, h=h, cx=x + w / 2, cy=y + h / 2, l=x, r=x + w, t=y, b=y + h)
+
+    def diamond(self, cx, cy, w, h, lines, role="neutral", size=12.5):
+        color, tint = ROLE[role]
+        pts = f"{cx},{cy - h / 2} {cx + w / 2},{cy} {cx},{cy + h / 2} {cx - w / 2},{cy}"
+        self.parts.append(f'<polygon points="{pts}" fill="{tint}" stroke="{color}" stroke-width="1.3"/>')
+        top = cy - (len(lines) - 1) * (size + 3) / 2 + size * 0.36
+        for i, s in enumerate(lines):
+            self.text(cx, top + i * (size + 3), s, size, INK, 500, False, "middle")
+        return dict(cx=cx, cy=cy, l=cx - w / 2, r=cx + w / 2, t=cy - h / 2, b=cy + h / 2)
+
+    def cyl(self, x, y, w, h, lines, role="data", size=12.5):
+        """A queue drawn as a horizontal cylinder."""
+        color, tint = ROLE[role]
+        e = 9
+        self.parts.append(f'<path d="M {x + e} {y} L {x + w - e} {y} A {e} {h / 2} 0 0 1 {x + w - e} {y + h} L {x + e} {y + h} '
+                          f'A {e} {h / 2} 0 0 1 {x + e} {y} Z" fill="{tint}" stroke="{color}" stroke-width="1.3"/>')
+        self.parts.append(f'<path d="M {x + w - e} {y} A {e} {h / 2} 0 0 0 {x + w - e} {y + h}" fill="none" stroke="{color}" stroke-width="1.1"/>')
+        top = y + h / 2 - (len(lines) - 1) * (size + 3) / 2 + size * 0.36
+        for i, s in enumerate(lines):
+            self.text(x + w / 2 - 4, top + i * (size + 3), s, size, color if i == 0 else INK, 600 if i == 0 else 400, True, "middle")
+        return dict(x=x, y=y, w=w, h=h, cx=x + w / 2, cy=y + h / 2, l=x, r=x + w, t=y, b=y + h)
+
+    def lanes(self, defs, top, bottom):
+        """Swim lanes: [(x, w, label, role)] with a header chip and a faint tinted band."""
+        for x, w, label, role in defs:
+            color, tint = ROLE[role]
+            self.parts.append(f'<rect x="{x}" y="{top}" width="{w}" height="{bottom - top}" rx="8" fill="{tint}" fill-opacity="0.35" stroke="{color}" stroke-opacity="0.35"/>')
+            self.text(x + w / 2, top + 22, label, 13, color, 700, True, "middle")
+
+    def circle(self, cx, cy, r, lines, role="neutral", size=12):
+        color, tint = ROLE[role]
+        self.parts.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{tint}" stroke="{color}" stroke-width="1.3"/>')
+        top = cy - (len(lines) - 1) * (size + 3) / 2 + size * 0.36
+        for i, s in enumerate(lines):
+            self.text(cx, top + i * (size + 3), s, size, INK, 500, True, "middle")
+        return dict(cx=cx, cy=cy, l=cx - r, r=cx + r, t=cy - r, b=cy + r)
+
+    def label(self, x, y, s, role="neutral", size=12, anchor="middle", mono=False):
+        self.text(x, y, s, size, ROLE[role][0], 500, mono, anchor, True)
+
     def _check(self, s, size, mono, room):
         if width_of(s, size, mono) > room + 2:
             WARN.append(f"{self.name}: '{s}' ({width_of(s, size, mono):.0f}px > {room:.0f}px)")

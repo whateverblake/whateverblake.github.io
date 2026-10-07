@@ -84,6 +84,7 @@
       570
     ],
     "drawio": "_migration/drawio/zookeeper/standalone-server-startup-03.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -127,6 +128,7 @@
     "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
     "region": null,
     "drawio": "_migration/drawio/zookeeper/client-startup-04.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Redrawn from the code screenshot embedded in the author's diagram, with the annotations translated to English.",
     "reconstruction": false
   },
@@ -140,6 +142,7 @@
     "source_diagram": "source code reading/zookeeper/zookeeper_client_connect_server.drawio",
     "region": null,
     "drawio": "_migration/drawio/zookeeper/client-startup-05.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -158,6 +161,7 @@
       1160
     ],
     "drawio": "_migration/drawio/zookeeper/expiry-queue-01.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -171,6 +175,7 @@
     "source_diagram": "source code reading/zookeeper/zookeeper_create_node.drawio",
     "region": null,
     "drawio": "_migration/drawio/zookeeper/node-creation-01.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -189,6 +194,7 @@
       640
     ],
     "drawio": "_migration/drawio/zookeeper/node-creation-02.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -207,6 +213,7 @@
       920
     ],
     "drawio": "_migration/drawio/zookeeper/node-creation-03.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -220,6 +227,7 @@
     "source_diagram": "source code reading/zookeeper/zookeeper_request_processor.drawio",
     "region": null,
     "drawio": "_migration/drawio/zookeeper/watch-processing-01.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -248,6 +256,7 @@
       2260
     ],
     "drawio": "_migration/drawio/zookeeper/data-recovery-02.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "The article's original screenshot of parsed log output could not be recovered; this is the author's own diagram of the transaction log format and how it is replayed from the same series of notes, with labels translated to English.",
     "reconstruction": false
   },
@@ -266,6 +275,7 @@
       2390
     ],
     "drawio": "_migration/drawio/zookeeper/data-recovery-03.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "The article's original screenshot of parsed snapshot nodes could not be recovered; this is the author's own diagram of the snapshot file format (DataTree section) from the same series of notes, with labels translated to English.",
     "reconstruction": false
   },
@@ -284,6 +294,7 @@
       1090
     ],
     "drawio": "_migration/drawio/zookeeper/data-recovery-04.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "The article's original screenshot of parsed snapshot sessions could not be recovered; this is the author's own diagram of the snapshot file format (header and session section) from the same series of notes, with labels translated to English.",
     "reconstruction": false
   },
@@ -332,6 +343,7 @@
       420
     ],
     "drawio": "_migration/drawio/zookeeper/leader-election-01.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -350,6 +362,7 @@
       1130
     ],
     "drawio": "_migration/drawio/zookeeper/leader-election-02.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -368,6 +381,7 @@
       1950
     ],
     "drawio": "_migration/drawio/zookeeper/leader-election-03.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -386,6 +400,7 @@
       440
     ],
     "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-01.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -404,6 +419,7 @@
       1580
     ],
     "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-02.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -422,6 +438,7 @@
       2730
     ],
     "drawio": "_migration/drawio/zookeeper/leader-follower-initialization-03.drawio",
+    "redrawn_by": "zookeeper/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -440,6 +457,7 @@
       680
     ],
     "drawio": "_migration/drawio/netty/thread-model-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -458,6 +476,7 @@
       945
     ],
     "drawio": "_migration/drawio/netty/thread-model-02.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -486,6 +505,7 @@
       1670
     ],
     "drawio": "_migration/drawio/netty/pipeline-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -499,6 +519,7 @@
     "source_diagram": "source code reading/netty/pipeline\u4e8b\u4ef6\u89e6\u53d1.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/pipeline-02.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -512,6 +533,7 @@
     "source_diagram": "source code reading/netty/size_table.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/socket-read-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -530,6 +552,7 @@
       470
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -548,6 +571,7 @@
       5660
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-02.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -566,6 +590,7 @@
       1835
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-03.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -584,6 +609,7 @@
       2200
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-04.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -602,6 +628,7 @@
       2385
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-05.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -620,6 +647,7 @@
       480
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-06.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -638,6 +666,7 @@
       980
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-07.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -656,6 +685,7 @@
       2525
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-08.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -684,6 +714,7 @@
       2770
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-10.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -702,6 +733,7 @@
       2070
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-11.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -720,6 +752,7 @@
       3720
     ],
     "drawio": "_migration/drawio/netty/pooled-memory-12.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -748,6 +781,7 @@
       1100
     ],
     "drawio": "_migration/drawio/netty/recycler-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -796,6 +830,7 @@
       480
     ],
     "drawio": "_migration/drawio/netty/recycler-05.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -814,6 +849,7 @@
       820
     ],
     "drawio": "_migration/drawio/netty/recycler-06.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -832,6 +868,7 @@
       1040
     ],
     "drawio": "_migration/drawio/netty/recycler-07.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -850,6 +887,7 @@
       1610
     ],
     "drawio": "_migration/drawio/netty/recycler-08.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -933,6 +971,7 @@
     "source_diagram": "source code reading/netty/\u5185\u6838-\u5185\u6838-copy.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/java-zero-copy-01.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "The article's original image was a third-party picture (watermarked); redrawn in the style of the author's sendfile diagram, with the CPU copies routed through the user-space buffer.",
     "reconstruction": false
   },
@@ -946,6 +985,7 @@
     "source_diagram": "source code reading/netty/\u5185\u6838-\u5185\u6838-copy.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/java-zero-copy-02.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -959,6 +999,7 @@
     "source_diagram": "source code reading/netty/\u975eMMAP_\u590d\u5236.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/java-zero-copy-03.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
@@ -972,6 +1013,7 @@
     "source_diagram": "source code reading/netty/mmap_\u5185\u5b58\u590d\u5236.drawio",
     "region": null,
     "drawio": "_migration/drawio/netty/java-zero-copy-04.drawio",
+    "redrawn_by": "netty/assets/draw_diagrams.py",
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "reconstruction": false
   },
