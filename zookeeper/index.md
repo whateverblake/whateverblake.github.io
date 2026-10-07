@@ -1,6 +1,7 @@
 ---
 layout: default
 series: true
+source: "ZooKeeper 3.6.2 · Java"
 topic: ZooKeeper
 lang: en
 title: "Reading ZooKeeper Source Code"

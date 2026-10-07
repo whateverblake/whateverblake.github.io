@@ -4,23 +4,27 @@ layout: default
 {% assign series = site.pages | where: 'series', true | sort: 'order' %}
 {% assign articles = site.pages | where: 'article', true | sort: 'order' %}
 <section class="home-intro">
+  <p class="kicker">// source-code walkthroughs</p>
   <h1>Engineering notes</h1>
   <p>Hi, I’m Blake. I read the source of distributed systems and networking libraries and write down how they work, from the first function call to the bytes on the wire.</p>
+  <p class="stats"><span>{{ series.size }} series</span><span>{{ articles.size }} articles</span>{% for s in series %}<span>{{ s.source | split: ' · ' | first }}</span>{% endfor %}</p>
 </section>
 {% for s in series %}
+{% assign count = articles | where: 'topic', s.topic | size %}
 <section class="series-block" id="{{ s.topic | slugify }}" aria-labelledby="series-{{ s.topic | slugify }}">
   <div class="series-heading">
     <h2 id="series-{{ s.topic | slugify }}"><a href="{{ s.url | relative_url }}">{{ s.topic | escape }}</a></h2>
-    <p>{{ s.description | escape }}</p>
+    <p class="series-meta">{% if s.source %}<span class="tag">{{ s.source | escape }}</span>{% endif %}<span>{{ count }} parts</span></p>
+    <p class="series-description">{{ s.description | escape }}</p>
   </div>
   {% include part-list.html topic=s.topic %}
 </section>
 {% endfor %}
 {% assign series_topics = series | map: 'topic' %}
-{% capture other %}{% for a in articles %}{% unless series_topics contains a.topic %}<li><a href="{{ a.url | relative_url }}"><span class="part-title">{{ a.nav_title | default: a.title | escape }}{% if a.lang == 'zh-CN' %}<span class="lang-tag">中文</span>{% endif %}</span></a></li>{% endunless %}{% endfor %}{% endcapture %}
+{% capture other %}{% for a in articles %}{% unless series_topics contains a.topic %}<li><a href="{{ a.url | relative_url }}"><span class="part-number">·</span><span class="part-title">{{ a.nav_title | default: a.title | escape }}</span></a></li>{% endunless %}{% endfor %}{% endcapture %}
 {% if other != '' %}
 <section class="series-block" id="notes" aria-labelledby="series-notes">
-  <div class="series-heading"><h2 id="series-notes">Other notes</h2><p>Standalone articles.</p></div>
+  <div class="series-heading"><h2 id="series-notes">Other notes</h2></div>
   <ul class="part-list">{{ other }}</ul>
 </section>
 {% endif %}

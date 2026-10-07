@@ -16,7 +16,7 @@
   const contents = document.createElement('details');
   contents.className = 'page-contents';
   const summary = document.createElement('summary');
-  summary.textContent = 'On this page';
+  summary.textContent = 'Contents';
   const list = document.createElement('ol');
   headings.forEach((heading, index) => {
     if (!heading.id) heading.id = `section-${index + 1}`;

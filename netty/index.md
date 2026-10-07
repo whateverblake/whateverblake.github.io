@@ -1,6 +1,7 @@
 ---
 layout: default
 series: true
+source: "Netty 4.1.53 · OpenJDK 8"
 topic: Netty
 lang: en
 title: "Reading Netty Source Code"

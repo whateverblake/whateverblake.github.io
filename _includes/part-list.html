@@ -5,6 +5,6 @@ Parameters: topic (required), descriptions (true to show each article's descript
 {% assign parts = site.pages | where: 'article', true | where: 'topic', include.topic | sort: 'order' %}
 <ol class="part-list{% if include.descriptions %} with-descriptions{% endif %}">
 {% for part in parts %}
-  <li><a href="{{ part.url | relative_url }}"><span class="part-number">{{ part.series_order }}</span><span class="part-title">{{ part.nav_title | default: part.title | escape }}{% if include.descriptions and part.description %}<span class="part-description">{{ part.description | escape }}</span>{% endif %}</span></a></li>
+  <li><a href="{{ part.url | relative_url }}"><span class="part-number">{% if part.series_order < 10 %}0{% endif %}{{ part.series_order }}</span><span class="part-title">{{ part.nav_title | default: part.title | escape }}{% if include.descriptions and part.description %}<span class="part-description">{{ part.description | escape }}</span>{% endif %}</span></a></li>
 {% endfor %}
 </ol>

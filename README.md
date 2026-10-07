@@ -26,7 +26,7 @@ Write the article here.
 - `topic` names the series. Articles whose topic has a series overview are
   listed under that series; others appear under “Other notes”.
 - `order` controls the reading order; use different numbers for each article.
-  Mooncake uses 10–40, Linux 100, ZooKeeper 210–310, Netty 410–500.
+  Mooncake uses 10–40, ZooKeeper 210–310, Netty 410–500.
 - `description` is shown in the series overview's part list.
 - Optional `nav_title` provides a shorter title for lists and links.
 - Optional `series_order` is the part number. Zero is supported.
