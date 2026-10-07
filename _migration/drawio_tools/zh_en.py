@@ -131,4 +131,19 @@ T = {
     '用户内存区': 'user memory',
     '内核缓存页': 'kernel page cache',
     '共享': 'shared',
+    # data-recovery (zookeeper_DB_init.drawio)
+    'Log文件恢复': 'Log file recovery',
+    'snap文件格式': 'Snapshot file format',
+    '根据从snap中恢复出的最大zxid+1得到恢复log需要的log_zxid，把log.x文件按照后缀进行降序排序，根据log_zxid从log文件夹中从获取后缀大于log_zxid和第一个小于log_zxid的log文件，因为log的后缀表示的是这个log文件记录的第一个事物id，里面存储的事物id可能会大于log_zxid':
+        'log_zxid = largest zxid restored from the snapshot + 1. Sort the log.x files by suffix, descending, and take those with a suffix above log_zxid plus the first one below it: a suffix is only the first zxid in its file, so that file can hold later zxids.',
+    '会得到': 'This gives ',
+    '从restoreFiles的尾部开始创建读取文件的流': 'open a reader starting from the tail of restoreFiles',
+    '文件解析': 'parse the file',
+    'record根据不同的类型': 'parsed by',
+    '进行解析': 'record type',
+    '对解析出来的': 'Compare each parsed ',
+    'TxnLogEntry比较它的zxid和log_zxid的大小，如果zxid小于': "TxnLogEntry's zxid with log_zxid; while zxid &lt; ",
+    'log_zxid那么继续解析，直到找到解析出的zxid&gt;=log_zxid的': 'log_zxid, skip it.',
+    'TxnLogEntry<br>然后会根据': '<br>Then, based on the ',
+    'TxnLogEntry的类型执行': 'TxnLogEntry type, run',
 }

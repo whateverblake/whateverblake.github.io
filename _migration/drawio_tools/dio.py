@@ -132,15 +132,19 @@ def inside(b, box, tol=2):
     return x >= X0 - tol and y >= Y0 - tol and x + w <= X1 + tol and y + h <= Y1 + tol
 
 
-def crop(model, box, drop=()):
-    """New mxGraphModel containing only the cells fully inside box (abs coords)."""
+def crop(model, box, drop=(), clip=()):
+    """New mxGraphModel containing only the cells fully inside box (abs coords).
+
+    Cells listed in clip (e.g. a background container) are kept even when they
+    extend past the box; their geometry is clipped to the box.
+    """
     ab = absolute(model)
     objs = all_objects(model)
     byid = {el.get('id'): (el, c) for el, c in objs}
     keep = set()
     for el, c in objs:
         i = el.get('id')
-        if i in ab and inside(ab[i], box) and i not in drop:
+        if i in ab and (inside(ab[i], box) or i in clip) and i not in drop:
             keep.add(i)
     # edges: keep if both connected ends kept (or unconnected end inside box)
     for el, c in objs:
@@ -175,6 +179,14 @@ def crop(model, box, drop=()):
             continue
         pid = c.get('parent')
         if pid in edges:
+            continue
+        if oid in clip:
+            x, y, w, h = ab[oid]
+            X0, Y0, X1, Y1 = box
+            nx, ny = max(x, X0), max(y, Y0)
+            g = c.find('mxGeometry')
+            g.set('x', str(nx)); g.set('y', str(ny))
+            g.set('width', str(min(x + w, X1) - nx)); g.set('height', str(min(y + h, Y1) - ny))
             continue
         if pid not in keep and pid in ab:
             # reparent to the top layer with absolute geometry

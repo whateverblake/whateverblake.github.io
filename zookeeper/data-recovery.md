@@ -11,7 +11,7 @@ description: "Understand snapshot and transaction log formats and trace ZooKeepe
 
 # How ZooKeeper Recovers Data from Snapshots and Transaction Logs
 
-> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. Figures are reconstructed from the source and original discussion because the original screenshots are unavailable. They are explanatory diagrams, not newly observed debugger output.
+> **Source version and figures:** This article is checked against ZooKeeper **3.6.2**, commit `803c7f1a12f85978cb049af5e4ef23bd8b688715`, the latest 3.6 release available in October 2020. The analyzed excerpts are retained with English annotations; identified original-source variants are labeled explicitly. The original screenshots are unavailable. The log and snapshot format figures are the author's own diagrams of those structures, with English labels; the other figures are reconstructed from the source and are explanatory, not newly observed debugger output.
 
 ## Introduction
 
@@ -42,9 +42,9 @@ For `log.y`, the suffix identifies the first zxid in that log; its records have 
 
 ### Transaction log contents
 
-[![Transaction header fields](assets/data-recovery-02.svg)](assets/data-recovery-02.svg)
+[![Transaction log recovery: TxnLogEntry with TxnHeader, Record and TxnDigest](assets/data-recovery-02.svg){: .diagram}](assets/data-recovery-02.svg)
 
-The reconstructed record panel shows the main fields of a transaction log entry. Its example values reproduce the original explanation and do not claim a newly observed execution.
+The diagram shows how a log file is read during recovery: each entry is a `TxnLogEntry` made of a `TxnHeader`, an operation-specific `Record` and a `TxnDigest`. The example values below reproduce the original explanation and do not claim a newly observed execution.
 
 - Transaction timestamp.
 - Session ID.
@@ -74,11 +74,11 @@ The reconstructed record panel shows the main fields of a transaction log entry.
 
 ### Snapshot contents
 
-[![What a snapshot stores for znodes](assets/data-recovery-03.svg)](assets/data-recovery-03.svg)
+[![Snapshot file format: DataTree with aclCache and DataNode records, then checksums and digest](assets/data-recovery-03.svg){: .diagram}](assets/data-recovery-03.svg)
 
-[![What a snapshot stores for sessions](assets/data-recovery-04.svg)](assets/data-recovery-04.svg)
+[![Snapshot file format: FileHeader, session count and sessionWithTimeOut entries](assets/data-recovery-04.svg){: .diagram}](assets/data-recovery-04.svg)
 
-The two reconstructed panels show a snapshot's node and session information.
+The two diagrams show the snapshot file layout: the `DataTree` section with the ACL cache and each `DataNode`, and the file header followed by the session table.
 
 1. **Znodes:** the data tree serializes its nodes, their state, data, and ACL references. The serialization is a fuzzy snapshot rather than an atomic point-in-time copy of every node.
 2. **Sessions:** the server also serializes session IDs and their timeout values.

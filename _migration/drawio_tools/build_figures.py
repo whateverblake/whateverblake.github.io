@@ -43,9 +43,9 @@ def merge_packet(model, x0, y0, k):
 
 
 def build():
-    for name, (f, box) in FIGS.items():
+    for name, (f, box, *clip) in FIGS.items():
         m = dio.load_pages(SRC + f)[0][1]
-        c = dio.crop(m, box)
+        c = dio.crop(m, box, clip=clip[0] if clip else ())
         if name.endswith('node-creation-01'):
             # replace the Chinese-annotated Packet screenshot with the English Packet cells (vector text)
             for el, cell in dio.all_objects(c):
@@ -60,6 +60,12 @@ def build():
             for el, cell in dio.all_objects(c):
                 if 'smaller than' in dio.label(el):
                     cell.set('style', (cell.get('style') or '').rstrip(';') + ';labelBackgroundColor=#ffffff;')
+        if name.endswith('data-recovery-03'):
+            # this half of the snapshot diagram lost the container title; give it one
+            title = next(copy.deepcopy(el) for el, _ in dio.all_objects(m) if 'snap文件格式' in dio.label(el))
+            title.set('id', 'dr03-title'); title.set('value', '<b>Snapshot file format: DataTree</b>')
+            g = title.find('mxGeometry'); g.set('x', '560'); g.set('y', '1096'); g.set('width', '330'); g.set('height', '22')
+            c.find('root').append(title)
         dio.save(c, str(OUT / (name + '.drawio')))
 
 

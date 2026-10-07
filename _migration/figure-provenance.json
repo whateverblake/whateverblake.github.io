@@ -282,42 +282,54 @@
     "topic": "zookeeper",
     "image_index": 2,
     "asset": "zookeeper/assets/data-recovery-02.svg",
-    "title": "Transaction header fields",
-    "kind": "code",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-jute/src/main/resources/zookeeper.jute",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-jute/src/main/resources/zookeeper.jute",
-    "source_line": 285,
-    "note": "The body record depends on the operation type. This replaces the missing parsed-log screenshot.",
-    "reconstruction": true
+    "title": "Transaction log recovery: TxnLogEntry with TxnHeader, Record and TxnDigest",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      1020,
+      745,
+      1600,
+      2260
+    ],
+    "drawio": "_migration/drawio/zookeeper/data-recovery-02.drawio",
+    "note": "The article's original screenshot of parsed log output could not be recovered; this is the author's own diagram of the transaction log format and how it is replayed from the same series of notes, with labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "data-recovery",
     "topic": "zookeeper",
     "image_index": 3,
     "asset": "zookeeper/assets/data-recovery-03.svg",
-    "title": "What a snapshot stores for znodes",
-    "kind": "fields",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java",
-    "source_line": null,
-    "note": "A source-based schema replaces the missing parsed-snapshot screenshot; it is not a binary hex dump.",
-    "reconstruction": true
+    "title": "Snapshot file format: DataTree with aclCache and DataNode records, then checksums and digest",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      530,
+      1095,
+      920,
+      2390
+    ],
+    "drawio": "_migration/drawio/zookeeper/data-recovery-03.drawio",
+    "note": "The article's original screenshot of parsed snapshot nodes could not be recovered; this is the author's own diagram of the snapshot file format (DataTree section) from the same series of notes, with labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "data-recovery",
     "topic": "zookeeper",
     "image_index": 4,
     "asset": "zookeeper/assets/data-recovery-04.svg",
-    "title": "What a snapshot stores for sessions",
-    "kind": "fields",
-    "version": "ZooKeeper 3.6.2",
-    "source_path": "zookeeper-server/src/main/java/org/apache/zookeeper/server/util/SerializeUtils.java",
-    "source_url": "https://github.com/apache/zookeeper/blob/803c7f1a12f85978cb049af5e4ef23bd8b688715/zookeeper-server/src/main/java/org/apache/zookeeper/server/util/SerializeUtils.java",
-    "source_line": null,
-    "note": "Field layout from serializeSnapshot / deserializeSnapshot; no session values are invented.",
-    "reconstruction": true
+    "title": "Snapshot file format: FileHeader, session count and sessionWithTimeOut entries",
+    "kind": "original-diagram",
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      530,
+      745,
+      920,
+      1090
+    ],
+    "drawio": "_migration/drawio/zookeeper/data-recovery-04.drawio",
+    "note": "The article's original screenshot of parsed snapshot sessions could not be recovered; this is the author's own diagram of the snapshot file format (header and session section) from the same series of notes, with labels translated to English.",
+    "reconstruction": false
   },
   {
     "article": "data-recovery",

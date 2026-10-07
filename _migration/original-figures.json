@@ -377,5 +377,38 @@
     "region": null,
     "note": "Cropped from the author's original draw.io diagram; Chinese labels translated to English.",
     "title": "Server request path and request processor chain"
+  },
+  "zookeeper/assets/data-recovery-02.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      1020,
+      745,
+      1600,
+      2260
+    ],
+    "note": "The article's original screenshot of parsed log output could not be recovered; this is the author's own diagram of the transaction log format and how it is replayed from the same series of notes, with labels translated to English.",
+    "title": "Transaction log recovery: TxnLogEntry with TxnHeader, Record and TxnDigest"
+  },
+  "zookeeper/assets/data-recovery-03.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      530,
+      1095,
+      920,
+      2390
+    ],
+    "note": "The article's original screenshot of parsed snapshot nodes could not be recovered; this is the author's own diagram of the snapshot file format (DataTree section) from the same series of notes, with labels translated to English.",
+    "title": "Snapshot file format: DataTree with aclCache and DataNode records, then checksums and digest"
+  },
+  "zookeeper/assets/data-recovery-04.svg": {
+    "source_diagram": "source code reading/zookeeper/zookeeper_source_code_drawio/zookeeper_DB_init.drawio",
+    "region": [
+      530,
+      745,
+      920,
+      1090
+    ],
+    "note": "The article's original screenshot of parsed snapshot sessions could not be recovered; this is the author's own diagram of the snapshot file format (header and session section) from the same series of notes, with labels translated to English.",
+    "title": "Snapshot file format: FileHeader, session count and sessionWithTimeOut entries"
   }
 }

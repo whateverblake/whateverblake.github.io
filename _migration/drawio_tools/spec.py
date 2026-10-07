@@ -2,7 +2,9 @@ INF = 1e9
 ALL = (-INF, -INF, INF, INF)
 Z = 'zookeeper/'
 N = 'netty/'
-# target asset (topic/assets/name.svg) -> (source drawio, crop box in absolute diagram coords)
+DB = 'zookeeper_source_code_drawio/zookeeper_DB_init.drawio'
+SNAP = 'GwyQWO2RPQr_w0LrGCnW-19'  # green 'snap file format' container
+# target asset (topic/assets/name.svg) -> (source drawio, crop box in absolute diagram coords[, ids to clip])
 FIGS = {
     'zookeeper/leader-follower-initialization-01': (Z + 'leader_follower_init.drawio', (-100, 90, 700, 440)),
     'zookeeper/leader-follower-initialization-02': (Z + 'leader_follower_init.drawio', (-560, 660, 560, 1580)),
@@ -12,6 +14,10 @@ FIGS = {
     'zookeeper/leader-election-03': (Z + 'ZAB_elect_message_exchange.drawio', (-570, 1180, 820, 1950)),
     'zookeeper/standalone-server-startup-03': (Z + 'zookeeper_io_model.drawio', (100, -20, 1460, 570)),
     'zookeeper/expiry-queue-01': (Z + 'zookeeper_io_model.drawio', (100, 870, 760, 1160)),
+    # The snapshot/log screenshots are lost; the author's file-format diagrams show the same structures.
+    'zookeeper/data-recovery-02': (Z + DB, (1020, 745, 1600, 2260)),
+    'zookeeper/data-recovery-03': (Z + DB, (530, 1095, 920, 2390), (SNAP,)),
+    'zookeeper/data-recovery-04': (Z + DB, (530, 745, 920, 1090), (SNAP,)),
     'zookeeper/client-startup-05': (Z + 'zookeeper_client_connect_server.drawio', ALL),
     'zookeeper/node-creation-01': (Z + 'zookeeper_create_node.drawio', ALL),
     'zookeeper/node-creation-02': (Z + 'zookeeper_request_processor.drawio', (120, 120, 1030, 640)),
