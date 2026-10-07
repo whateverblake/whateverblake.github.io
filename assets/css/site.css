@@ -36,6 +36,8 @@ a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outlin
 .home-intro h1 { font-size:clamp(30px,3.4vw,42px); line-height:1.15; letter-spacing:-.02em; font-weight:600; margin:0 0 14px; }
 .home-intro p { font-size:16.5px; line-height:1.7; color:var(--muted); max-width:660px; margin:0; }
 .home-intro p + p { margin-top:12px; }
+.home-intro .stack { max-width:none; margin-top:14px; display:flex; flex-wrap:wrap; gap:6px; }
+.home-intro .stack span { font-family:var(--mono); font-size:12px; line-height:1; padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--panel); color:var(--ink); }
 .home-intro .links { margin-top:16px; display:flex; gap:18px; font-family:var(--mono); font-size:13px; }
 .home-intro .links a { text-decoration:none; }
 .home-intro .links a::after { content:" ↗"; color:var(--faint); }
